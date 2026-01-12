@@ -16,8 +16,11 @@ class HtmlGeneratorService {
    */
   async generateTaskHtml(data) {
     try {
+      console.log('Generating HTML for token:', data.token);
+
       // Read template
       const template = fs.readFileSync(this.templatePath, 'utf8');
+      console.log('Template loaded successfully');
 
       // Prepare API URL
       const apiUrl = process.env.API_URL || 'http://192.168.1.35:3001';
@@ -37,12 +40,14 @@ class HtmlGeneratorService {
 
       // Write HTML file
       fs.writeFileSync(filepath, html, 'utf8');
+      console.log('HTML file written:', filepath);
 
       // Commit and push to GitHub
       await this.pushToGitHub(filename);
 
       // Return public URL
       const publicUrl = `${this.baseUrl}/${filename}`;
+      console.log('Generated URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Error generating HTML:', error);
@@ -59,22 +64,32 @@ class HtmlGeneratorService {
       const projectRoot = path.join(__dirname, '..', '..');
 
       // Add file to git
-      execSync(`git add docs/${filename}`, { cwd: projectRoot });
+      execSync(`git add docs/${filename}`, { cwd: projectRoot, stdio: 'ignore' });
 
       // Commit
       const commitMessage = `Add task confirmation page: ${filename}`;
-      execSync(`git commit -m "${commitMessage}"`, { cwd: projectRoot });
-
-      // Push
-      execSync('git push', { cwd: projectRoot });
-
-      console.log(`Successfully pushed ${filename} to GitHub`);
-    } catch (error) {
-      // If nothing to commit, that's okay
-      if (!error.message.includes('nothing to commit')) {
-        console.error('Error pushing to GitHub:', error);
-        throw error;
+      try {
+        execSync(`git commit -m "${commitMessage}"`, { cwd: projectRoot, stdio: 'ignore' });
+      } catch (e) {
+        // Nothing to commit is okay
+        if (!e.message.includes('nothing to commit')) {
+          throw e;
+        }
       }
+
+      // Push in background (don't wait for it)
+      setTimeout(() => {
+        try {
+          execSync('git push', { cwd: projectRoot, stdio: 'ignore' });
+          console.log(`Successfully pushed ${filename} to GitHub`);
+        } catch (err) {
+          console.error('Error pushing to GitHub:', err.message);
+        }
+      }, 100);
+
+    } catch (error) {
+      console.error('Error in git operations:', error.message);
+      // Don't throw - we still want to return the URL
     }
   }
 

@@ -100,20 +100,27 @@ router.post('/send', async (req, res) => {
 // Send bulk WhatsApp messages (grouped by employee)
 router.post('/send-bulk', async (req, res) => {
   try {
+    console.log('=== BULK SEND START ===');
     const { tasksByEmployee } = req.body;
     // tasksByEmployee format: { employeeId: { phone, name, tasks: [...] } }
 
     if (!tasksByEmployee || Object.keys(tasksByEmployee).length === 0) {
+      console.error('No tasks to send');
       return res.status(400).json({ error: 'לא נמצאו משימות לשליחה' });
     }
+
+    console.log(`Processing bulk send for ${Object.keys(tasksByEmployee).length} employees`);
 
     // Check if WhatsApp is ready
     const status = whatsappService.getStatus();
     if (!status.isReady) {
+      console.error('WhatsApp not ready');
       return res.status(400).json({
         error: 'וואטסאפ אינו מחובר. אנא התחבר תחילה דרך ההגדרות'
       });
     }
+
+    console.log('WhatsApp is ready, proceeding with send');
 
     const results = [];
     const crypto = require('crypto');
@@ -122,9 +129,12 @@ router.post('/send-bulk', async (req, res) => {
     // Send to each employee
     for (const [employeeId, data] of Object.entries(tasksByEmployee)) {
       try {
+        console.log(`\n--- Processing employee ${employeeId} ---`);
         const { phone, name, tasks, date } = data;
+        console.log(`Employee: ${name}, Phone: ${phone}, Tasks: ${tasks.length}`);
 
         if (!phone) {
+          console.error(`No phone number for employee ${name}`);
           results.push({
             employeeId,
             name,
@@ -135,21 +145,29 @@ router.post('/send-bulk', async (req, res) => {
         }
 
         // Generate confirmation token
+        console.log('Generating confirmation token...');
         const token = crypto.randomBytes(32).toString('hex');
         const taskIds = tasks.map(t => t.id);
+        console.log(`Token generated: ${token.substring(0, 8)}...`);
 
         // Token expires in 30 days
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 30);
 
         // Store token in database
+        console.log('Storing token in database...');
         const stmt = db.prepare(`
           INSERT INTO task_confirmations (token, employee_id, task_ids, expires_at)
           VALUES (?, ?, ?, ?)
         `);
         stmt.run(token, employeeId, JSON.stringify(taskIds), expiresAt.toISOString());
+        console.log('Token stored successfully');
+
+        // Sort tasks by time
+        const sortedTasks = tasks.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
         // Generate HTML page with tasks
+        console.log(`Generating HTML for employee ${name} with ${sortedTasks.length} tasks`);
         const htmlUrl = await htmlGenerator.generateTaskHtml({
           token: token,
           employeeName: name,
@@ -157,16 +175,16 @@ router.post('/send-bulk', async (req, res) => {
           isAcknowledged: false,
           acknowledgedAt: null
         });
+        console.log(`HTML generated successfully: ${htmlUrl}`);
 
         // Shorten the URL for better WhatsApp compatibility
+        console.log('Shortening URL...');
         const shortUrl = await shortenUrl(htmlUrl);
+        console.log(`URL shortened: ${shortUrl}`);
 
         // Build message with all tasks
         let message = `שלום ${name},\n\n`;
         message += `משימות ליום ${date}:\n\n`;
-
-        // Sort tasks by time
-        const sortedTasks = tasks.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
         sortedTasks.forEach((task, index) => {
           message += `${index + 1}. ${task.start_time} - ${task.title}\n`;
@@ -179,10 +197,14 @@ router.post('/send-bulk', async (req, res) => {
         message += `\n📱 *לצפייה אינטרקטיבית ואישור קבלה - קישור יגיע בהודעה הבאה*`;
 
         // Send the message
+        console.log('Sending task list message...');
         await whatsappService.sendMessage(phone, message);
+        console.log('Task list message sent successfully');
 
         // Send the shortened link as a separate message to ensure it's clickable
+        console.log('Sending link message...');
         await whatsappService.sendMessage(phone, shortUrl);
+        console.log('Link message sent successfully');
 
         results.push({
           employeeId,
@@ -191,7 +213,9 @@ router.post('/send-bulk', async (req, res) => {
           taskCount: tasks.length,
           confirmationUrl: htmlUrl
         });
+        console.log(`✓ Successfully sent to ${name}`);
       } catch (error) {
+        console.error(`✗ Error sending to employee ${employeeId}:`, error);
         results.push({
           employeeId,
           name: data.name,
@@ -201,8 +225,12 @@ router.post('/send-bulk', async (req, res) => {
       }
     }
 
+    console.log('\n=== BULK SEND COMPLETE ===');
+
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
+
+    console.log(`Results: ${successCount} success, ${failureCount} failures`);
 
     res.json({
       success: true,
@@ -210,6 +238,7 @@ router.post('/send-bulk', async (req, res) => {
       results
     });
   } catch (error) {
+    console.error('Error in bulk send endpoint:', error);
     res.status(500).json({ error: error.message });
   }
 });
