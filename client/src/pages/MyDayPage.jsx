@@ -266,7 +266,7 @@ export default function MyDayPage() {
       {/* Stats Bar */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {/* 1. Total tasks for today */}
-        <div className="bg-blue-50 rounded-lg p-4">
+        <div className="bg-blue-50 border-r-4 border-blue-500 rounded-lg p-4">
           <div className="flex items-center gap-3">
             <FaCalendarDay className="text-3xl text-blue-500" />
             <div>
@@ -277,7 +277,7 @@ export default function MyDayPage() {
         </div>
 
         {/* 2. Tasks by priority */}
-        <div className="bg-purple-50 rounded-lg p-4">
+        <div className="bg-purple-50 border-r-4 border-purple-500 rounded-lg p-4">
           <div className="text-lg font-bold text-purple-700 mb-3 text-center">לפי עדיפות</div>
           <div className="flex items-end justify-between gap-2 h-24">
             {/* Urgent */}
@@ -331,7 +331,7 @@ export default function MyDayPage() {
         </div>
 
         {/* 3. Tasks by system */}
-        <div className="bg-orange-50 rounded-lg p-4">
+        <div className="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4">
           <div className="text-lg font-bold text-orange-700 mb-3 text-center">לפי מערכת</div>
           <div className="flex items-end justify-between gap-1 h-24">
             {systems.map((system) => {
@@ -380,7 +380,7 @@ export default function MyDayPage() {
         </div>
 
         {/* 4. Tasks by status */}
-        <div className="bg-green-50 rounded-lg p-4">
+        <div className="bg-green-50 border-r-4 border-green-500 rounded-lg p-4">
           <div className="text-lg font-bold text-green-700 mb-3 text-center">לפי סטטוס</div>
           <div className="flex items-end justify-between gap-2 h-24">
             {/* New */}
