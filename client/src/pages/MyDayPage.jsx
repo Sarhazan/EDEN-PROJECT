@@ -2,16 +2,20 @@ import { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { format, isBefore, startOfDay, addDays, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { FaCalendarDay } from 'react-icons/fa';
+import { FaCalendarDay, FaPaperPlane } from 'react-icons/fa';
 import TaskCard from '../components/shared/TaskCard';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../components/forms/datepicker-custom.css';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function MyDayPage() {
-  const { tasks, systems, employees, setIsTaskModalOpen, setEditingTask } = useApp();
+  const { tasks, systems, employees, setIsTaskModalOpen, setEditingTask, updateTaskStatus } = useApp();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const today = startOfDay(new Date());
+  const [isSendingBulk, setIsSendingBulk] = useState(false);
 
   // Filter states
   const [filterCategory, setFilterCategory] = useState(''); // '' | 'priority' | 'system' | 'status' | 'employee'
@@ -26,6 +30,94 @@ export default function MyDayPage() {
   const handleCategoryChange = (category) => {
     setFilterCategory(category);
     setFilterValue(''); // Reset value when category changes
+  };
+
+  // Handle bulk send all tasks
+  const handleSendAllTasks = async () => {
+    // Get current time
+    const now = new Date();
+    const currentTime = format(now, 'HH:mm');
+
+    // Filter tasks to send (not sent yet, and time hasn't passed)
+    let tasksToSend = todaysTasks.filter(task => {
+      // Only draft tasks (not sent yet)
+      if (task.status !== 'draft') return false;
+
+      // Must have employee
+      if (!task.employee_id) return false;
+
+      // Check if task time hasn't passed
+      if (isSameDay(new Date(task.start_date), selectedDate)) {
+        // If it's today, check if time hasn't passed
+        if (task.start_time < currentTime) return false;
+      }
+
+      return true;
+    });
+
+    // Apply employee filter if active
+    if (filterCategory === 'employee' && filterValue) {
+      if (filterValue === 'general') {
+        tasksToSend = tasksToSend.filter(t => !t.employee_id);
+      } else {
+        tasksToSend = tasksToSend.filter(t => t.employee_id === parseInt(filterValue));
+      }
+    }
+
+    if (tasksToSend.length === 0) {
+      alert('אין משימות לשליחה (כל המשימות כבר נשלחו או שהזמן עבר)');
+      return;
+    }
+
+    // Group tasks by employee
+    const tasksByEmployee = {};
+    tasksToSend.forEach(task => {
+      if (!tasksByEmployee[task.employee_id]) {
+        const employee = employees.find(emp => emp.id === task.employee_id);
+        if (!employee) return;
+
+        tasksByEmployee[task.employee_id] = {
+          phone: employee.phone,
+          name: employee.name,
+          tasks: [],
+          date: format(new Date(task.start_date), 'dd/MM/yyyy')
+        };
+      }
+
+      tasksByEmployee[task.employee_id].tasks.push({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        start_time: task.start_time
+      });
+    });
+
+    const employeeCount = Object.keys(tasksByEmployee).length;
+    const confirmMessage = filterCategory === 'employee' && filterValue
+      ? `האם לשלוח ${tasksToSend.length} משימות ל-${tasksByEmployee[Object.keys(tasksByEmployee)[0]]?.name}?`
+      : `האם לשלוח ${tasksToSend.length} משימות ל-${employeeCount} עובדים?`;
+
+    if (!confirm(confirmMessage)) return;
+
+    setIsSendingBulk(true);
+
+    try {
+      const response = await axios.post(`${API_URL}/api/whatsapp/send-bulk`, {
+        tasksByEmployee
+      });
+
+      // Update all tasks status to 'sent'
+      const taskIds = tasksToSend.map(t => t.id);
+      for (const taskId of taskIds) {
+        await updateTaskStatus(taskId, 'sent');
+      }
+
+      alert(response.data.message);
+    } catch (error) {
+      alert('שגיאה: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setIsSendingBulk(false);
+    }
   };
 
   // Calculate statistics and filter tasks
@@ -530,9 +622,19 @@ export default function MyDayPage() {
         {/* Tasks with System Assignment (70%) - RIGHT SIDE */}
         <div className="col-span-8">
           <div className="bg-white rounded-lg shadow-md p-4">
-            <h2 className="text-xl font-bold mb-4">
-              משימות לביצוע ({todaysTasks.length})
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">
+                משימות לביצוע ({todaysTasks.length})
+              </h2>
+              <button
+                onClick={handleSendAllTasks}
+                disabled={isSendingBulk}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaPaperPlane />
+                <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+              </button>
+            </div>
 
             {/* Filters */}
             <div className="mb-4 flex gap-3">
