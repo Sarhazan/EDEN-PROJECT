@@ -333,7 +333,7 @@ export default function MyDayPage() {
         {/* 3. Tasks by system */}
         <div className="bg-orange-50 rounded-lg p-4">
           <div className="text-lg font-bold text-orange-700 mb-3 text-center">לפי מערכת</div>
-          <div className="flex items-end justify-between gap-1 h-24 overflow-x-auto">
+          <div className="flex items-end justify-between gap-1 h-24">
             {systems.map((system) => {
               const count = stats.bySystem[system.id] || 0;
               if (count === 0) return null;
