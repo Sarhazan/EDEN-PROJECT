@@ -58,18 +58,19 @@ function seedDatabase() {
 
   // Insert locations
   const insertLocation = db.prepare(`
-    INSERT INTO locations (name, latitude, longitude)
-    VALUES (?, ?, ?)
+    INSERT INTO locations (name, image, latitude, longitude)
+    VALUES (?, ?, ?, ?)
   `);
 
-  insertLocation.run('לובי ראשי - קומת קרקע', '32.0853', '34.7818');
-  insertLocation.run('חדר מדרגות א', '32.0854', '34.7819');
-  insertLocation.run('חדר מדרגות ב', '32.0852', '34.7817');
-  insertLocation.run('גג המבנה', '32.0855', '34.7820');
-  insertLocation.run('חניון תת קרקעי', '32.0851', '34.7816');
-  insertLocation.run('חצר אחורית', '32.0850', '34.7815');
-  insertLocation.run('גינה קדמית', '32.0856', '34.7821');
-  insertLocation.run('חדר מכונות - קומה 1', '32.0853', '34.7819');
+  // Using placeholder images - in real use, these would be actual uploaded images
+  insertLocation.run('לובי ראשי - קומת קרקע', 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800', '32.0853', '34.7818');
+  insertLocation.run('חדר מדרגות א', 'https://images.unsplash.com/photo-1562095241-8c6714fd4178?w=800', '32.0854', '34.7819');
+  insertLocation.run('חדר מדרגות ב', 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800', '32.0852', '34.7817');
+  insertLocation.run('גג המבנה', 'https://images.unsplash.com/photo-1519974719765-e6559eac2575?w=800', '32.0855', '34.7820');
+  insertLocation.run('חניון תת קרקעי', 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800', '32.0851', '34.7816');
+  insertLocation.run('חצר אחורית', 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800', '32.0850', '34.7815');
+  insertLocation.run('גינה קדמית', 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=800', '32.0856', '34.7821');
+  insertLocation.run('חדר מכונות - קומה 1', 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800', '32.0853', '34.7819');
 
   // Insert tasks
   const insertTask = db.prepare(`
