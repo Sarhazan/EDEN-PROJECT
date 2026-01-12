@@ -99,6 +99,21 @@ function initializeDatabase() {
     )
   `);
 
+  // Task confirmation tokens table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_confirmations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      token TEXT UNIQUE NOT NULL,
+      employee_id INTEGER NOT NULL,
+      task_ids TEXT NOT NULL,
+      is_acknowledged BOOLEAN DEFAULT 0,
+      acknowledged_at TIMESTAMP,
+      expires_at TIMESTAMP NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+    )
+  `);
+
   console.log('Database tables initialized successfully');
 }
 

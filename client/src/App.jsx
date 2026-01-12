@@ -16,6 +16,7 @@ import SuppliersPage from './pages/SuppliersPage';
 import EmployeesPage from './pages/EmployeesPage';
 import LocationsPage from './pages/LocationsPage';
 import SettingsPage from './pages/SettingsPage';
+import TaskConfirmationPage from './pages/TaskConfirmationPage';
 import { FaPlus } from 'react-icons/fa';
 
 function MainContent() {
@@ -98,12 +99,15 @@ function MainContent() {
 
   const buttonConfig = getFloatingButtonConfig();
 
+  // Check if we're on the confirmation page (public route)
+  const isPublicRoute = location.pathname.startsWith('/confirm/');
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <DataControls />
+      {!isPublicRoute && <Sidebar />}
+      {!isPublicRoute && <DataControls />}
 
-      <main className="mr-64 flex-1">
+      <main className={isPublicRoute ? 'flex-1' : 'mr-64 flex-1'}>
         <Routes>
           <Route path="/" element={<MyDayPage />} />
           <Route path="/tasks" element={<AllTasksPage />} />
@@ -112,11 +116,12 @@ function MainContent() {
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/locations" element={<LocationsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/confirm/:token" element={<TaskConfirmationPage />} />
         </Routes>
       </main>
 
       {/* Floating Add Button */}
-      {buttonConfig.show && (
+      {!isPublicRoute && buttonConfig.show && (
         <button
           onClick={buttonConfig.onClick}
           className="fixed top-1/2 -translate-y-1/2 right-6 bg-primary hover:bg-orange-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all flex items-center gap-2 group z-50"

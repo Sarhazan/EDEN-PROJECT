@@ -1,6 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const whatsappService = require('../services/whatsapp');
+const htmlGenerator = require('../services/htmlGenerator');
+const axios = require('axios');
+
+// Function to shorten URL using TinyURL
+async function shortenUrl(longUrl) {
+  try {
+    const response = await axios.get(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error shortening URL:', error);
+    return longUrl; // Return original URL if shortening fails
+  }
+}
 
 // Get WhatsApp connection status
 router.get('/status', (req, res) => {
@@ -103,6 +116,8 @@ router.post('/send-bulk', async (req, res) => {
     }
 
     const results = [];
+    const crypto = require('crypto');
+    const { db } = require('../database/schema');
 
     // Send to each employee
     for (const [employeeId, data] of Object.entries(tasksByEmployee)) {
@@ -119,8 +134,36 @@ router.post('/send-bulk', async (req, res) => {
           continue;
         }
 
+        // Generate confirmation token
+        const token = crypto.randomBytes(32).toString('hex');
+        const taskIds = tasks.map(t => t.id);
+
+        // Token expires in 30 days
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+
+        // Store token in database
+        const stmt = db.prepare(`
+          INSERT INTO task_confirmations (token, employee_id, task_ids, expires_at)
+          VALUES (?, ?, ?, ?)
+        `);
+        stmt.run(token, employeeId, JSON.stringify(taskIds), expiresAt.toISOString());
+
+        // Generate HTML page with tasks
+        const htmlUrl = await htmlGenerator.generateTaskHtml({
+          token: token,
+          employeeName: name,
+          tasks: sortedTasks,
+          isAcknowledged: false,
+          acknowledgedAt: null
+        });
+
+        // Shorten the URL for better WhatsApp compatibility
+        const shortUrl = await shortenUrl(htmlUrl);
+
         // Build message with all tasks
-        let message = `משימות ליום ${date}\n\n`;
+        let message = `שלום ${name},\n\n`;
+        message += `משימות ליום ${date}:\n\n`;
 
         // Sort tasks by time
         const sortedTasks = tasks.sort((a, b) => a.start_time.localeCompare(b.start_time));
@@ -133,14 +176,20 @@ router.post('/send-bulk', async (req, res) => {
           message += '\n';
         });
 
+        message += `\n📱 *לצפייה אינטרקטיבית ואישור קבלה - קישור יגיע בהודעה הבאה*`;
+
         // Send the message
         await whatsappService.sendMessage(phone, message);
+
+        // Send the shortened link as a separate message to ensure it's clickable
+        await whatsappService.sendMessage(phone, shortUrl);
 
         results.push({
           employeeId,
           name,
           success: true,
-          taskCount: tasks.length
+          taskCount: tasks.length,
+          confirmationUrl: htmlUrl
         });
       } catch (error) {
         results.push({

@@ -29,7 +29,15 @@
       "mcp__plugin_playwright_playwright__browser_navigate",
       "mcp__plugin_playwright_playwright__browser_click",
       "mcp__plugin_playwright_playwright__browser_handle_dialog",
-      "mcp__plugin_playwright_playwright__browser_take_screenshot"
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "Bash(ipconfig:*)",
+      "Bash(curl:*)",
+      "Bash(set NODE_ENV=production)",
+      "Bash(lt:*)",
+      "Bash(set NODE_ENV=development)",
+      "Bash(npm run dev:server:*)",
+      "Bash(choco install:*)",
+      "Bash(git --version:*)"
     ],
     "additionalDirectories": [
       "c:\\dev\\projects\\claude projects\\eden claude"
