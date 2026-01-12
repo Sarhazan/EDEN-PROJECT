@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:brainstorming:*)",
+      "Bash(npm init:*)",
+      "Bash(npm create:*)",
+      "Bash(where:*)",
+      "Bash(npx tailwindcss init -p)",
+      "Bash(node_modules/.bin/tailwindcss:*)",
+      "Bash(node:*)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(del maintenance.db)",
+      "Bash(timeout:*)",
+      "Bash(find:*)",
+      "Bash(taskkill:*)",
+      "Bash(tree:*)",
+      "Bash(npm run build:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(del NUL)",
+      "Bash(git commit:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\dev\\projects\\claude projects\\eden claude"
+    ]
+  }
+}

@@ -1,0 +1,85 @@
+/* Custom styles for react-datepicker with RTL support */
+
+.react-datepicker-wrapper {
+  display: block;
+  width: 100%;
+}
+
+.react-datepicker__input-container {
+  display: block;
+  width: 100%;
+}
+
+/* RTL Support */
+.react-datepicker {
+  direction: rtl;
+  font-family: 'Heebo', sans-serif;
+}
+
+.react-datepicker__header {
+  direction: rtl;
+  text-align: center;
+}
+
+.react-datepicker__day-names {
+  direction: rtl;
+}
+
+.react-datepicker__week {
+  direction: rtl;
+}
+
+.react-datepicker__navigation {
+  top: 13px;
+}
+
+.react-datepicker__navigation--previous {
+  right: 10px;
+  left: auto;
+}
+
+.react-datepicker__navigation--next {
+  left: 10px;
+  right: auto;
+}
+
+/* Styling */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #f97316;
+  color: white;
+}
+
+.react-datepicker__day--selected:hover,
+.react-datepicker__day--keyboard-selected:hover {
+  background-color: #ea580c;
+}
+
+.react-datepicker__day:hover {
+  background-color: #fed7aa;
+}
+
+.react-datepicker__current-month {
+  font-weight: 600;
+}
+
+.react-datepicker__day-name {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.react-datepicker__header {
+  background-color: #fff7ed;
+  border-bottom: 1px solid #fed7aa;
+}
+
+.react-datepicker__day--today {
+  font-weight: bold;
+  color: #f97316;
+}
+
+/* When today is also selected, make text white for visibility */
+.react-datepicker__day--selected.react-datepicker__day--today,
+.react-datepicker__day--keyboard-selected.react-datepicker__day--today {
+  color: white;
+}
