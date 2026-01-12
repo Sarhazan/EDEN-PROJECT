@@ -100,10 +100,9 @@ function MainContent() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
       <DataControls />
 
-      <main className="mr-64 flex-1">
+      <main className="flex-1">
         <Routes>
           <Route path="/" element={<MyDayPage />} />
           <Route path="/tasks" element={<AllTasksPage />} />
