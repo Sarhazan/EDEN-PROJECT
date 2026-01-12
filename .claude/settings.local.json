@@ -22,7 +22,13 @@
       "Bash(git init:*)",
       "Bash(git add:*)",
       "Bash(del NUL)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git push:*)",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_handle_dialog"
     ],
     "additionalDirectories": [
       "c:\\dev\\projects\\claude projects\\eden claude"

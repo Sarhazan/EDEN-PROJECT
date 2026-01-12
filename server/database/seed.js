@@ -113,7 +113,7 @@ function seedDatabase() {
   insertTask.run('ניקוי גג', 'ניקוי וסילוק פסולת מגג המבנה', null, 4, 'one-time', in3Days, '09:00', 'normal', 'draft', 0);
   insertTask.run('בדיקת מערכת התראה', 'בדיקה חודשית של מערכת התראת האבטחה', 6, 1, 'monthly', in5Days, '14:00', 'normal', 'draft', 1);
   insertTask.run('טיפול בדשא', 'כיסוח דשא וטיפול בשטחי הגינה', 5, 5, 'biweekly', in3Days, '07:00', 'optional', 'draft', 1);
-  insertTask.run('בדיקת חימום מים', 'בדיקת תקינות דוד חשמלי ומערכת חימום', 2, 3, 'quarterly', nextWeek, '13:00', 'normal', 'draft', 1);
+  insertTask.run('בדיקת חימום מים', 'בדיקת תקינות דוד חשמלי ומערכת חימום', 2, 3, 'monthly', nextWeek, '13:00', 'normal', 'draft', 1);
 
   console.log('Database seeded with sample data successfully');
 }
