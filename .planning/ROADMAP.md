@@ -31,6 +31,12 @@
 
 **Estimated Effort:** Medium (WebSocket setup, client/server integration)
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Server WebSocket setup and task broadcasting
+- [ ] 01-02-PLAN.md — Client WebSocket integration and real-time listeners
+
 ---
 
 ### Phase 2: Enhanced Task Completion
@@ -54,6 +60,11 @@
 5. עובד מוסיף הערה ותמונה לאותה משימה - מנהל רואה את שניהם בכרטיס המשימה
 
 **Estimated Effort:** Medium-High (file upload, storage, UI for media display)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (created by /gsd:plan-phase 2)
 
 ---
 
@@ -81,6 +92,11 @@
 5. משימה שהושלמה לפני הזמן (08:20) מציגה "הושלם מוקדם ב-10 דקות"
 
 **Estimated Effort:** Medium (DB schema updates, status logic, UI indicators)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (created by /gsd:plan-phase 3)
 
 ---
 
@@ -110,13 +126,18 @@
 
 **Estimated Effort:** Medium (archive table, filters, cleanup job, stats calculations)
 
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (created by /gsd:plan-phase 4)
+
 ---
 
 ## Progress
 
 | Phase | Status | Requirements | Completed |
 |-------|--------|--------------|-----------|
-| 1 - Real-Time Infrastructure | Pending | RT-01, RT-02, RT-03, RT-04 | 0/4 |
+| 1 - Real-Time Infrastructure | Planning | RT-01, RT-02, RT-03, RT-04 | 0/4 |
 | 2 - Enhanced Task Completion | Pending | TC-01, TC-02, TC-03, TC-04, TC-05 | 0/5 |
 | 3 - Status Tracking & Timing | Pending | TS-01, TS-02, TS-03, TS-04, TS-05, TS-06, TS-07, TS-08 | 0/8 |
 | 4 - History & Archive | Pending | HA-01, HA-02, HA-03, HA-04, HA-05, HA-06, HA-07, HA-08 | 0/8 |
