@@ -55,6 +55,42 @@ export function AppProvider({ children }) {
     };
   }, []);
 
+  // Listen for real-time task updates
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    // Listen for task created
+    socket.on('task:created', (data) => {
+      console.log('Task created via WebSocket:', data.task);
+      setTasks(prevTasks => [...prevTasks, data.task]);
+    });
+
+    // Listen for task updated
+    socket.on('task:updated', (data) => {
+      console.log('Task updated via WebSocket:', data.task);
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === data.task.id ? data.task : task
+        )
+      );
+    });
+
+    // Listen for task deleted
+    socket.on('task:deleted', (data) => {
+      console.log('Task deleted via WebSocket:', data.task);
+      setTasks(prevTasks =>
+        prevTasks.filter(task => task.id !== data.task.id)
+      );
+    });
+
+    return () => {
+      socket.off('task:created');
+      socket.off('task:updated');
+      socket.off('task:deleted');
+    };
+  }, []);
+
   const fetchAllData = async () => {
     try {
       setLoading(true);
