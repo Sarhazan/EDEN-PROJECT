@@ -59,15 +59,8 @@ app.use('/api/data', require('./routes/data'));
 app.use('/api/whatsapp', require('./routes/whatsapp'));
 app.use('/api/confirm', require('./routes/taskConfirmation'));
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/dist')));
-
-  // Handle SPA routing - serve index.html for all non-API routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-  });
-}
+// Note: Client is deployed separately on Vercel
+// Static file serving is not needed in this Railway deployment
 
 // Error handling middleware
 app.use((err, req, res, next) => {
