@@ -1,8 +1,13 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 
 const AppContext = createContext();
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : 'http://localhost:3001/api';
+
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export function AppProvider({ children }) {
   const [tasks, setTasks] = useState([]);
@@ -14,11 +19,40 @@ export function AppProvider({ children }) {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [whatsappConnected, setWhatsappConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const socketRef = useRef(null);
 
   // Fetch all data on mount
   useEffect(() => {
     fetchAllData();
     checkWhatsAppConnection();
+  }, []);
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    const socket = io(SOCKET_URL);
+
+    socket.on('connect', () => {
+      console.log('WebSocket connected');
+      setConnectionStatus('connected');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('WebSocket disconnected');
+      setConnectionStatus('disconnected');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('WebSocket connection error:', error);
+      setConnectionStatus('error');
+    });
+
+    // Store socket in ref for cleanup
+    socketRef.current = socket;
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const fetchAllData = async () => {
@@ -300,7 +334,9 @@ export function AppProvider({ children }) {
     refreshData: fetchAllData,
     // WhatsApp
     whatsappConnected,
-    checkWhatsAppConnection
+    checkWhatsAppConnection,
+    // WebSocket
+    connectionStatus
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
