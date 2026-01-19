@@ -7,9 +7,9 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const priorityColors = {
-  urgent: 'bg-red-100 text-red-800',
-  normal: 'bg-blue-100 text-blue-800',
-  optional: 'bg-green-100 text-green-800'
+  urgent: 'bg-rose-50 text-rose-700',
+  normal: 'bg-indigo-50 text-indigo-700',
+  optional: 'bg-sky-50 text-sky-700'
 };
 
 const priorityLabels = {
@@ -19,15 +19,17 @@ const priorityLabels = {
 };
 
 const statusColors = {
-  draft: 'bg-gray-100 text-gray-800',
-  sent: 'bg-orange-100 text-orange-800',
-  in_progress: 'bg-blue-100 text-blue-800',
-  completed: 'bg-green-100 text-green-800'
+  draft: 'bg-slate-50 text-slate-700',
+  sent: 'bg-amber-50 text-amber-700',
+  received: 'bg-teal-50 text-teal-700',
+  in_progress: 'bg-blue-50 text-blue-700',
+  completed: 'bg-emerald-50 text-emerald-700'
 };
 
 const statusLabels = {
   draft: 'חדש',
   sent: 'נשלח',
+  received: 'התקבל',
   in_progress: 'בביצוע',
   completed: 'הושלם'
 };
@@ -46,6 +48,13 @@ export default function TaskCard({ task, onEdit }) {
   const { updateTaskStatus, deleteTask, updateTask, employees } = useApp();
   const [isChangingEmployee, setIsChangingEmployee] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  // Check if task time is in the future
+  const isTaskInFuture = () => {
+    const now = new Date();
+    const taskDateTime = new Date(`${task.start_date}T${task.start_time}`);
+    return taskDateTime > now;
+  };
 
   const handleCheckbox = async () => {
     const newStatus = task.status === 'completed' ? 'draft' : 'completed';
@@ -115,21 +124,44 @@ export default function TaskCard({ task, onEdit }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
-      <div className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          checked={task.status === 'completed'}
-          onChange={handleCheckbox}
-          className="mt-1 w-5 h-5 cursor-pointer"
-        />
+    <div className={`
+      bg-white rounded-xl shadow-md p-5
+      transition-all duration-200
+      hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01]
+      ${task.status === 'completed' ? 'opacity-70' : ''}
+      ${task.priority === 'urgent' ? 'border-r-4 border-rose-500' : ''}
+    `}>
+      <div className="flex items-start gap-4">
+        <div className="relative flex-shrink-0">
+          <input
+            type="checkbox"
+            checked={task.status === 'completed'}
+            onChange={handleCheckbox}
+            className={`
+              w-6 h-6 cursor-pointer appearance-none
+              border-2 rounded-md
+              transition-all duration-200
+              checked:scale-110
+              ${task.status === 'completed'
+                ? 'bg-primary border-primary'
+                : 'border-gray-300'
+              }
+            `}
+          />
+        </div>
 
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="text-lg font-semibold">{task.title}</h3>
-            <div className="flex gap-2 items-center">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between mb-3">
+            <h3 className={`
+              text-lg font-semibold text-gray-900 leading-snug
+              ${task.status === 'completed' ? 'line-through' : ''}
+            `}>
+              {task.title}
+            </h3>
+
+            <div className="flex gap-2 items-center flex-shrink-0">
               {task.status === 'sent' && task.sent_at && (
-                <div className="flex items-center gap-1 text-green-600 text-sm">
+                <div className="flex items-center gap-1 text-emerald-600 text-sm animate-pulse">
                   <FaCheck />
                   <span className="font-semibold">נשלח</span>
                   <span className="text-gray-500">
@@ -140,11 +172,11 @@ export default function TaskCard({ task, onEdit }) {
                   </span>
                 </div>
               )}
-              {task.status === 'draft' && task.employee_id && (
+              {task.status === 'draft' && task.employee_id && isTaskInFuture() && (
                 <button
                   onClick={handleSendTask}
                   disabled={isSending}
-                  className="text-primary hover:text-orange-600 p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-primary hover:text-indigo-700 p-2 rounded-lg hover:bg-indigo-50 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="שלח משימה בוואטסאפ"
                 >
                   {isSending ? '...' : <FaPaperPlane />}
@@ -152,14 +184,14 @@ export default function TaskCard({ task, onEdit }) {
               )}
               <button
                 onClick={() => onEdit(task)}
-                className="text-blue-500 hover:text-blue-600 p-1"
+                className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-all duration-150"
                 title="ערוך"
               >
                 <FaEdit />
               </button>
               <button
                 onClick={handleDelete}
-                className="text-red-500 hover:text-red-600 p-1"
+                className="text-rose-600 hover:text-rose-700 p-2 rounded-lg hover:bg-rose-50 transition-all duration-150"
                 title="מחק"
               >
                 <FaTrash />
@@ -168,33 +200,41 @@ export default function TaskCard({ task, onEdit }) {
           </div>
 
           {task.description && (
-            <p className="text-gray-600 text-sm mb-2">{task.description}</p>
+            <p className="text-sm text-gray-600 leading-relaxed mb-3">
+              {task.description}
+            </p>
           )}
 
-          <div className="flex flex-wrap gap-2 mb-2">
-            <span className={`px-3 py-1 rounded-full text-sm ${priorityColors[task.priority]}`}>
+          <div className="flex flex-wrap gap-2 mb-3">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${priorityColors[task.priority]}`}>
               {priorityLabels[task.priority]}
             </span>
-            <span className={`px-3 py-1 rounded-full text-sm ${statusColors[task.status]}`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors[task.status]}`}>
               {statusLabels[task.status]}
             </span>
             {task.system_name && (
-              <span className="px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700">
                 {task.system_name}
               </span>
             )}
             {task.frequency && (
-              <span className="px-3 py-1 rounded-full text-sm bg-indigo-100 text-indigo-800 flex items-center gap-1">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 flex items-center gap-1">
                 {task.is_recurring === 1 && <FaRedo className="text-xs" />}
                 {frequencyLabels[task.frequency] || task.frequency}
               </span>
             )}
           </div>
 
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div>
-              <span>📅 {format(new Date(task.start_date), 'dd/MM/yyyy')}</span>
-              <span className="mr-3">🕐 {task.start_time}</span>
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1">
+                <span className="text-base">📅</span>
+                {format(new Date(task.start_date), 'dd/MM/yyyy')}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="text-base">🕐</span>
+                {task.start_time}
+              </span>
             </div>
 
             {isChangingEmployee ? (
@@ -202,7 +242,7 @@ export default function TaskCard({ task, onEdit }) {
                 value={task.employee_id || ''}
                 onChange={handleEmployeeChange}
                 onBlur={() => setIsChangingEmployee(false)}
-                className="border rounded px-2 py-1 text-sm"
+                className="border border-gray-200 rounded-lg px-3 py-1 text-sm shadow-inner focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:border-primary transition-all duration-200"
                 autoFocus
               >
                 <option value="">ללא עובד</option>
@@ -215,9 +255,10 @@ export default function TaskCard({ task, onEdit }) {
             ) : (
               <span
                 onClick={() => setIsChangingEmployee(true)}
-                className="cursor-pointer hover:text-primary"
+                className="cursor-pointer hover:text-primary transition-colors duration-150 flex items-center gap-1"
               >
-                👤 {task.employee_name || 'ללא עובד'}
+                <span className="text-base">👤</span>
+                {task.employee_name || 'ללא עובד'}
               </span>
             )}
           </div>

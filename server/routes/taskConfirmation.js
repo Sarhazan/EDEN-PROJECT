@@ -109,7 +109,7 @@ router.put('/:token/task/:taskId', (req, res) => {
     const { status } = req.body;
 
     // Validate status
-    const validStatuses = ['draft', 'sent', 'in_progress', 'completed'];
+    const validStatuses = ['draft', 'sent', 'received', 'in_progress', 'completed'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'סטטוס לא חוקי' });
     }
@@ -205,11 +205,11 @@ router.post('/:token/acknowledge', (req, res) => {
 
     stmt.run(token);
 
-    // Update all tasks to 'received' status (we'll use 'in_progress' for now since 'received' is not in schema)
+    // Update all tasks to 'received' status
     const taskIds = JSON.parse(confirmation.task_ids);
     const updateStmt = db.prepare(`
       UPDATE tasks
-      SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP
+      SET status = 'received', updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
 

@@ -36,6 +36,7 @@ function seedDatabase() {
   insertEmployee.run('שרה לוי', '052-7654321', 'עובדת תחזוקה');
   insertEmployee.run('יוסי אברהם', '054-3216549', 'חשמלאי');
   insertEmployee.run('מיכל ישראלי', '050-9876543', 'מנקה');
+  insertEmployee.run('עדן קנדי ', '0539441903', 'טכנאי');
   insertEmployee.run('אבי דוד', '052-1112223', 'גנן');
   insertEmployee.run('רונית כהן', '054-4445556', 'טכנאית מיזוג');
 
@@ -95,8 +96,14 @@ function seedDatabase() {
   // Today's one-time tasks
   insertTask.run('בדיקת נורות בקומה 3', 'החלפת נורות שרופות בקומה השלישית - חדר מדרגות', 3, 3, 'one-time', today, '14:00', 'normal', 'draft', 0);
   insertTask.run('תיקון דלת כניסה', 'תיקון מנגנון סגירה של דלת הכניסה הראשית', null, 1, 'one-time', today, '11:00', 'urgent', 'sent', 0);
-  insertTask.run('ניקוי גינה קדמית', 'הסרת עלים ופסולת מהגינה הקדמית', 5, 5, 'one-time', today, '15:00', 'optional', 'draft', 0);
+  insertTask.run('ניקוי גינה קדמית', 'הסרת עלים ופסולת מהגינה הקדמית', 5, 6, 'one-time', today, '15:00', 'optional', 'draft', 0);
   insertTask.run('בדיקת לחץ מים', 'בדיקת לחץ מים בקומות העליונות', 2, 2, 'one-time', today, '12:00', 'normal', 'draft', 0);
+  insertTask.run('ניקוי מצלמות אבטחה', 'ניקוי עדשות מצלמות האבטחה', 6, 5, 'one-time', today, '13:00', 'normal', 'draft', 0);
+  insertTask.run('בדיקת גינה אחורית', 'בדיקה והסרת פסולת בגינה האחורית', 5, 5, 'one-time', today, '15:30', 'optional', 'draft', 0);
+  insertTask.run('תיקון נורה בלובי', 'החלפת נורה שרופה בלובי הראשי', 3, 3, 'one-time', today, '16:00', 'normal', 'draft', 0);
+  insertTask.run('בדיקת מעקות בגג', 'בדיקת תקינות מעקות הבטיחות בגג', null, 1, 'one-time', today, '17:00', 'urgent', 'draft', 0);
+  insertTask.run('ניקוי חדר מדרגות א', 'ניקוי יומי של חדר מדרגות א', null, 4, 'one-time', today, '08:30', 'normal', 'draft', 0);
+  insertTask.run('בדיקת מנעול שער חניון', 'בדיקת תקינות מנעול השער החשמלי', 6, 1, 'one-time', today, '18:00', 'normal', 'draft', 0);
 
   // Overdue tasks (yesterday)
   insertTask.run('תיקון ברז דולף', 'תיקון ברז דולף בשירותי קומה 2 - דחוף!', 2, 2, 'one-time', yesterday, '09:00', 'urgent', 'draft', 0);

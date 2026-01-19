@@ -72,6 +72,73 @@ function initializeDatabase() {
     // Column already exists, ignore error
   }
 
+  // Migration: Update status CHECK constraint to include 'received'
+  // SQLite doesn't support ALTER COLUMN for CHECK constraints
+  // So we need to check if the constraint needs updating and recreate table if needed
+  try {
+    const tableInfo = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'`).get();
+    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes("'received'")) {
+      console.log('Migrating tasks table to add "received" status...');
+
+      // Begin transaction
+      db.exec('BEGIN TRANSACTION');
+
+      // Create new table with updated constraint
+      db.exec(`
+        CREATE TABLE tasks_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          description TEXT,
+          system_id INTEGER,
+          employee_id INTEGER,
+          frequency TEXT CHECK(frequency IN ('one-time', 'daily', 'weekly', 'biweekly', 'monthly', 'semi-annual', 'annual')) DEFAULT 'one-time',
+          start_date DATE NOT NULL,
+          start_time TIME NOT NULL,
+          priority TEXT CHECK(priority IN ('urgent', 'normal', 'optional')) DEFAULT 'normal',
+          status TEXT CHECK(status IN ('draft', 'sent', 'received', 'in_progress', 'completed')) DEFAULT 'draft',
+          is_recurring BOOLEAN DEFAULT 0,
+          parent_task_id INTEGER,
+          weekly_days TEXT,
+          sent_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (system_id) REFERENCES systems(id) ON DELETE SET NULL,
+          FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL,
+          FOREIGN KEY (parent_task_id) REFERENCES tasks(id) ON DELETE SET NULL
+        )
+      `);
+
+      // Copy data from old table to new table
+      db.exec(`
+        INSERT INTO tasks_new (id, title, description, system_id, employee_id, frequency,
+                               start_date, start_time, priority, status, is_recurring,
+                               parent_task_id, weekly_days, sent_at, created_at, updated_at)
+        SELECT id, title, description, system_id, employee_id, frequency,
+               start_date, start_time, priority, status, is_recurring,
+               parent_task_id, weekly_days, sent_at, created_at, updated_at
+        FROM tasks
+      `);
+
+      // Drop old table
+      db.exec('DROP TABLE tasks');
+
+      // Rename new table to original name
+      db.exec('ALTER TABLE tasks_new RENAME TO tasks');
+
+      // Commit transaction
+      db.exec('COMMIT');
+
+      console.log('Migration complete: "received" status added to tasks table');
+    }
+  } catch (e) {
+    console.error('Error during status migration:', e);
+    try {
+      db.exec('ROLLBACK');
+    } catch (rollbackError) {
+      // Ignore rollback error
+    }
+  }
+
   // Locations table
   db.exec(`
     CREATE TABLE IF NOT EXISTS locations (

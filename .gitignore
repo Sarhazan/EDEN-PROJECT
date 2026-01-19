@@ -11,13 +11,16 @@ dist/
 .env.local
 .env.production
 
-# Database
+# Database (ignore locally, but Railway will persist it)
+# For local development, we ignore DB files
+# On Railway, they will be stored in persistent volume
 *.db
 *.sqlite
 *.sqlite3
 database.sqlite
 
-# WhatsApp session data
+# WhatsApp session data (ignore locally, but Railway will persist it)
+# On Railway, the session will be stored in persistent volume
 .wwebjs_auth/
 .wwebjs_cache/
 
@@ -46,3 +49,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+.vercel
+
+# Auto Claude data directory
+.auto-claude/

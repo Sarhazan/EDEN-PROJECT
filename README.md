@@ -61,17 +61,26 @@ cd client && npm install && cd ..
 
 ## הפעלה
 
+### פיתוח מקומי
+
 \`\`\`bash
 # מצב פיתוח (שרת + לקוח)
 npm run dev
-
-# בניית גרסת ייצור
-npm run build
-npm start
 \`\`\`
 
 - **לקוח**: http://localhost:5174
-- **שרת**: http://localhost:3001
+- **שרת**: http://localhost:3002
+
+### פריסה לייצור (Railway)
+
+למדריך מפורט לפריסה ב-Railway, ראה [DEPLOYMENT.md](DEPLOYMENT.md)
+
+**סיכום מהיר:**
+1. צור חשבון ב-[Railway](https://railway.app)
+2. חבר את ה-GitHub repository
+3. Railway יפרוס אוטומטית
+4. קבל URL ציבורי (למשל: `https://eden-server.up.railway.app`)
+5. עדכן `PUBLIC_API_URL` בקובץ `.env` המקומי
 
 ## מבנה הפרויקט
 
@@ -98,7 +107,22 @@ eden-claude/
 - \`/api/employees\` - ניהול עובדים
 - \`/api/locations\` - ניהול מיקומים
 - \`/api/whatsapp\` - אינטגרציית WhatsApp
-- \`/api/data\` - ניהול נתונים
+- \`/api/confirm\` - דפי אישור משימות (webhook)
+- \`/api/data\` - ניהול נתוני דמה
+
+## ארכיטקטורת הפריסה
+
+**שרת (Railway):**
+- Node.js backend עם Express
+- SQLite database עם persistent storage
+- WhatsApp-web.js session management
+- Socket.IO לעדכונים בזמן אמת
+
+**דפי אישור (Vercel):**
+- HTML סטטי עם JavaScript
+- מתארח ב-Vercel Pages
+- מתקשר עם Railway API דרך \`PUBLIC_API_URL\`
+- Git automation לעדכון אוטומטי
 
 ---
 

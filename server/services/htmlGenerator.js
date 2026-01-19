@@ -6,7 +6,8 @@ class HtmlGeneratorService {
   constructor() {
     this.templatePath = path.join(__dirname, '..', 'templates', 'task-confirmation.html');
     this.outputDir = path.join(__dirname, '..', '..', 'docs');
-    this.baseUrl = 'https://sarhazan.github.io/EDEN-PROJECT';
+    // Use Vercel URL if available, fallback to GitHub Pages
+    this.baseUrl = process.env.VERCEL_PROJECT_URL || 'https://sarhazan.github.io/EDEN-PROJECT';
   }
 
   /**
@@ -22,8 +23,8 @@ class HtmlGeneratorService {
       const template = fs.readFileSync(this.templatePath, 'utf8');
       console.log('Template loaded successfully');
 
-      // Prepare API URL
-      const apiUrl = process.env.API_URL || 'http://192.168.1.35:3001';
+      // Prepare API URL - use PUBLIC_API_URL for external access, fallback to API_URL
+      const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://192.168.1.35:3002';
 
       // Replace placeholders
       let html = template
@@ -63,33 +64,43 @@ class HtmlGeneratorService {
     try {
       const projectRoot = path.join(__dirname, '..', '..');
 
+      console.log(`📝 Starting git operations for ${filename}...`);
+
       // Add file to git
-      execSync(`git add docs/${filename}`, { cwd: projectRoot, stdio: 'ignore' });
+      console.log('   - Adding file to git...');
+      execSync(`git add docs/${filename}`, { cwd: projectRoot, stdio: 'pipe' });
 
       // Commit
       const commitMessage = `Add task confirmation page: ${filename}`;
       try {
-        execSync(`git commit -m "${commitMessage}"`, { cwd: projectRoot, stdio: 'ignore' });
+        console.log('   - Committing...');
+        execSync(`git commit -m "${commitMessage}"`, { cwd: projectRoot, stdio: 'pipe' });
       } catch (e) {
         // Nothing to commit is okay
         if (!e.message.includes('nothing to commit')) {
+          console.error('   ✗ Git commit failed:', e.message);
           throw e;
         }
+        console.log('   - Nothing new to commit (file unchanged)');
       }
 
-      // Push in background (don't wait for it)
-      setTimeout(() => {
-        try {
-          execSync('git push', { cwd: projectRoot, stdio: 'ignore' });
-          console.log(`Successfully pushed ${filename} to GitHub`);
-        } catch (err) {
-          console.error('Error pushing to GitHub:', err.message);
-        }
-      }, 100);
+      // Push to GitHub
+      console.log('   - Pushing to GitHub...');
+      execSync('git push', { cwd: projectRoot, stdio: 'pipe' });
+      console.log(`   ✓ Successfully pushed ${filename} to GitHub`);
+
+      // Deploy to Vercel
+      console.log('   - Triggering Vercel deployment...');
+      const vercelOutput = execSync('vercel --prod --yes', { cwd: projectRoot, encoding: 'utf-8' });
+      console.log('   ✓ Vercel deployment triggered');
+      console.log('   Vercel output:', vercelOutput.trim().substring(0, 200));
 
     } catch (error) {
-      console.error('Error in git operations:', error.message);
-      // Don't throw - we still want to return the URL
+      console.error('✗ Error in git/Vercel operations:', error.message);
+      if (error.stderr) {
+        console.error('   stderr:', error.stderr.toString());
+      }
+      // Don't throw - we still want to return the URL and let waitForUrlAvailable handle verification
     }
   }
 
