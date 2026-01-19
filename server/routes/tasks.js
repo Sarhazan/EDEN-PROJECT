@@ -3,6 +3,15 @@ const router = express.Router();
 const { db } = require('../database/schema');
 const { addDays, addWeeks, addMonths, format } = require('date-fns');
 
+// Import io instance for broadcasting (may be undefined during initial module load)
+let io;
+try {
+  io = require('../index').io;
+} catch (e) {
+  // io will be undefined if index.js hasn't finished loading yet
+  io = undefined;
+}
+
 // Get all tasks
 router.get('/', (req, res) => {
   try {
@@ -190,7 +199,19 @@ router.post('/', (req, res) => {
 
       // Return the first created task
       if (createdTaskIds.length > 0) {
-        const firstTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(createdTaskIds[0]);
+        const firstTask = db.prepare(`
+          SELECT t.*, s.name as system_name, e.name as employee_name
+          FROM tasks t
+          LEFT JOIN systems s ON t.system_id = s.id
+          LEFT JOIN employees e ON t.employee_id = e.id
+          WHERE t.id = ?
+        `).get(createdTaskIds[0]);
+
+        // Broadcast task creation event
+        if (io) {
+          io.emit('task:created', { task: firstTask });
+        }
+
         return res.status(201).json(firstTask);
       } else {
         return res.status(400).json({ error: 'לא נוצרו משימות' });
@@ -203,7 +224,19 @@ router.post('/', (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(title, description, system_id || null, employee_id || null, frequency || 'one-time', start_date, start_time, priority || 'normal', status || 'draft', 0, weeklyDaysJson);
 
-    const newTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(result.lastInsertRowid);
+    const newTask = db.prepare(`
+      SELECT t.*, s.name as system_name, e.name as employee_name
+      FROM tasks t
+      LEFT JOIN systems s ON t.system_id = s.id
+      LEFT JOIN employees e ON t.employee_id = e.id
+      WHERE t.id = ?
+    `).get(result.lastInsertRowid);
+
+    // Broadcast task creation event
+    if (io) {
+      io.emit('task:created', { task: newTask });
+    }
+
     res.status(201).json(newTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -227,7 +260,19 @@ router.put('/:id', (req, res) => {
       return res.status(404).json({ error: 'משימה לא נמצאה' });
     }
 
-    const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    const updatedTask = db.prepare(`
+      SELECT t.*, s.name as system_name, e.name as employee_name
+      FROM tasks t
+      LEFT JOIN systems s ON t.system_id = s.id
+      LEFT JOIN employees e ON t.employee_id = e.id
+      WHERE t.id = ?
+    `).get(req.params.id);
+
+    // Broadcast task update event
+    if (io) {
+      io.emit('task:updated', { task: updatedTask });
+    }
+
     res.json(updatedTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -327,7 +372,19 @@ router.put('/:id/status', (req, res) => {
       }
     }
 
-    const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    const updatedTask = db.prepare(`
+      SELECT t.*, s.name as system_name, e.name as employee_name
+      FROM tasks t
+      LEFT JOIN systems s ON t.system_id = s.id
+      LEFT JOIN employees e ON t.employee_id = e.id
+      WHERE t.id = ?
+    `).get(req.params.id);
+
+    // Broadcast task update event
+    if (io) {
+      io.emit('task:updated', { task: updatedTask });
+    }
+
     res.json(updatedTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -337,10 +394,16 @@ router.put('/:id/status', (req, res) => {
 // Delete task
 router.delete('/:id', (req, res) => {
   try {
-    const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
+    const taskId = req.params.id;
+    const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'משימה לא נמצאה' });
+    }
+
+    // Broadcast task deletion event
+    if (io) {
+      io.emit('task:deleted', { taskId: parseInt(taskId) });
     }
 
     res.json({ message: 'המשימה נמחקה בהצלחה' });

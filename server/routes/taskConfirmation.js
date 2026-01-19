@@ -3,6 +3,15 @@ const router = express.Router();
 const crypto = require('crypto');
 const { db } = require('../database/schema');
 
+// Import io instance for broadcasting (may be undefined during initial module load)
+let io;
+try {
+  io = require('../index').io;
+} catch (e) {
+  // io will be undefined if index.js hasn't finished loading yet
+  io = undefined;
+}
+
 // Generate a unique token for employee task confirmation
 router.post('/generate', async (req, res) => {
   try {
@@ -135,6 +144,20 @@ router.put('/:token/task/:taskId', (req, res) => {
 
     stmt.run(status, taskId);
 
+    // Get updated task with related data for broadcasting
+    const updatedTask = db.prepare(`
+      SELECT t.*, s.name as system_name, e.name as employee_name
+      FROM tasks t
+      LEFT JOIN systems s ON t.system_id = s.id
+      LEFT JOIN employees e ON t.employee_id = e.id
+      WHERE t.id = ?
+    `).get(taskId);
+
+    // Broadcast task update event
+    if (io && updatedTask) {
+      io.emit('task:updated', { task: updatedTask });
+    }
+
     res.json({
       success: true,
       message: 'סטטוס המשימה עודכן בהצלחה'
@@ -193,6 +216,21 @@ router.post('/:token/acknowledge', (req, res) => {
     taskIds.forEach(taskId => {
       updateStmt.run(taskId);
     });
+
+    // Broadcast task update events for all acknowledged tasks
+    if (io) {
+      const updatedTasks = db.prepare(`
+        SELECT t.*, s.name as system_name, e.name as employee_name
+        FROM tasks t
+        LEFT JOIN systems s ON t.system_id = s.id
+        LEFT JOIN employees e ON t.employee_id = e.id
+        WHERE t.id IN (${taskIds.map(() => '?').join(',')})
+      `).all(...taskIds);
+
+      updatedTasks.forEach(task => {
+        io.emit('task:updated', { task });
+      });
+    }
 
     res.json({
       success: true,
