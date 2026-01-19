@@ -48,7 +48,7 @@
 
 - **RT-05**: התחברות מחדש אוטומטית ל-WebSocket במקרה של ניתוק - ייעשה בשלב מאוחר יותר
 - **TC-06**: העלאת מספר תמונות למשימה אחת - כרגע תמונה אחת מספיקה
-- **TS-06**: התרעות למנהל על משימות מאוחרות - לא בשלב ראשון
+- **TS-09**: התרעות למנהל על משימות מאוחרות - לא בשלב ראשון
 - **HA-09**: ייצוא דוחות ל-Excel/PDF - לא בשלב ראשון
 
 ## Out of Scope
@@ -66,17 +66,41 @@
 
 ## Traceability
 
-מיפוי בין דרישות לפאזות יעודכן במהלך יצירת Roadmap.
+מיפוי בין דרישות לפאזות:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (יעודכן על ידי roadmapper) | | |
+| RT-01 | Phase 1 | Pending |
+| RT-02 | Phase 1 | Pending |
+| RT-03 | Phase 1 | Pending |
+| RT-04 | Phase 1 | Pending |
+| TC-01 | Phase 2 | Pending |
+| TC-02 | Phase 2 | Pending |
+| TC-03 | Phase 2 | Pending |
+| TC-04 | Phase 2 | Pending |
+| TC-05 | Phase 2 | Pending |
+| TS-01 | Phase 3 | Pending |
+| TS-02 | Phase 3 | Pending |
+| TS-03 | Phase 3 | Pending |
+| TS-04 | Phase 3 | Pending |
+| TS-05 | Phase 3 | Pending |
+| TS-06 | Phase 3 | Pending |
+| TS-07 | Phase 3 | Pending |
+| TS-08 | Phase 3 | Pending |
+| HA-01 | Phase 4 | Pending |
+| HA-02 | Phase 4 | Pending |
+| HA-03 | Phase 4 | Pending |
+| HA-04 | Phase 4 | Pending |
+| HA-05 | Phase 4 | Pending |
+| HA-06 | Phase 4 | Pending |
+| HA-07 | Phase 4 | Pending |
+| HA-08 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 27 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 27 ⚠️
+- Mapped to phases: 27 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after initial definition*
+*Last updated: 2026-01-19 after roadmap creation*
