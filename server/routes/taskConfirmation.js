@@ -1,16 +1,53 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { db } = require('../database/schema');
+const { getCurrentTimestampIsrael } = require('../utils/dateUtils');
 
-// Import io instance for broadcasting (may be undefined during initial module load)
+// Store io instance reference
 let io;
-try {
-  io = require('../index').io;
-} catch (e) {
-  // io will be undefined if index.js hasn't finished loading yet
-  io = undefined;
+
+// Function to set io instance (called from index.js after initialization)
+function setIo(ioInstance) {
+  io = ioInstance;
+  console.log('Socket.IO instance set in taskConfirmation route');
 }
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer with secure filename generation
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename with crypto (RESEARCH.md Pattern 1)
+    const uniqueName = crypto.randomBytes(16).toString('hex');
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueName + ext);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit (RESEARCH.md recommendation)
+  fileFilter: (req, file, cb) => {
+    // Only allow images (RESEARCH.md security pattern)
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('רק קבצי JPG ו-PNG מותרים'));
+    }
+  }
+});
 
 // Generate a unique token for employee task confirmation
 router.post('/generate', async (req, res) => {
@@ -99,6 +136,81 @@ router.get('/:token', (req, res) => {
   } catch (error) {
     console.error('Error fetching tasks:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Complete task with image and note
+router.post('/:token/complete', upload.single('image'), async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { taskId, note } = req.body;
+
+    // Validate token
+    const confirmation = db.prepare(`
+      SELECT * FROM task_confirmations WHERE token = ?
+    `).get(token);
+
+    if (!confirmation) {
+      return res.status(404).json({ error: 'קישור לא תקין' });
+    }
+
+    // Check if token expired
+    const now = new Date();
+    const expiresAt = new Date(confirmation.expires_at);
+    if (now > expiresAt) {
+      return res.status(410).json({ error: 'קוד האימות פג תוקף' });
+    }
+
+    // Check if this task belongs to this token
+    const taskIds = JSON.parse(confirmation.task_ids);
+    if (!taskIds.includes(parseInt(taskId))) {
+      return res.status(403).json({ error: 'משימה לא שייכת לקישור זה' });
+    }
+
+    // Save image if uploaded
+    if (req.file) {
+      const imagePath = `/uploads/${req.file.filename}`;
+      db.prepare(`
+        INSERT INTO task_attachments (task_id, file_path, file_type)
+        VALUES (?, ?, 'image')
+      `).run(taskId, imagePath);
+    }
+
+    // Save note if provided
+    if (note && note.trim()) {
+      db.prepare(`
+        UPDATE tasks SET completion_note = ? WHERE id = ?
+      `).run(note.trim(), taskId);
+    }
+
+    // Update task status to completed
+    db.prepare(`
+      UPDATE tasks SET status = 'completed', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(taskId);
+
+    // Fetch updated task with JOINs for real-time broadcast
+    const updatedTask = db.prepare(`
+      SELECT t.*, s.name as system_name, e.name as employee_name
+      FROM tasks t
+      LEFT JOIN systems s ON t.system_id = s.id
+      LEFT JOIN employees e ON t.employee_id = e.id
+      WHERE t.id = ?
+    `).get(taskId);
+
+    // Broadcast real-time update (Phase 1 pattern)
+    if (io) {
+      io.emit('task:updated', { task: updatedTask });
+    }
+
+    res.json({
+      success: true,
+      message: 'המשימה עודכנה בהצלחה',
+      imagePath: req.file ? `/uploads/${req.file.filename}` : null
+    });
+  } catch (error) {
+    console.error('Error completing task:', error);
+    res.status(500).json({ error: 'שגיאה בשמירת הנתונים' });
   }
 });
 
@@ -197,28 +309,30 @@ router.post('/:token/acknowledge', (req, res) => {
     }
 
     // Mark as acknowledged
+    const timestamp = getCurrentTimestampIsrael();
     const stmt = db.prepare(`
       UPDATE task_confirmations
-      SET is_acknowledged = 1, acknowledged_at = CURRENT_TIMESTAMP
+      SET is_acknowledged = 1, acknowledged_at = ?
       WHERE token = ?
     `);
 
-    stmt.run(token);
+    stmt.run(timestamp, token);
 
     // Update all tasks to 'received' status
     const taskIds = JSON.parse(confirmation.task_ids);
     const updateStmt = db.prepare(`
       UPDATE tasks
-      SET status = 'received', updated_at = CURRENT_TIMESTAMP
+      SET status = 'received', acknowledged_at = ?, updated_at = ?
       WHERE id = ?
     `);
 
     taskIds.forEach(taskId => {
-      updateStmt.run(taskId);
+      updateStmt.run(timestamp, timestamp, taskId);
     });
 
     // Broadcast task update events for all acknowledged tasks
     if (io) {
+      console.log('📡 Broadcasting task updates for acknowledged tasks...');
       const updatedTasks = db.prepare(`
         SELECT t.*, s.name as system_name, e.name as employee_name
         FROM tasks t
@@ -227,9 +341,14 @@ router.post('/:token/acknowledge', (req, res) => {
         WHERE t.id IN (${taskIds.map(() => '?').join(',')})
       `).all(...taskIds);
 
+      console.log(`   Found ${updatedTasks.length} tasks to broadcast`);
       updatedTasks.forEach(task => {
+        console.log(`   📤 Broadcasting task ${task.id} with status: ${task.status}`);
         io.emit('task:updated', { task });
       });
+      console.log('   ✅ All broadcasts sent');
+    } else {
+      console.log('⚠️ WARNING: io is undefined, cannot broadcast task updates');
     }
 
     res.json({
@@ -243,3 +362,4 @@ router.post('/:token/acknowledge', (req, res) => {
 });
 
 module.exports = router;
+module.exports.setIo = setIo;

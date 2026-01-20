@@ -33,7 +33,8 @@ const io = new Server(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+app.use('/docs', express.static(path.join(__dirname, '..', 'docs')));
 
 // Initialize database
 initializeDatabase();
@@ -50,14 +51,20 @@ io.on('connection', (socket) => {
 // Don't initialize WhatsApp automatically - it will be initialized when user clicks "connect" in the UI
 
 // API Routes
-app.use('/api/tasks', require('./routes/tasks'));
+const tasksRouter = require('./routes/tasks');
+app.use('/api/tasks', tasksRouter);
 app.use('/api/systems', require('./routes/systems'));
 app.use('/api/suppliers', require('./routes/suppliers'));
 app.use('/api/employees', require('./routes/employees'));
 app.use('/api/locations', require('./routes/locations'));
 app.use('/api/data', require('./routes/data'));
 app.use('/api/whatsapp', require('./routes/whatsapp'));
-app.use('/api/confirm', require('./routes/taskConfirmation'));
+const taskConfirmationRouter = require('./routes/taskConfirmation');
+app.use('/api/confirm', taskConfirmationRouter);
+
+// Set io instance in routes after all routes are loaded
+tasksRouter.setIo(io);
+taskConfirmationRouter.setIo(io);
 
 // Note: Client is deployed separately on Vercel
 // Static file serving is not needed in this Railway deployment
@@ -79,3 +86,4 @@ server.listen(PORT, '0.0.0.0', () => {
 
 // Export io instance for use in routes
 module.exports.io = io;
+
