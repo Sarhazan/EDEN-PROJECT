@@ -1,6 +1,6 @@
 # State: Eden - מערכת ניהול אחזקת מבנים
 
-**Last updated:** 2026-01-19
+**Last updated:** 2026-01-20
 
 ## Project Reference
 
@@ -10,18 +10,18 @@
 
 ## Current Position
 
-**Phase:** 1 of 4 (Real-Time Infrastructure)
-**Plan:** 1 of 4
+**Phase:** 2 of 4 (Enhanced Task Completion)
+**Plan:** 1 of 5 (Backend Image Upload & Notes Infrastructure)
 **Status:** In progress
-**Last activity:** 2026-01-19 - Completed 01-01-PLAN.md (WebSocket Server Setup)
+**Last activity:** 2026-01-20 - Completed 02-01-PLAN.md
 
 **Progress:**
 ```
 Milestone: v1 Feature Additions
-[█░░░░░░░░░░░░░░░░░░░] 4% (1/27 requirements)
+[██████░░░░░░░░░░░░░░] 26% (7/27 requirements)
 
-Phase 1: Real-Time Infrastructure [██░░░░░░░░] 1/4
-Phase 2: Enhanced Task Completion [░░░░░░░░░░] 0/5
+Phase 1: Real-Time Infrastructure [██████████] 4/4 ✅ COMPLETE
+Phase 2: Enhanced Task Completion [██░░░░░░░░] 2/5
 Phase 3: Status Tracking & Timing [░░░░░░░░░░] 0/8
 Phase 4: History & Archive [░░░░░░░░░░] 0/8
 ```
@@ -32,12 +32,12 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 
 | Metric | Value |
 |--------|-------|
-| Requirements completed | 1/27 |
-| Plans completed | 1 |
-| Phases completed | 0/4 |
+| Requirements completed | 7/27 |
+| Plans completed | 3 |
+| Phases completed | 1/4 ✅ |
 | Days in current phase | 0 |
 | Blockers encountered | 0 |
-| Context reloads | 0 |
+| Context reloads | 1 |
 
 ## Accumulated Context
 
@@ -52,6 +52,12 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 | 2026-01-19 | Socket.IO with http.Server wrapper | Integrated with existing Express server for robust WebSocket implementation |
 | 2026-01-19 | Event naming: task:created/updated/deleted | Consistent pattern for clarity and easy client-side listening |
 | 2026-01-19 | Full task objects in event payloads | Include system_name and employee_name to eliminate client refetch needs |
+| 2026-01-20 | Dependency injection for Socket.IO in routes | Avoid circular dependency by using setIo() pattern instead of direct import |
+| 2026-01-20 | Functional state updates in event handlers | Prevent stale closure bugs in WebSocket event listeners |
+| 2026-01-20 | Separate task_attachments table vs JSON column | Better scalability for multiple images, supports foreign keys, easier querying |
+| 2026-01-20 | File paths in DB, not BLOBs | Keep database compact, enable filesystem backups, better performance |
+| 2026-01-20 | crypto.randomBytes for filenames | Prevents path traversal attacks, avoids collisions, security best practice |
+| 2026-01-20 | 5MB file size limit | Balance between image quality and server storage/bandwidth |
 
 ### Active TODOs
 
@@ -59,13 +65,47 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 - [x] Run `/gsd:plan-phase 1` to plan Real-Time Infrastructure phase
 - [x] Begin Phase 1 execution
 - [x] Complete 01-01 WebSocket Server Setup
-- [ ] Continue Phase 1: Client WebSocket Connection (01-02)
+- [x] Complete 01-02 Client WebSocket Connection
+- [x] Verify Phase 1 completion
+- [x] Run `/gsd:plan-phase 2` to plan Enhanced Task Completion phase
+- [x] Begin Phase 2 execution
+- [x] Complete 02-01 Backend Image Upload & Notes Infrastructure
 
 ### Known Blockers
 
 None currently.
 
 ### Recent Changes
+
+**2026-01-20 (continued):**
+- **Completed 02-01-PLAN.md:** Backend Image Upload & Notes Infrastructure
+  - Added task_attachments table with id, task_id, file_path, file_type, uploaded_at columns
+  - Added completion_note TEXT column to tasks table
+  - Installed and configured multer for secure file uploads
+  - Created POST /api/confirm/:token/complete endpoint accepting multipart/form-data
+  - Image MIME type validation (jpeg, png, jpg only) with 5MB limit
+  - Secure filename generation using crypto.randomBytes(16)
+  - Token validation, expiration check, task ownership verification
+  - Broadcasts task:updated event via Socket.IO after completion
+  - Fixed static uploads path inconsistency (project root vs server subdirectory)
+  - Duration: 3min 33sec
+  - Requirements satisfied: TC-01 backend, TC-02 backend (partial)
+
+**2026-01-20:**
+- **✅ COMPLETED PHASE 1: Real-Time Infrastructure**
+  - All 4 requirements satisfied (RT-01, RT-02, RT-03, RT-04)
+  - RT-03 & RT-04: Infrastructure ready for images/notes (features in Phase 2)
+  - Created VERIFICATION.md documenting phase completion
+- **Completed 01-02-PLAN.md:** Client WebSocket Connection
+  - Installed socket.io-client in React app
+  - Implemented WebSocket connection in AppContext
+  - Added real-time event listeners (task:created, task:updated, task:deleted)
+  - Created connection status indicator in Sidebar ("מחובר" / "מנותק")
+  - **Bug Fix:** Resolved circular dependency in server/routes/tasks.js using dependency injection
+  - **Bug Fix:** Fixed DELETE route to send full task object instead of just ID
+  - Verified real-time updates across multiple browser tabs
+  - Duration: ~45 minutes
+  - Requirements satisfied: RT-01 (WebSocket connection), RT-02 (Real-time task updates)
 
 **2026-01-19:**
 - Roadmap created with 4 phases derived from 27 v1 requirements
@@ -80,28 +120,47 @@ None currently.
 
 ## Session Continuity
 
-**Last session:** 2026-01-19 09:30 UTC
-**Stopped at:** Completed 01-01-PLAN.md (WebSocket Server Setup)
+**Last session:** 2026-01-20 18:30 UTC
+**Stopped at:** Completed 02-01-PLAN.md (Backend Image Upload & Notes Infrastructure)
 **Resume file:** None
 
 **What happened this session:**
-- Executed 01-01-PLAN.md: WebSocket Server Setup
-- Installed Socket.IO 4.8.2 and integrated with Express
-- Added real-time broadcasting to all task mutation endpoints
-- Created SUMMARY.md documenting implementation
-- Updated STATE.md with progress
+- Executed 02-01-PLAN.md: Backend Image Upload & Notes Infrastructure
+- Created task_attachments database table and completion_note column
+- Configured multer for secure file uploads with crypto-based filenames
+- Built POST /api/confirm/:token/complete endpoint with validation
+- Fixed static uploads path inconsistency
+- Installed socket.io-client and connected React app to WebSocket server
+- Implemented real-time event listeners in AppContext
+- Added connection status indicator in Sidebar UI
+- Fixed circular dependency bug in tasks.js route
+- Fixed DELETE route payload bug
+- Performed browser-based verification with multiple tabs
+- Created 01-02-SUMMARY.md documenting implementation
+- Created VERIFICATION.md for Phase 1
+- Updated STATE.md and ROADMAP.md with completion
+- **Phase 1 COMPLETE ✅**
 
 **What needs to happen next session:**
-- Continue Phase 1: Execute plan 01-02 (Client WebSocket Connection)
-- Connect React client to WebSocket server
-- Handle real-time task updates in UI
+- Execute 02-02-PLAN.md (Client Upload UI)
+- Execute 02-03-PLAN.md (Manager View Images)
+- Complete remaining Phase 2 plans
 
 **Context to preserve:**
-- Server now has Socket.IO running on port 3001
+- Backend infrastructure ready for image uploads and completion notes
+- Upload endpoint: POST /api/confirm/:token/complete (multipart/form-data)
+- Accepts fields: taskId (required), note (optional), image (optional file)
+- Images stored in uploads/ directory with crypto-generated hex filenames
+- Image paths in task_attachments table, notes in tasks.completion_note column
+- 5MB file size limit, MIME type validation (jpeg, png, jpg only)
+- Server has Socket.IO running on port 3002 (updated from 3001)
 - Event naming convention: task:created, task:updated, task:deleted
 - Event payloads include full task objects with system_name and employee_name
-- Circular dependency warning during startup is expected and harmless
+- Client connects automatically on AppContext mount
+- Connection status tracked in state and displayed in Sidebar
+- Dependency injection pattern used for Socket.IO in routes (setIo() function)
 - All existing functionality continues to work (WhatsApp, task management, confirmation pages)
+- Real-time updates verified working across multiple browser tabs
 - Must stay with React + Node.js + SQLite (no tech changes)
 - All UI must remain in Hebrew
 - System is intentionally open (no authentication)
