@@ -47,19 +47,6 @@ export function AppProvider({ children }) {
       setConnectionStatus('error');
     });
 
-    // Store socket in ref for cleanup
-    socketRef.current = socket;
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
-  // Listen for real-time task updates
-  useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket) return;
-
     // Listen for task created
     socket.on('task:created', (data) => {
       console.log('Task created via WebSocket:', data.task);
@@ -68,12 +55,15 @@ export function AppProvider({ children }) {
 
     // Listen for task updated
     socket.on('task:updated', (data) => {
-      console.log('Task updated via WebSocket:', data.task);
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
+      console.log('✅ Task updated via WebSocket:', data.task);
+      console.log('   Task ID:', data.task.id, '| New Status:', data.task.status);
+      setTasks(prevTasks => {
+        const updated = prevTasks.map(task =>
           task.id === data.task.id ? data.task : task
-        )
-      );
+        );
+        console.log('   Tasks after update:', updated.length, 'tasks');
+        return updated;
+      });
     });
 
     // Listen for task deleted
@@ -84,10 +74,14 @@ export function AppProvider({ children }) {
       );
     });
 
+    // Store socket in ref for cleanup
+    socketRef.current = socket;
+
     return () => {
       socket.off('task:created');
       socket.off('task:updated');
       socket.off('task:deleted');
+      socket.disconnect();
     };
   }, []);
 
