@@ -54,9 +54,20 @@ export function AppProvider({ children }) {
     });
 
     // Listen for task updated
-    socket.on('task:updated', (data) => {
+    socket.on('task:updated', async (data) => {
       console.log('✅ Task updated via WebSocket:', data.task);
       console.log('   Task ID:', data.task.id, '| New Status:', data.task.status);
+
+      // Fetch attachments for updated task
+      try {
+        const attachmentsResponse = await fetch(`${API_URL}/tasks/${data.task.id}/attachments`);
+        const attachments = await attachmentsResponse.json();
+        data.task.attachments = attachments;
+      } catch (error) {
+        console.error('Error fetching attachments for updated task:', error);
+        data.task.attachments = [];
+      }
+
       setTasks(prevTasks => {
         const updated = prevTasks.map(task =>
           task.id === data.task.id ? data.task : task
@@ -105,8 +116,23 @@ export function AppProvider({ children }) {
   // Tasks
   const fetchTasks = async () => {
     const response = await fetch(`${API_URL}/tasks`);
-    const data = await response.json();
-    setTasks(data);
+    const tasksData = await response.json();
+
+    // Fetch attachments for each task
+    const tasksWithAttachments = await Promise.all(
+      tasksData.map(async (task) => {
+        try {
+          const attachmentsResponse = await fetch(`${API_URL}/tasks/${task.id}/attachments`);
+          const attachments = await attachmentsResponse.json();
+          return { ...task, attachments };
+        } catch (error) {
+          console.error(`Error fetching attachments for task ${task.id}:`, error);
+          return { ...task, attachments: [] };
+        }
+      })
+    );
+
+    setTasks(tasksWithAttachments);
   };
 
   const addTask = async (task) => {

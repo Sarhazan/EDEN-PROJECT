@@ -48,10 +48,20 @@ export default function TaskCard({ task, onEdit }) {
   const { updateTaskStatus, deleteTask, updateTask, employees } = useApp();
   const [isChangingEmployee, setIsChangingEmployee] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   // Check if task time is in the future
   const isTaskInFuture = () => {
     const now = new Date();
+
+    // For recurring tasks, only check if the time today is in the future
+    if (task.is_recurring === 1) {
+      const today = now.toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+      const taskDateTimeToday = new Date(`${today}T${task.start_time}`);
+      return taskDateTimeToday > now;
+    }
+
+    // For one-time tasks, check the actual date and time
     const taskDateTime = new Date(`${task.start_date}T${task.start_time}`);
     return taskDateTime > now;
   };
@@ -159,17 +169,34 @@ export default function TaskCard({ task, onEdit }) {
               {task.title}
             </h3>
 
-            <div className="flex gap-2 items-center flex-shrink-0">
-              {task.status === 'sent' && task.sent_at && (
-                <div className="flex items-center gap-1 text-emerald-600 text-sm animate-pulse">
-                  <FaCheck />
-                  <span className="font-semibold">נשלח</span>
-                  <span className="text-gray-500">
-                    {new Date(task.sent_at).toLocaleTimeString('he-IL', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
+            <div className="flex gap-2 items-start flex-shrink-0">
+              {(task.status === 'sent' || task.status === 'received') && task.sent_at && (
+                <div className="flex flex-col gap-1">
+                  {/* נשלח - תמיד מוצג כשיש sent_at */}
+                  <div className="flex items-center gap-1 text-sm text-emerald-600">
+                    <FaCheck />
+                    <span className="font-semibold">נשלח</span>
+                    <span className="text-gray-500">
+                      {new Date(task.sent_at).toLocaleTimeString('he-IL', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+
+                  {/* התקבל - מוצג רק כש-status = 'received' */}
+                  {task.status === 'received' && task.acknowledged_at && (
+                    <div className="flex items-center gap-1 text-sm bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full font-semibold">
+                      <FaCheck />
+                      <span className="font-semibold">התקבל</span>
+                      <span className="text-gray-500">
+                        {new Date(task.acknowledged_at).toLocaleTimeString('he-IL', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
               {task.status === 'draft' && task.employee_id && isTaskInFuture() && (
@@ -209,9 +236,11 @@ export default function TaskCard({ task, onEdit }) {
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${priorityColors[task.priority]}`}>
               {priorityLabels[task.priority]}
             </span>
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors[task.status]}`}>
-              {statusLabels[task.status]}
-            </span>
+            {task.status !== 'sent' && task.status !== 'received' && (
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors[task.status]}`}>
+                {statusLabels[task.status]}
+              </span>
+            )}
             {task.system_name && (
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700">
                 {task.system_name}
@@ -262,8 +291,107 @@ export default function TaskCard({ task, onEdit }) {
               </span>
             )}
           </div>
+
+          {/* Completion data section */}
+          {(task.completion_note || (task.attachments && task.attachments.length > 0)) && (
+            <div className="completion-section" style={{
+              marginTop: '15px',
+              paddingTop: '15px',
+              borderTop: '1px solid #e5e7eb'
+            }}>
+              <h4 style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '10px'
+              }}>
+                פרטי השלמה:
+              </h4>
+
+              {/* Display note */}
+              {task.completion_note && (
+                <div className="completion-note" style={{
+                  background: '#fef3c7',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  marginBottom: '10px',
+                  fontSize: '14px',
+                  lineHeight: '1.5'
+                }}>
+                  <strong>הערה:</strong> {task.completion_note}
+                </div>
+              )}
+
+              {/* Display images */}
+              {task.attachments && task.attachments.filter(a => a.file_type === 'image').length > 0 && (
+                <div className="completion-images">
+                  <div style={{
+                    display: 'flex',
+                    gap: '10px',
+                    flexWrap: 'wrap'
+                  }}>
+                    {task.attachments
+                      .filter(a => a.file_type === 'image')
+                      .map((attachment) => (
+                        <img
+                          key={attachment.id}
+                          src={`${API_URL}${attachment.file_path}`}
+                          alt="תמונת השלמה"
+                          className="thumbnail"
+                          onClick={() => setLightboxImage(`${API_URL}${attachment.file_path}`)}
+                          style={{
+                            width: '80px',
+                            height: '80px',
+                            objectFit: 'cover',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            border: '2px solid #d1d5db',
+                            transition: 'transform 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                          onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Lightbox modal */}
+      {lightboxImage && (
+        <div
+          className="lightbox-overlay"
+          onClick={() => setLightboxImage(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            cursor: 'pointer'
+          }}
+        >
+          <img
+            src={lightboxImage}
+            alt="תצוגה מלאה"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              objectFit: 'contain',
+              cursor: 'default'
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

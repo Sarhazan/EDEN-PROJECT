@@ -2,14 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../database/schema');
 const { addDays, addWeeks, addMonths, format } = require('date-fns');
+const { getCurrentTimestampIsrael } = require('../utils/dateUtils');
 
-// Import io instance for broadcasting (may be undefined during initial module load)
+// Store io instance reference
 let io;
-try {
-  io = require('../index').io;
-} catch (e) {
-  // io will be undefined if index.js hasn't finished loading yet
-  io = undefined;
+
+// Function to set io instance (called from index.js after initialization)
+function setIo(ioInstance) {
+  io = ioInstance;
+  console.log('Socket.IO instance set in tasks route');
 }
 
 // Get all tasks
@@ -87,6 +88,25 @@ router.get('/:id', (req, res) => {
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Get attachments for a task
+router.get('/:id/attachments', (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const attachments = db.prepare(`
+      SELECT id, task_id, file_path, file_type, uploaded_at
+      FROM task_attachments
+      WHERE task_id = ?
+      ORDER BY uploaded_at DESC
+    `).all(id);
+
+    res.json(attachments);
+  } catch (error) {
+    console.error('Error fetching attachments:', error);
+    res.status(500).json({ error: 'שגיאה בטעינת קבצים מצורפים' });
   }
 });
 
@@ -292,11 +312,12 @@ router.put('/:id/status', (req, res) => {
     // Update current task status
     // If status is 'sent', also update sent_at timestamp
     if (status === 'sent') {
+      const timestamp = getCurrentTimestampIsrael();
       db.prepare(`
         UPDATE tasks
-        SET status = ?, sent_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        SET status = ?, sent_at = ?, updated_at = ?
         WHERE id = ?
-      `).run(status, req.params.id);
+      `).run(status, timestamp, timestamp, req.params.id);
     } else {
       db.prepare(`
         UPDATE tasks
@@ -395,15 +416,29 @@ router.put('/:id/status', (req, res) => {
 router.delete('/:id', (req, res) => {
   try {
     const taskId = req.params.id;
+
+    // Get task before deleting (for broadcasting)
+    const task = db.prepare(`
+      SELECT t.*, s.name as system_name, e.name as employee_name
+      FROM tasks t
+      LEFT JOIN systems s ON t.system_id = s.id
+      LEFT JOIN employees e ON t.employee_id = e.id
+      WHERE t.id = ?
+    `).get(taskId);
+
+    if (!task) {
+      return res.status(404).json({ error: 'משימה לא נמצאה' });
+    }
+
     const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'משימה לא נמצאה' });
     }
 
-    // Broadcast task deletion event
+    // Broadcast task deletion event with full task object
     if (io) {
-      io.emit('task:deleted', { taskId: parseInt(taskId) });
+      io.emit('task:deleted', { task });
     }
 
     res.json({ message: 'המשימה נמחקה בהצלחה' });
@@ -413,3 +448,4 @@ router.delete('/:id', (req, res) => {
 });
 
 module.exports = router;
+module.exports.setIo = setIo;
