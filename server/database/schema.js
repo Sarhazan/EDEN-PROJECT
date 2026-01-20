@@ -72,6 +72,20 @@ function initializeDatabase() {
     // Column already exists, ignore error
   }
 
+  // Add acknowledged_at column if it doesn't exist (migration)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN acknowledged_at TIMESTAMP`);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
+  // Add completion_note column if it doesn't exist (migration)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN completion_note TEXT`);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
   // Migration: Update status CHECK constraint to include 'received'
   // SQLite doesn't support ALTER COLUMN for CHECK constraints
   // So we need to check if the constraint needs updating and recreate table if needed
@@ -178,6 +192,18 @@ function initializeDatabase() {
       expires_at TIMESTAMP NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Task attachments table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_attachments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      file_path TEXT NOT NULL,
+      file_type TEXT CHECK(file_type IN ('image', 'note')) NOT NULL,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     )
   `);
 
