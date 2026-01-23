@@ -94,10 +94,12 @@ Plans:
 
 **Estimated Effort:** Medium (DB schema updates, status logic, UI indicators)
 
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (created by /gsd:plan-phase 3)
+- [ ] 03-01-PLAN.md — Database timing fields and completion timestamp
+- [ ] 03-02-PLAN.md — Backend late detection and time delta calculation
+- [ ] 03-03-PLAN.md — Frontend timing display with countdown and red styling
 
 ---
 
@@ -140,7 +142,7 @@ Plans:
 |-------|--------|--------------|-----------|
 | 1 - Real-Time Infrastructure | ✅ Complete | RT-01 ✅, RT-02 ✅, RT-03 ✅, RT-04 ✅ | 4/4 |
 | 2 - Enhanced Task Completion | ✅ Complete | TC-01 ✅, TC-02 ✅, TC-03 ✅, TC-04 ✅, TC-05 ✅ | 5/5 |
-| 3 - Status Tracking & Timing | Ready to Plan | TS-01, TS-02, TS-03, TS-04, TS-05, TS-06, TS-07, TS-08 | 0/8 |
+| 3 - Status Tracking & Timing | Ready to Execute | TS-01, TS-02, TS-03, TS-04, TS-05, TS-06, TS-07, TS-08 | 0/8 |
 | 4 - History & Archive | Pending | HA-01, HA-02, HA-03, HA-04, HA-05, HA-06, HA-07, HA-08 | 0/8 |
 
 **Overall:** 9/27 requirements completed (33%)
@@ -154,12 +156,12 @@ Plans:
 3. ✅ ~~Execute Phase 1 plan~~
 4. ✅ ~~Verify Phase 1 success criteria~~
 5. ✅ ~~Continue to Phase 2~~
-6. **Run `/gsd:plan-phase 3` to create execution plan for Status Tracking & Timing**
-7. Execute Phase 3 plan
+6. ✅ ~~Run `/gsd:plan-phase 3` to create execution plan for Status Tracking & Timing~~
+7. **Execute Phase 3 plan with `/gsd:execute-phase 3`**
 8. Verify Phase 3 success criteria
 9. Continue to Phase 4
 
 ---
 
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-20*
+*Last updated: 2026-01-23*
