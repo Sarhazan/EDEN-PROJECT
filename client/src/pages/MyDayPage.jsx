@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { format, isBefore, startOfDay, addDays, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -16,10 +16,20 @@ export default function MyDayPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const today = startOfDay(new Date());
   const [isSendingBulk, setIsSendingBulk] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Filter states
   const [filterCategory, setFilterCategory] = useState(''); // '' | 'priority' | 'system' | 'status' | 'employee'
   const [filterValue, setFilterValue] = useState(''); // The specific value within the selected category
+
+  // Update current time every minute to refresh countdown displays
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleEdit = (task) => {
     setEditingTask(task);
@@ -120,11 +130,48 @@ export default function MyDayPage() {
     }
   };
 
+  // Helper function to check if a task should appear on the selected date
+  const shouldTaskAppearOnDate = (task, date) => {
+    // One-time tasks: check exact date match
+    if (!task.is_recurring) {
+      return isSameDay(new Date(task.start_date), date);
+    }
+
+    // Recurring tasks: check if they apply to this day
+    const taskStartDate = new Date(task.start_date);
+
+    // Task hasn't started yet
+    if (date < taskStartDate) {
+      return false;
+    }
+
+    // Daily tasks: appear every day after start date
+    if (task.frequency === 'daily') {
+      return true;
+    }
+
+    // Weekly tasks: check weekly_days
+    if (task.frequency === 'weekly' && task.weekly_days) {
+      try {
+        const weeklyDays = JSON.parse(task.weekly_days);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        return weeklyDays.includes(dayNames[dayOfWeek]);
+      } catch (e) {
+        console.error('Error parsing weekly_days:', e);
+        return false;
+      }
+    }
+
+    // For other frequencies, just show on the exact date for now
+    return isSameDay(taskStartDate, date);
+  };
+
   // Calculate statistics and filter tasks
   const stats = useMemo(() => {
     // Filter tasks for selected date (excluding completed tasks)
     const todayTasks = tasks.filter((t) =>
-      isSameDay(new Date(t.start_date), selectedDate) &&
+      shouldTaskAppearOnDate(t, selectedDate) &&
       t.status !== 'completed'
     );
 
@@ -152,7 +199,7 @@ export default function MyDayPage() {
 
     // 5. Count completed tasks separately for completion rate
     const completedTasks = tasks.filter((t) =>
-      isSameDay(new Date(t.start_date), selectedDate) &&
+      shouldTaskAppearOnDate(t, selectedDate) &&
       t.status === 'completed'
     ).length;
 
@@ -185,7 +232,7 @@ export default function MyDayPage() {
   const todaysTasks = useMemo(() => {
     let filtered = tasks.filter(
       (t) =>
-        isSameDay(new Date(t.start_date), selectedDate) &&
+        shouldTaskAppearOnDate(t, selectedDate) &&
         t.status !== 'completed' &&
         t.system_id // Has system assignment
     );
@@ -225,7 +272,7 @@ export default function MyDayPage() {
     return tasks
       .filter(
         (t) =>
-          isSameDay(new Date(t.start_date), selectedDate) &&
+          shouldTaskAppearOnDate(t, selectedDate) &&
           t.status !== 'completed' &&
           !t.system_id // No system assignment
       )
@@ -263,7 +310,7 @@ export default function MyDayPage() {
     const tomorrow = addDays(selectedDate, 1);
     return tasks.filter(
       (t) =>
-        isSameDay(new Date(t.start_date), tomorrow) &&
+        shouldTaskAppearOnDate(t, tomorrow) &&
         t.status !== 'completed'
     ).length;
   }, [tasks, selectedDate]);
@@ -281,7 +328,7 @@ export default function MyDayPage() {
     for (let i = 0; i < 7; i++) {
       const currentDate = addDays(startDate, i);
       const tasksForDay = tasks.filter((task) =>
-        isSameDay(new Date(task.start_date), currentDate) &&
+        shouldTaskAppearOnDate(task, currentDate) &&
         task.status !== 'completed'
       );
 

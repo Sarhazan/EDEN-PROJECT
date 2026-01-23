@@ -23,6 +23,7 @@ const statusColors = {
   sent: 'bg-amber-50 text-amber-700',
   received: 'bg-teal-50 text-teal-700',
   in_progress: 'bg-blue-50 text-blue-700',
+  pending_approval: 'bg-orange-50 text-orange-700',
   completed: 'bg-emerald-50 text-emerald-700'
 };
 
@@ -31,6 +32,7 @@ const statusLabels = {
   sent: 'נשלח',
   received: 'התקבל',
   in_progress: 'בביצוע',
+  pending_approval: 'ממתין לאישור',
   completed: 'הושלם'
 };
 
@@ -133,13 +135,25 @@ export default function TaskCard({ task, onEdit }) {
     }
   };
 
+  const handleApproveTask = async () => {
+    try {
+      await axios.post(`${API_URL}/api/tasks/${task.id}/approve`);
+      // Task will be updated via WebSocket event
+    } catch (error) {
+      alert('שגיאה באישור המשימה: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
   return (
     <div className={`
       bg-white rounded-xl shadow-md p-5
       transition-all duration-200
       hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01]
       ${task.status === 'completed' ? 'opacity-70' : ''}
-      ${task.priority === 'urgent' ? 'border-r-4 border-rose-500' : ''}
+      ${task.status === 'pending_approval' ? 'task-pending-approval' : ''}
+      ${task.is_late ? 'border-l-4 border-red-500 bg-red-50' : ''}
+      ${task.timing_status === 'near-deadline' && !task.is_late ? 'border-l-4 border-yellow-500' : ''}
+      ${task.priority === 'urgent' && !task.is_late && task.timing_status !== 'near-deadline' ? 'border-r-4 border-rose-500' : ''}
     `}>
       <div className="flex items-start gap-4">
         <div className="relative flex-shrink-0">
@@ -163,6 +177,7 @@ export default function TaskCard({ task, onEdit }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between mb-3">
             <h3 className={`
+              task-title
               text-lg font-semibold text-gray-900 leading-snug
               ${task.status === 'completed' ? 'line-through' : ''}
             `}>
@@ -199,6 +214,16 @@ export default function TaskCard({ task, onEdit }) {
                   )}
                 </div>
               )}
+              {task.status === 'pending_approval' && (
+                <button
+                  onClick={handleApproveTask}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-150 flex items-center gap-2"
+                  title="אשר משימה"
+                >
+                  <FaCheck />
+                  בוצע
+                </button>
+              )}
               {task.status === 'draft' && task.employee_id && isTaskInFuture() && (
                 <button
                   onClick={handleSendTask}
@@ -227,7 +252,7 @@ export default function TaskCard({ task, onEdit }) {
           </div>
 
           {task.description && (
-            <p className="text-sm text-gray-600 leading-relaxed mb-3">
+            <p className="task-description text-sm text-gray-600 leading-relaxed mb-3">
               {task.description}
             </p>
           )}
@@ -291,6 +316,67 @@ export default function TaskCard({ task, onEdit }) {
               </span>
             )}
           </div>
+
+          {/* Timing information section */}
+          {task.status !== 'completed' && (task.is_late !== undefined || task.minutes_remaining !== undefined) && (
+            <div className="timing-info mt-3 pt-3 border-t border-gray-200">
+              {task.is_late ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">⏰</span>
+                  <div>
+                    <div className="text-sm font-semibold text-red-600">
+                      באיחור {Math.abs(task.minutes_remaining)} דקות
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      היה צריך להסתיים ב-{task.estimated_end_time}
+                    </div>
+                  </div>
+                </div>
+              ) : task.timing_status === 'near-deadline' ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">⚠️</span>
+                  <div>
+                    <div className="text-sm font-semibold text-yellow-600">
+                      נשארו {task.minutes_remaining} דקות
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      סיום מוערך: {task.estimated_end_time}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">✅</span>
+                  <div>
+                    <div className="text-sm text-gray-600">
+                      נשארו {task.minutes_remaining} דקות
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      סיום מוערך: {task.estimated_end_time}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Completion variance for completed tasks */}
+          {task.status === 'completed' && task.time_delta_text && (
+            <div className="timing-info mt-3 pt-3 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">
+                  {task.time_delta_minutes < 0 ? '🎉' : task.time_delta_minutes > 0 ? '⏱️' : '✅'}
+                </span>
+                <div className={`text-sm font-semibold ${
+                  task.time_delta_minutes < 0 ? 'text-green-600' :
+                  task.time_delta_minutes > 0 ? 'text-orange-600' :
+                  'text-gray-600'
+                }`}>
+                  {task.time_delta_text}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Completion data section */}
           {(task.completion_note || (task.attachments && task.attachments.length > 0)) && (
