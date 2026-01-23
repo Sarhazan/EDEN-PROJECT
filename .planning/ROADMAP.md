@@ -39,33 +39,33 @@ Plans:
 
 ---
 
-### Phase 2: Enhanced Task Completion
+### Phase 2: Enhanced Task Completion ✅
 
 **Goal:** עובד יכול לצרף תמונות והערות למשימה, ומנהל רואה אותם מיד בממשק
 
 **Dependencies:** Phase 1 (needs WebSocket for real-time updates)
 
 **Requirements:**
-- TC-01: עובד יכול להעלות תמונה מהדף האינטראקטיבי (mobile/desktop)
-- TC-02: עובד יכול להוסיף הערת טקסט חופשית למשימה
-- TC-03: תמונות נשמרות כקבצים בשרת (תחת `/uploads` או דומה)
-- TC-04: מנהל רואה תמונות והערות שצורפו למשימה בממשק הניהול
-- TC-05: תמונות מוצגות כתצוגה מקדימה עם אפשרות הגדלה
+- TC-01: ✅ עובד יכול להעלות תמונה מהדף האינטראקטיבי (mobile/desktop)
+- TC-02: ✅ עובד יכול להוסיף הערת טקסט חופשית למשימה
+- TC-03: ✅ תמונות נשמרות כקבצים בשרת (תחת `/uploads` או דומה)
+- TC-04: ✅ מנהל רואה תמונות והערות שצורפו למשימה בממשק הניהול
+- TC-05: ✅ תמונות מוצגות כתצוגה מקדימה עם אפשרות הגדלה
 
 **Success Criteria:**
-1. עובד מצלם תמונה בנייד מהדף האינטראקטיבי - תמונה נשלחת לשרת ומנהל רואה אותה מיד
-2. עובד כותב הערה "מצאתי נזילה" - מנהל רואה את ההערה בממשק תוך שנייה
-3. מנהל לוחץ על תמונה קטנה - תמונה נפתחת בגדול במודל או טאב חדש
-4. תמונות נשמרות בתיקיית `/uploads` בשרת עם שמות ייחודיים
-5. עובד מוסיף הערה ותמונה לאותה משימה - מנהל רואה את שניהם בכרטיס המשימה
+1. ✅ עובד מצלם תמונה בנייד מהדף האינטראקטיבי - תמונה נשלחת לשרת ומנהל רואה אותה מיד
+2. ✅ עובד כותב הערה "מצאתי נזילה" - מנהל רואה את ההערה בממשק תוך שנייה
+3. ✅ מנהל לוחץ על תמונה קטנה - תמונה נפתחת בגדול במודל או טאב חדש
+4. ✅ תמונות נשמרות בתיקיית `/uploads` בשרת עם שמות ייחודיים
+5. ✅ עובד מוסיף הערה ותמונה לאותה משימה - מנהל רואה את שניהם בכרטיס המשימה
 
 **Estimated Effort:** Medium-High (file upload, storage, UI for media display)
 
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Backend infrastructure for image uploads and notes
-- [ ] 02-02-PLAN.md — Frontend upload form and display UI with real-time updates
+- [x] 02-01-PLAN.md — Backend infrastructure for image uploads and notes ✅
+- [x] 02-02-PLAN.md — Frontend upload form and display UI with real-time updates ✅
 
 ---
 
@@ -139,21 +139,25 @@ Plans:
 | Phase | Status | Requirements | Completed |
 |-------|--------|--------------|-----------|
 | 1 - Real-Time Infrastructure | ✅ Complete | RT-01 ✅, RT-02 ✅, RT-03 ✅, RT-04 ✅ | 4/4 |
-| 2 - Enhanced Task Completion | Ready to Execute | TC-01, TC-02, TC-03, TC-04, TC-05 | 0/5 |
-| 3 - Status Tracking & Timing | Pending | TS-01, TS-02, TS-03, TS-04, TS-05, TS-06, TS-07, TS-08 | 0/8 |
+| 2 - Enhanced Task Completion | ✅ Complete | TC-01 ✅, TC-02 ✅, TC-03 ✅, TC-04 ✅, TC-05 ✅ | 5/5 |
+| 3 - Status Tracking & Timing | Ready to Plan | TS-01, TS-02, TS-03, TS-04, TS-05, TS-06, TS-07, TS-08 | 0/8 |
 | 4 - History & Archive | Pending | HA-01, HA-02, HA-03, HA-04, HA-05, HA-06, HA-07, HA-08 | 0/8 |
 
-**Overall:** 4/27 requirements completed (15%)
+**Overall:** 9/27 requirements completed (33%)
 
 ---
 
 ## Next Steps
 
-1. Review and approve this roadmap
-2. Run `/gsd:plan-phase 1` to create execution plan for Real-Time Infrastructure
-3. Execute Phase 1 plan
-4. Verify Phase 1 success criteria
-5. Continue to Phase 2
+1. ✅ ~~Review and approve this roadmap~~
+2. ✅ ~~Run `/gsd:plan-phase 1` to create execution plan for Real-Time Infrastructure~~
+3. ✅ ~~Execute Phase 1 plan~~
+4. ✅ ~~Verify Phase 1 success criteria~~
+5. ✅ ~~Continue to Phase 2~~
+6. **Run `/gsd:plan-phase 3` to create execution plan for Status Tracking & Timing**
+7. Execute Phase 3 plan
+8. Verify Phase 3 success criteria
+9. Continue to Phase 4
 
 ---
 
