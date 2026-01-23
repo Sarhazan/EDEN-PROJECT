@@ -46,7 +46,7 @@ function initializeDatabase() {
       start_date DATE NOT NULL,
       start_time TIME NOT NULL,
       priority TEXT CHECK(priority IN ('urgent', 'normal', 'optional')) DEFAULT 'normal',
-      status TEXT CHECK(status IN ('draft', 'sent', 'in_progress', 'completed')) DEFAULT 'draft',
+      status TEXT CHECK(status IN ('draft', 'sent', 'received', 'in_progress', 'pending_approval', 'completed')) DEFAULT 'draft',
       is_recurring BOOLEAN DEFAULT 0,
       parent_task_id INTEGER,
       weekly_days TEXT,
@@ -86,13 +86,27 @@ function initializeDatabase() {
     // Column already exists, ignore error
   }
 
-  // Migration: Update status CHECK constraint to include 'received'
+  // Add estimated_duration_minutes column if it doesn't exist (migration)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN estimated_duration_minutes INTEGER DEFAULT 30`);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
+  // Add completed_at column if it doesn't exist (migration)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN completed_at TIMESTAMP`);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
+  // Migration: Update status CHECK constraint to include 'received' and 'pending_approval'
   // SQLite doesn't support ALTER COLUMN for CHECK constraints
   // So we need to check if the constraint needs updating and recreate table if needed
   try {
     const tableInfo = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'`).get();
-    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes("'received'")) {
-      console.log('Migrating tasks table to add "received" status...');
+    if (tableInfo && tableInfo.sql && (!tableInfo.sql.includes("'received'") || !tableInfo.sql.includes("'pending_approval'"))) {
+      console.log('Migrating tasks table to add "received" and "pending_approval" statuses...');
 
       // Begin transaction
       db.exec('BEGIN TRANSACTION');
@@ -109,11 +123,13 @@ function initializeDatabase() {
           start_date DATE NOT NULL,
           start_time TIME NOT NULL,
           priority TEXT CHECK(priority IN ('urgent', 'normal', 'optional')) DEFAULT 'normal',
-          status TEXT CHECK(status IN ('draft', 'sent', 'received', 'in_progress', 'completed')) DEFAULT 'draft',
+          status TEXT CHECK(status IN ('draft', 'sent', 'received', 'in_progress', 'pending_approval', 'completed')) DEFAULT 'draft',
           is_recurring BOOLEAN DEFAULT 0,
           parent_task_id INTEGER,
           weekly_days TEXT,
           sent_at TIMESTAMP,
+          acknowledged_at TIMESTAMP,
+          completion_note TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (system_id) REFERENCES systems(id) ON DELETE SET NULL,
@@ -126,10 +142,12 @@ function initializeDatabase() {
       db.exec(`
         INSERT INTO tasks_new (id, title, description, system_id, employee_id, frequency,
                                start_date, start_time, priority, status, is_recurring,
-                               parent_task_id, weekly_days, sent_at, created_at, updated_at)
+                               parent_task_id, weekly_days, sent_at, acknowledged_at,
+                               completion_note, created_at, updated_at)
         SELECT id, title, description, system_id, employee_id, frequency,
                start_date, start_time, priority, status, is_recurring,
-               parent_task_id, weekly_days, sent_at, created_at, updated_at
+               parent_task_id, weekly_days, sent_at, acknowledged_at,
+               completion_note, created_at, updated_at
         FROM tasks
       `);
 
@@ -142,7 +160,7 @@ function initializeDatabase() {
       // Commit transaction
       db.exec('COMMIT');
 
-      console.log('Migration complete: "received" status added to tasks table');
+      console.log('Migration complete: "received" and "pending_approval" statuses added to tasks table');
     }
   } catch (e) {
     console.error('Error during status migration:', e);
