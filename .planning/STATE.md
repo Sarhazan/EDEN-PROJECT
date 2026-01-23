@@ -1,6 +1,6 @@
 # State: Eden - מערכת ניהול אחזקת מבנים
 
-**Last updated:** 2026-01-20
+**Last updated:** 2026-01-23
 
 ## Project Reference
 
@@ -10,19 +10,19 @@
 
 ## Current Position
 
-**Phase:** 2 of 4 (Enhanced Task Completion)
-**Plan:** 1 of 5 (Backend Image Upload & Notes Infrastructure)
+**Phase:** 3 of 4 (Status Tracking & Timing)
+**Plan:** 1 of 8 (Timing Infrastructure)
 **Status:** In progress
-**Last activity:** 2026-01-20 - Completed 02-01-PLAN.md
+**Last activity:** 2026-01-23 - Completed 03-01-PLAN.md
 
 **Progress:**
 ```
 Milestone: v1 Feature Additions
-[██████░░░░░░░░░░░░░░] 26% (7/27 requirements)
+[████████░░░░░░░░░░░░] 37% (10/27 requirements)
 
 Phase 1: Real-Time Infrastructure [██████████] 4/4 ✅ COMPLETE
 Phase 2: Enhanced Task Completion [██░░░░░░░░] 2/5
-Phase 3: Status Tracking & Timing [░░░░░░░░░░] 0/8
+Phase 3: Status Tracking & Timing [██░░░░░░░░] 1/8
 Phase 4: History & Archive [░░░░░░░░░░] 0/8
 ```
 
@@ -32,10 +32,10 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 
 | Metric | Value |
 |--------|-------|
-| Requirements completed | 7/27 |
-| Plans completed | 3 |
+| Requirements completed | 10/27 |
+| Plans completed | 4 |
 | Phases completed | 1/4 ✅ |
-| Days in current phase | 0 |
+| Days in current phase | 3 |
 | Blockers encountered | 0 |
 | Context reloads | 1 |
 
@@ -58,6 +58,9 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 | 2026-01-20 | File paths in DB, not BLOBs | Keep database compact, enable filesystem backups, better performance |
 | 2026-01-20 | crypto.randomBytes for filenames | Prevents path traversal attacks, avoids collisions, security best practice |
 | 2026-01-20 | 5MB file size limit | Balance between image quality and server storage/bandwidth |
+| 2026-01-23 | Default task duration 30 minutes | Standard for maintenance tasks, can be overridden per task |
+| 2026-01-23 | completed_at stores worker finish time | Timing variance measures worker performance, not approval delay |
+| 2026-01-23 | No "late" status column | Late status computed dynamically to avoid stale data |
 
 ### Active TODOs
 
@@ -76,6 +79,16 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 None currently.
 
 ### Recent Changes
+
+**2026-01-23:**
+- **Completed 03-01-PLAN.md:** Timing Infrastructure
+  - Added estimated_duration_minutes (INTEGER DEFAULT 30) column to tasks table
+  - Added completed_at (TIMESTAMP) column to tasks table
+  - Modified taskConfirmation.js to save completion timestamp on worker finish
+  - Created calculateEstimatedEnd(task) helper function in tasks.js
+  - Added enrichTaskWithTiming and calculateTimeDelta helper functions
+  - Duration: 92 seconds
+  - Requirements satisfied: TS-01 (duration field), TS-02 (partial), TS-06 (completion timestamp)
 
 **2026-01-20 (continued):**
 - **Completed 02-01-PLAN.md:** Backend Image Upload & Notes Infrastructure
@@ -120,31 +133,24 @@ None currently.
 
 ## Session Continuity
 
-**Last session:** 2026-01-20 18:30 UTC
-**Stopped at:** Completed 02-01-PLAN.md (Backend Image Upload & Notes Infrastructure)
+**Last session:** 2026-01-23
+**Stopped at:** Completed 03-01-PLAN.md (Timing Infrastructure)
 **Resume file:** None
 
 **What happened this session:**
-- Executed 02-01-PLAN.md: Backend Image Upload & Notes Infrastructure
-- Created task_attachments database table and completion_note column
-- Configured multer for secure file uploads with crypto-based filenames
-- Built POST /api/confirm/:token/complete endpoint with validation
-- Fixed static uploads path inconsistency
-- Installed socket.io-client and connected React app to WebSocket server
-- Implemented real-time event listeners in AppContext
-- Added connection status indicator in Sidebar UI
-- Fixed circular dependency bug in tasks.js route
-- Fixed DELETE route payload bug
-- Performed browser-based verification with multiple tabs
-- Created 01-02-SUMMARY.md documenting implementation
-- Created VERIFICATION.md for Phase 1
-- Updated STATE.md and ROADMAP.md with completion
-- **Phase 1 COMPLETE ✅**
+- Executed 03-01-PLAN.md: Timing Infrastructure
+- Added estimated_duration_minutes and completed_at columns to tasks table
+- Modified taskConfirmation.js to save completion timestamp when worker finishes
+- Created calculateEstimatedEnd helper function for timing calculations
+- Included enrichTaskWithTiming and calculateTimeDelta helpers from prior uncommitted work
+- Created 03-01-SUMMARY.md documenting implementation
+- Updated STATE.md with progress and decisions
+- All 3 tasks completed with 3 atomic commits
 
 **What needs to happen next session:**
-- Execute 02-02-PLAN.md (Client Upload UI)
-- Execute 02-03-PLAN.md (Manager View Images)
-- Complete remaining Phase 2 plans
+- Execute 03-02-PLAN.md (Late Detection Logic)
+- Complete remaining Phase 3 plans
+- Eventually return to Phase 2 plans (02-02, 02-03, etc.)
 
 **Context to preserve:**
 - Backend infrastructure ready for image uploads and completion notes
@@ -153,6 +159,12 @@ None currently.
 - Images stored in uploads/ directory with crypto-generated hex filenames
 - Image paths in task_attachments table, notes in tasks.completion_note column
 - 5MB file size limit, MIME type validation (jpeg, png, jpg only)
+- **Timing infrastructure ready:**
+  - tasks.estimated_duration_minutes (INTEGER DEFAULT 30)
+  - tasks.completed_at (TIMESTAMP) - saved when worker finishes task
+  - calculateEstimatedEnd(task) helper in tasks.js
+  - enrichTaskWithTiming(task) helper for late detection
+  - calculateTimeDelta(task) helper for completed task variance
 - Server has Socket.IO running on port 3002 (updated from 3001)
 - Event naming convention: task:created, task:updated, task:deleted
 - Event payloads include full task objects with system_name and employee_name
