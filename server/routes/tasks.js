@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../database/schema');
-const { addDays, addWeeks, addMonths, format } = require('date-fns');
+const { addDays, addWeeks, addMonths, format, addMinutes, differenceInMinutes } = require('date-fns');
 const { getCurrentTimestampIsrael } = require('../utils/dateUtils');
 
 // Store io instance reference
@@ -11,6 +11,79 @@ let io;
 function setIo(ioInstance) {
   io = ioInstance;
   console.log('Socket.IO instance set in tasks route');
+}
+
+/**
+ * Calculate estimated end time for a task
+ * @param {Object} task - Task object with start_date, start_time, estimated_duration_minutes
+ * @returns {Date} Estimated end time as Date object
+ */
+function calculateEstimatedEnd(task) {
+  const taskStart = new Date(`${task.start_date}T${task.start_time}`);
+  const durationMinutes = task.estimated_duration_minutes || 30;
+  return addMinutes(taskStart, durationMinutes);
+}
+
+/**
+ * Enrich task with timing information (late detection, time remaining, etc.)
+ * @param {Object} task - Task object from database
+ * @returns {Object} Task with added timing fields
+ */
+function enrichTaskWithTiming(task) {
+  // Skip timing logic for completed tasks (calculate delta instead)
+  if (task.status === 'completed') {
+    return {
+      ...task,
+      ...calculateTimeDelta(task)
+    };
+  }
+
+  const now = new Date();
+  const estimatedEnd = calculateEstimatedEnd(task);
+  const minutesRemaining = differenceInMinutes(estimatedEnd, now);
+
+  const isLate = minutesRemaining < 0;
+  const isNearDeadline = !isLate && minutesRemaining < 10;
+
+  return {
+    ...task,
+    estimated_end_time: estimatedEnd.toTimeString().slice(0, 5), // "HH:MM"
+    is_late: isLate,
+    minutes_remaining: Math.abs(minutesRemaining), // Always positive for display
+    timing_status: isLate ? 'late' : (isNearDeadline ? 'near-deadline' : 'on-time')
+  };
+}
+
+/**
+ * Calculate time delta for completed tasks (early/on-time/late)
+ * @param {Object} task - Completed task with completed_at timestamp
+ * @returns {Object} Object with delta fields
+ */
+function calculateTimeDelta(task) {
+  if (!task.completed_at) {
+    return {
+      time_delta_minutes: null,
+      time_delta_text: null
+    };
+  }
+
+  const estimatedEnd = calculateEstimatedEnd(task);
+  const actualEnd = new Date(task.completed_at);
+  const deltaMinutes = differenceInMinutes(actualEnd, estimatedEnd);
+
+  let deltaText;
+  if (deltaMinutes < 0) {
+    deltaText = `הושלם מוקדם ב-${Math.abs(deltaMinutes)} דקות`;
+  } else if (deltaMinutes > 0) {
+    deltaText = `איחור של ${deltaMinutes} דקות`;
+  } else {
+    deltaText = 'הושלם בזמן';
+  }
+
+  return {
+    time_delta_minutes: deltaMinutes,
+    time_delta_text: deltaText
+  };
 }
 
 // Get all tasks
@@ -30,7 +103,7 @@ router.get('/', (req, res) => {
   }
 });
 
-// Get today's tasks (not completed)
+// Get today's tasks (not completed, including pending_approval)
 router.get('/today', (req, res) => {
   try {
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -40,13 +113,121 @@ router.get('/today', (req, res) => {
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
-      WHERE t.start_date = ? AND t.status != 'completed'
+      WHERE (t.start_date = ? OR t.status = 'pending_approval') AND t.status != 'completed'
       ORDER BY t.priority DESC, t.start_time ASC
     `).all(today);
 
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Manager approves a task (changes status from pending_approval to completed)
+router.post('/:id/approve', (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get current task
+    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+
+    if (!task) {
+      return res.status(404).json({ error: 'משימה לא נמצאה' });
+    }
+
+    if (task.status !== 'pending_approval') {
+      return res.status(400).json({ error: 'ניתן לאשר רק משימות הממתינות לאישור' });
+    }
+
+    // Update task status to completed
+    db.prepare(`
+      UPDATE tasks
+      SET status = 'completed', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(id);
+
+    // If task is recurring, create next instance
+    if (task.is_recurring) {
+      if (task.frequency === 'daily' && task.weekly_days) {
+        const weeklyDays = JSON.parse(task.weekly_days);
+        const currentDate = new Date(task.start_date);
+        let nextDate = addDays(currentDate, 1);
+        let foundNextDay = false;
+
+        for (let i = 1; i <= 30 && !foundNextDay; i++) {
+          const checkDate = addDays(currentDate, i);
+          const dayOfWeek = checkDate.getDay();
+
+          if (weeklyDays.includes(dayOfWeek)) {
+            nextDate = checkDate;
+            foundNextDay = true;
+          }
+        }
+
+        if (foundNextDay) {
+          const nextDateStr = format(nextDate, 'yyyy-MM-dd');
+          db.prepare(`
+            INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, parent_task_id, weekly_days)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', 1, ?, ?)
+          `).run(task.title, task.description, task.system_id, task.employee_id, task.frequency, nextDateStr, task.start_time, task.priority, task.id, task.weekly_days);
+        }
+      } else {
+        const currentDate = new Date(task.start_date);
+        let nextDate;
+
+        switch (task.frequency) {
+          case 'daily':
+            nextDate = addDays(currentDate, 1);
+            break;
+          case 'weekly':
+            nextDate = addWeeks(currentDate, 1);
+            break;
+          case 'biweekly':
+            nextDate = addWeeks(currentDate, 2);
+            break;
+          case 'monthly':
+            nextDate = addMonths(currentDate, 1);
+            break;
+          case 'semi-annual':
+            nextDate = addMonths(currentDate, 6);
+            break;
+          case 'annual':
+            nextDate = addMonths(currentDate, 12);
+            break;
+          default:
+            nextDate = currentDate;
+        }
+
+        const nextDateStr = format(nextDate, 'yyyy-MM-dd');
+        db.prepare(`
+          INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, parent_task_id, weekly_days)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', 1, ?, ?)
+        `).run(task.title, task.description, task.system_id, task.employee_id, task.frequency, nextDateStr, task.start_time, task.priority, task.id, task.weekly_days);
+      }
+    }
+
+    // Get updated task with JOINs
+    const updatedTask = db.prepare(`
+      SELECT t.*, s.name as system_name, e.name as employee_name
+      FROM tasks t
+      LEFT JOIN systems s ON t.system_id = s.id
+      LEFT JOIN employees e ON t.employee_id = e.id
+      WHERE t.id = ?
+    `).get(id);
+
+    // Broadcast task update event
+    if (io) {
+      io.emit('task:updated', { task: updatedTask });
+    }
+
+    res.json({
+      success: true,
+      message: 'המשימה אושרה בהצלחה',
+      task: updatedTask
+    });
+  } catch (error) {
+    console.error('Error approving task:', error);
+    res.status(500).json({ error: 'שגיאה באישור המשימה' });
   }
 });
 
