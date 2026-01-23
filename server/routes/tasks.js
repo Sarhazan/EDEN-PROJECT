@@ -97,7 +97,8 @@ router.get('/', (req, res) => {
       ORDER BY t.start_date DESC, t.start_time DESC
     `).all();
 
-    res.json(tasks);
+    const enrichedTasks = tasks.map(enrichTaskWithTiming);
+    res.json(enrichedTasks);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -117,7 +118,8 @@ router.get('/today', (req, res) => {
       ORDER BY t.priority DESC, t.start_time ASC
     `).all(today);
 
-    res.json(tasks);
+    const enrichedTasks = tasks.map(enrichTaskWithTiming);
+    res.json(enrichedTasks);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -215,15 +217,17 @@ router.post('/:id/approve', (req, res) => {
       WHERE t.id = ?
     `).get(id);
 
-    // Broadcast task update event
+    const enrichedTask = enrichTaskWithTiming(updatedTask);
+
+    // Broadcast enriched task
     if (io) {
-      io.emit('task:updated', { task: updatedTask });
+      io.emit('task:updated', { task: enrichedTask });
     }
 
     res.json({
       success: true,
       message: 'המשימה אושרה בהצלחה',
-      task: updatedTask
+      task: enrichedTask
     });
   } catch (error) {
     console.error('Error approving task:', error);
@@ -266,7 +270,8 @@ router.get('/:id', (req, res) => {
       return res.status(404).json({ error: 'משימה לא נמצאה' });
     }
 
-    res.json(task);
+    const enrichedTask = enrichTaskWithTiming(task);
+    res.json(enrichedTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -408,12 +413,14 @@ router.post('/', (req, res) => {
           WHERE t.id = ?
         `).get(createdTaskIds[0]);
 
-        // Broadcast task creation event
+        const enrichedTask = enrichTaskWithTiming(firstTask);
+
+        // Broadcast enriched task creation event
         if (io) {
-          io.emit('task:created', { task: firstTask });
+          io.emit('task:created', { task: enrichedTask });
         }
 
-        return res.status(201).json(firstTask);
+        return res.status(201).json(enrichedTask);
       } else {
         return res.status(400).json({ error: 'לא נוצרו משימות' });
       }
@@ -433,12 +440,14 @@ router.post('/', (req, res) => {
       WHERE t.id = ?
     `).get(result.lastInsertRowid);
 
-    // Broadcast task creation event
+    const enrichedTask = enrichTaskWithTiming(newTask);
+
+    // Broadcast enriched task creation event
     if (io) {
-      io.emit('task:created', { task: newTask });
+      io.emit('task:created', { task: enrichedTask });
     }
 
-    res.status(201).json(newTask);
+    res.status(201).json(enrichedTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -469,12 +478,14 @@ router.put('/:id', (req, res) => {
       WHERE t.id = ?
     `).get(req.params.id);
 
-    // Broadcast task update event
+    const enrichedTask = enrichTaskWithTiming(updatedTask);
+
+    // Broadcast enriched task update event
     if (io) {
-      io.emit('task:updated', { task: updatedTask });
+      io.emit('task:updated', { task: enrichedTask });
     }
 
-    res.json(updatedTask);
+    res.json(enrichedTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -582,12 +593,14 @@ router.put('/:id/status', (req, res) => {
       WHERE t.id = ?
     `).get(req.params.id);
 
-    // Broadcast task update event
+    const enrichedTask = enrichTaskWithTiming(updatedTask);
+
+    // Broadcast enriched task update event
     if (io) {
-      io.emit('task:updated', { task: updatedTask });
+      io.emit('task:updated', { task: enrichedTask });
     }
 
-    res.json(updatedTask);
+    res.json(enrichedTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
