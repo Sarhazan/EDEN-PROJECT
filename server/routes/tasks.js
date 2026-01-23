@@ -50,8 +50,38 @@ function enrichTaskWithTiming(task) {
     estimated_end_time: estimatedEnd.toTimeString().slice(0, 5), // "HH:MM"
     is_late: isLate,
     minutes_remaining: Math.abs(minutesRemaining), // Always positive for display
+    minutes_remaining_text: formatMinutesToHebrew(Math.abs(minutesRemaining)), // Human-readable format
     timing_status: isLate ? 'late' : (isNearDeadline ? 'near-deadline' : 'on-time')
   };
+}
+
+/**
+ * Format minutes into days, hours, minutes (Hebrew)
+ * @param {number} totalMinutes - Total minutes
+ * @returns {string} Formatted string like "2 ימים, 3 שעות, 40 דקות"
+ */
+function formatMinutesToHebrew(totalMinutes) {
+  const absMinutes = Math.abs(totalMinutes);
+
+  const days = Math.floor(absMinutes / (24 * 60));
+  const hours = Math.floor((absMinutes % (24 * 60)) / 60);
+  const minutes = absMinutes % 60;
+
+  const parts = [];
+
+  if (days > 0) {
+    parts.push(days === 1 ? 'יום אחד' : `${days} ימים`);
+  }
+
+  if (hours > 0) {
+    parts.push(hours === 1 ? 'שעה אחת' : `${hours} שעות`);
+  }
+
+  if (minutes > 0 || parts.length === 0) {
+    parts.push(minutes === 1 ? 'דקה אחת' : `${minutes} דקות`);
+  }
+
+  return parts.join(', ');
 }
 
 /**
@@ -73,9 +103,9 @@ function calculateTimeDelta(task) {
 
   let deltaText;
   if (deltaMinutes < 0) {
-    deltaText = `הושלם מוקדם ב-${Math.abs(deltaMinutes)} דקות`;
+    deltaText = `הושלם מוקדם ב-${formatMinutesToHebrew(deltaMinutes)}`;
   } else if (deltaMinutes > 0) {
-    deltaText = `איחור של ${deltaMinutes} דקות`;
+    deltaText = `איחור של ${formatMinutesToHebrew(deltaMinutes)}`;
   } else {
     deltaText = 'הושלם בזמן';
   }

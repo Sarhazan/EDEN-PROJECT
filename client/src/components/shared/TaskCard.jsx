@@ -325,7 +325,7 @@ export default function TaskCard({ task, onEdit }) {
                   <span className="text-2xl">⏰</span>
                   <div>
                     <div className="text-sm font-semibold text-red-600">
-                      באיחור {Math.abs(task.minutes_remaining)} דקות
+                      באיחור {task.minutes_remaining_text || `${Math.abs(task.minutes_remaining)} דקות`}
                     </div>
                     <div className="text-xs text-gray-500">
                       היה צריך להסתיים ב-{task.estimated_end_time}
@@ -337,7 +337,7 @@ export default function TaskCard({ task, onEdit }) {
                   <span className="text-2xl">⚠️</span>
                   <div>
                     <div className="text-sm font-semibold text-yellow-600">
-                      נשארו {task.minutes_remaining} דקות
+                      נשארו {task.minutes_remaining_text || `${task.minutes_remaining} דקות`}
                     </div>
                     <div className="text-xs text-gray-500">
                       סיום מוערך: {task.estimated_end_time}
@@ -349,7 +349,7 @@ export default function TaskCard({ task, onEdit }) {
                   <span className="text-2xl">✅</span>
                   <div>
                     <div className="text-sm text-gray-600">
-                      נשארו {task.minutes_remaining} דקות
+                      נשארו {task.minutes_remaining_text || `${task.minutes_remaining} דקות`}
                     </div>
                     <div className="text-xs text-gray-500">
                       סיום מוערך: {task.estimated_end_time}
