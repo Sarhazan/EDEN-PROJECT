@@ -183,11 +183,14 @@ router.post('/:token/complete', upload.single('image'), async (req, res) => {
       `).run(note.trim(), taskId);
     }
 
-    // Update task status to completed
+    // Capture completion timestamp
+    const completedAt = getCurrentTimestampIsrael();
+
+    // Update task status to pending_approval (waiting for manager approval)
     db.prepare(`
-      UPDATE tasks SET status = 'completed', updated_at = CURRENT_TIMESTAMP
+      UPDATE tasks SET status = 'pending_approval', completed_at = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(taskId);
+    `).run(completedAt, taskId);
 
     // Fetch updated task with JOINs for real-time broadcast
     const updatedTask = db.prepare(`
@@ -221,7 +224,7 @@ router.put('/:token/task/:taskId', (req, res) => {
     const { status } = req.body;
 
     // Validate status
-    const validStatuses = ['draft', 'sent', 'received', 'in_progress', 'completed'];
+    const validStatuses = ['draft', 'sent', 'received', 'in_progress', 'pending_approval', 'completed'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'סטטוס לא חוקי' });
     }
