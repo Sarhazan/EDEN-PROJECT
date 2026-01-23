@@ -55,8 +55,8 @@
 - דפי אישור אינטראקטיביים מתארחים ב-Vercel (static HTML)
 
 **סביבת פיתוח:**
-- Frontend: React 19 + Vite + Tailwind CSS
-- Backend: Node.js + Express + SQLite (better-sqlite3)
+- Frontend: React 19 + Vite + Tailwind CSS (http://localhost:5174)
+- Backend: Node.js + Express + SQLite (better-sqlite3) (http://localhost:3002)
 - WhatsApp: whatsapp-web.js (unofficial API)
 - Deployment: Vercel לדפים סטטיים, Git-based workflow
 
