@@ -299,7 +299,7 @@ router.get('/:id/attachments', (req, res) => {
 // Create task
 router.post('/', (req, res) => {
   try {
-    const { title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days } = req.body;
+    const { title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes } = req.body;
 
     if (!title || !start_date || !start_time) {
       return res.status(400).json({ error: 'שדות חובה חסרים' });
@@ -322,9 +322,9 @@ router.post('/', (req, res) => {
             const dateStr = format(checkDate, 'yyyy-MM-dd');
 
             const result = db.prepare(`
-              INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson);
+              INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30);
 
             createdTaskIds.push(result.lastInsertRowid);
           }
@@ -336,9 +336,9 @@ router.post('/', (req, res) => {
           const dateStr = format(checkDate, 'yyyy-MM-dd');
 
           const result = db.prepare(`
-            INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson);
+            INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30);
 
           createdTaskIds.push(result.lastInsertRowid);
         }
@@ -395,9 +395,9 @@ router.post('/', (req, res) => {
           const dateStr = format(instanceDate, 'yyyy-MM-dd');
 
           const result = db.prepare(`
-            INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson);
+            INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30);
 
           createdTaskIds.push(result.lastInsertRowid);
         }
@@ -428,9 +428,9 @@ router.post('/', (req, res) => {
 
     // For non-recurring tasks, create single instance
     const result = db.prepare(`
-      INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(title, description, system_id || null, employee_id || null, frequency || 'one-time', start_date, start_time, priority || 'normal', status || 'draft', 0, weeklyDaysJson);
+      INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(title, description, system_id || null, employee_id || null, frequency || 'one-time', start_date, start_time, priority || 'normal', status || 'draft', 0, weeklyDaysJson, estimated_duration_minutes || 30);
 
     const newTask = db.prepare(`
       SELECT t.*, s.name as system_name, e.name as employee_name
@@ -456,15 +456,15 @@ router.post('/', (req, res) => {
 // Update task
 router.put('/:id', (req, res) => {
   try {
-    const { title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days } = req.body;
+    const { title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes } = req.body;
 
     const weeklyDaysJson = weekly_days && weekly_days.length > 0 ? JSON.stringify(weekly_days) : null;
 
     const result = db.prepare(`
       UPDATE tasks
-      SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, updated_at = CURRENT_TIMESTAMP
+      SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(title, description, system_id || null, employee_id || null, frequency, start_date, start_time, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, req.params.id);
+    `).run(title, description, system_id || null, employee_id || null, frequency, start_date, start_time, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, req.params.id);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'משימה לא נמצאה' });

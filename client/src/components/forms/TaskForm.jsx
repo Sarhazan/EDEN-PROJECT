@@ -35,7 +35,8 @@ export default function TaskForm({ task, onClose }) {
     priority: 'normal',
     status: 'draft',
     is_recurring: false,
-    weekly_days: []
+    weekly_days: [],
+    estimated_duration_minutes: 30
   });
 
   const [selectedDate, setSelectedDate] = useState(null);
@@ -64,7 +65,8 @@ export default function TaskForm({ task, onClose }) {
         priority: task.priority || 'normal',
         status: task.status || 'draft',
         is_recurring: task.is_recurring === 1,
-        weekly_days: task.weekly_days ? JSON.parse(task.weekly_days) : []
+        weekly_days: task.weekly_days ? JSON.parse(task.weekly_days) : [],
+        estimated_duration_minutes: task.estimated_duration_minutes || 30
       });
 
       // Set selectedDate from task.start_date (YYYY-MM-DD format)
@@ -81,9 +83,16 @@ export default function TaskForm({ task, onClose }) {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
+    let processedValue = value;
+    if (type === 'checkbox') {
+      processedValue = checked;
+    } else if (type === 'number') {
+      processedValue = value === '' ? '' : parseInt(value, 10);
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: processedValue
     }));
   };
 
@@ -380,6 +389,25 @@ export default function TaskForm({ task, onClose }) {
             </option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          משך המשימה (דקות) <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="number"
+          name="estimated_duration_minutes"
+          value={formData.estimated_duration_minutes}
+          onChange={handleChange}
+          min="5"
+          step="5"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          required
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
+        </p>
       </div>
 
       <div className="flex gap-3 pt-4">
