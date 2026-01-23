@@ -11,18 +11,18 @@
 ## Current Position
 
 **Phase:** 3 of 4 (Status Tracking & Timing)
-**Plan:** 1 of 8 (Timing Infrastructure)
+**Plan:** 2 of 8 (Backend Late Detection & Timing Status)
 **Status:** In progress
-**Last activity:** 2026-01-23 - Completed 03-01-PLAN.md
+**Last activity:** 2026-01-23 - Completed 03-02-PLAN.md
 
 **Progress:**
 ```
 Milestone: v1 Feature Additions
-[████████░░░░░░░░░░░░] 37% (10/27 requirements)
+[██████████░░░░░░░░░░] 48% (13/27 requirements)
 
 Phase 1: Real-Time Infrastructure [██████████] 4/4 ✅ COMPLETE
 Phase 2: Enhanced Task Completion [██░░░░░░░░] 2/5
-Phase 3: Status Tracking & Timing [██░░░░░░░░] 1/8
+Phase 3: Status Tracking & Timing [████░░░░░░] 2/8
 Phase 4: History & Archive [░░░░░░░░░░] 0/8
 ```
 
@@ -32,8 +32,8 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 
 | Metric | Value |
 |--------|-------|
-| Requirements completed | 10/27 |
-| Plans completed | 4 |
+| Requirements completed | 13/27 |
+| Plans completed | 5 |
 | Phases completed | 1/4 ✅ |
 | Days in current phase | 3 |
 | Blockers encountered | 0 |
@@ -61,6 +61,9 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 | 2026-01-23 | Default task duration 30 minutes | Standard for maintenance tasks, can be overridden per task |
 | 2026-01-23 | completed_at stores worker finish time | Timing variance measures worker performance, not approval delay |
 | 2026-01-23 | No "late" status column | Late status computed dynamically to avoid stale data |
+| 2026-01-23 | Enrichment after DB, before response | Keep DB lean with source data, calculate derived fields (is_late, timing_status) dynamically |
+| 2026-01-23 | Near-deadline threshold: 10 minutes | Gives workers urgent attention window before task becomes late |
+| 2026-01-23 | Hebrew time variance text | Manager UI localized - show "הושלם מוקדם ב-X דקות" for completed task variance |
 
 ### Active TODOs
 
@@ -79,6 +82,18 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 None currently.
 
 ### Recent Changes
+
+**2026-01-23 (continued):**
+- **Completed 03-02-PLAN.md:** Backend Late Detection & Timing Status
+  - Applied enrichTaskWithTiming to all 7 task API endpoints
+  - All responses now include: estimated_end_time, is_late, minutes_remaining, timing_status
+  - Completed tasks include: time_delta_minutes, time_delta_text (Hebrew)
+  - Real-time Socket.IO broadcasts enriched with timing data
+  - Late detection: minutesRemaining < 0
+  - Near-deadline: minutesRemaining < 10
+  - Enrichment pattern: after DB query, before response (keeps DB lean)
+  - Duration: 4min 53sec
+  - Requirements satisfied: TS-03 (status logic), TS-04 (auto late detection), TS-07 (time variance calculation)
 
 **2026-01-23:**
 - **Completed 03-01-PLAN.md:** Timing Infrastructure
@@ -134,21 +149,21 @@ None currently.
 ## Session Continuity
 
 **Last session:** 2026-01-23
-**Stopped at:** Completed 03-01-PLAN.md (Timing Infrastructure)
+**Stopped at:** Completed 03-02-PLAN.md (Backend Late Detection & Timing Status)
 **Resume file:** None
 
 **What happened this session:**
-- Executed 03-01-PLAN.md: Timing Infrastructure
-- Added estimated_duration_minutes and completed_at columns to tasks table
-- Modified taskConfirmation.js to save completion timestamp when worker finishes
-- Created calculateEstimatedEnd helper function for timing calculations
-- Included enrichTaskWithTiming and calculateTimeDelta helpers from prior uncommitted work
-- Created 03-01-SUMMARY.md documenting implementation
+- Executed 03-02-PLAN.md: Backend Late Detection & Timing Status
+- Applied enrichTaskWithTiming to all 7 task API endpoints
+- All task responses now include timing fields (is_late, minutes_remaining, timing_status, etc.)
+- Completed tasks include time variance with Hebrew text display
+- Real-time Socket.IO broadcasts enriched with timing data
+- Created 03-02-SUMMARY.md documenting implementation
 - Updated STATE.md with progress and decisions
-- All 3 tasks completed with 3 atomic commits
+- 1 atomic commit (8d63884)
 
 **What needs to happen next session:**
-- Execute 03-02-PLAN.md (Late Detection Logic)
+- Execute 03-03-PLAN.md (UI Late Indicators)
 - Complete remaining Phase 3 plans
 - Eventually return to Phase 2 plans (02-02, 02-03, etc.)
 
@@ -165,6 +180,12 @@ None currently.
   - calculateEstimatedEnd(task) helper in tasks.js
   - enrichTaskWithTiming(task) helper for late detection
   - calculateTimeDelta(task) helper for completed task variance
+  - **All task API endpoints enriched with timing data:**
+    - Non-completed: estimated_end_time, is_late, minutes_remaining, timing_status
+    - Completed: time_delta_minutes, time_delta_text (Hebrew)
+  - Near-deadline threshold: 10 minutes
+  - Late detection: past estimated end time
+  - Socket.IO broadcasts include enriched timing fields
 - Server has Socket.IO running on port 3002 (updated from 3001)
 - Event naming convention: task:created, task:updated, task:deleted
 - Event payloads include full task objects with system_name and employee_name
@@ -180,4 +201,4 @@ None currently.
 ---
 
 *State initialized: 2026-01-19*
-*Last session: 2026-01-19*
+*Last session: 2026-01-23*
