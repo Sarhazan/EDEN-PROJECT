@@ -17,6 +17,15 @@
 - מעקב אחר הודעות שנשלחו עם תאריך ושעה
 - הצגת סטטוס שליחה עם סימון וי
 
+### תמיכה רב-לשונית
+- תמיכה בעברית (עברית), אנגלית (English), רוסית (Русский) וערבית (العربية)
+- העדפת שפה לכל עובד (נשמרת במאגר)
+- הודעות WhatsApp בשפת העובד המבוקשת
+- דפי משימות אינטראקטיביים בשפת העובד עם כיוון טקסט אוטומטי (RTL/LTR)
+- תרגום אוטומטי של הערות עובדים לעברית למנהל
+- תרגום תוכן משימות לשפת העובד
+- שירות תרגום היברידי: Gemini API (חינם) → Google Translate (בתשלום) → טקסט מקורי
+
 ### ניהול מערכות
 - רישום מערכות תחזוקה (חשמל, מזגן, אינסטלציה, וכו')
 - תיאור ופרטי קשר לכל מערכת
@@ -59,6 +68,28 @@ npm install
 cd client && npm install && cd ..
 \`\`\`
 
+### הגדרת שירות תרגום (אופציונלי)
+
+למערכת תמיכה רב-לשונית מלאה, הגדר מפתח API של Google Gemini:
+
+1. צור מפתח API ב-[Google AI Studio](https://aistudio.google.com/apikey)
+2. הוסף לקובץ \`server/.env\`:
+
+\`\`\`bash
+# Google Gemini API (FREE tier - primary translation provider)
+# Free tier: 15 requests/minute, 1,500 requests/day
+GEMINI_API_KEY=your-api-key-here
+\`\`\`
+
+3. (אופציונלי) להגדרת Google Cloud Translation API כ-fallback:
+
+\`\`\`bash
+# Google Cloud Translation API (PAID fallback - optional)
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
+\`\`\`
+
+**הערה:** המערכת פועלת גם ללא מפתח API - הודעות וממשק משתמש יתורגמו, אך הערות עובדים לא יתורגמו אוטומטית.
+
 ## הפעלה
 
 ### פיתוח מקומי
@@ -99,6 +130,21 @@ eden-claude/
     └── index.js
 \`\`\`
 
+## הגדרת שפת עובד
+
+לכל עובד ניתן להגדיר העדפת שפה:
+
+\`\`\`sql
+UPDATE employees SET language = 'en' WHERE name = 'Eden Kennedy';
+-- Supported: 'he' (עברית), 'en' (English), 'ru' (Русский), 'ar' (العربية)
+\`\`\`
+
+**תוצאה:**
+- הודעות WhatsApp בשפת העובד
+- דפי HTML עם כיוון טקסט נכון (\`lang="en" dir="ltr"\` או \`lang="he" dir="rtl"\`)
+- ממשק מתורגם לחלוטין (כפתורים, תוויות, הודעות)
+- הערות שהעובד כותב מתורגמות לעברית למנהל
+
 ## API Endpoints
 
 - \`/api/tasks\` - ניהול משימות
@@ -107,7 +153,7 @@ eden-claude/
 - \`/api/employees\` - ניהול עובדים
 - \`/api/locations\` - ניהול מיקומים
 - \`/api/whatsapp\` - אינטגרציית WhatsApp
-- \`/api/confirm\` - דפי אישור משימות (webhook)
+- \`/api/task-confirmation/:token\` - דפי אישור משימות עם תמיכה רב-לשונית
 - \`/api/data\` - ניהול נתוני דמה
 
 ## ארכיטקטורת הפריסה
@@ -123,6 +169,13 @@ eden-claude/
 - מתארח ב-Vercel Pages
 - מתקשר עם Railway API דרך \`PUBLIC_API_URL\`
 - Git automation לעדכון אוטומטי
+- תמיכה רב-לשונית עם כיוון טקסט אוטומטי
+
+**שירות תרגום:**
+- Google Gemini API (חינם): 15 בקשות/דקה, 1,500 בקשות/יום
+- Google Cloud Translation API (fallback בתשלום): $20 למיליון תווים
+- מעקב אחר ספק תרגום ושפה מקורית במאגר
+- ירידה חלקה (\`provider: 'none'\`) כאשר APIs לא זמינים
 
 ---
 
