@@ -3,7 +3,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../forms/datepicker-custom.css';
 
-export default function HistoryFilters({ filters, employees, systems, locations, onFilterChange, onClear }) {
+export default function HistoryFilters({ filters, employees, systems, locations, onFilterChange, onApplyFilters, onClear }) {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [tempFilters, setTempFilters] = useState({
@@ -22,35 +22,14 @@ export default function HistoryFilters({ filters, employees, systems, locations,
 
   const handleApplyFilters = () => {
     // Apply all filters at once when "הצג" is clicked
-    if (startDate) {
-      onFilterChange('start', formatDateToISO(startDate));
-    } else {
-      onFilterChange('start', '');
-    }
-
-    if (endDate) {
-      onFilterChange('end', formatDateToISO(endDate));
-    } else {
-      onFilterChange('end', '');
-    }
-
-    if (tempFilters.employeeId) {
-      onFilterChange('employee', tempFilters.employeeId);
-    } else {
-      onFilterChange('employee', '');
-    }
-
-    if (tempFilters.systemId) {
-      onFilterChange('system', tempFilters.systemId);
-    } else {
-      onFilterChange('system', '');
-    }
-
-    if (tempFilters.locationId) {
-      onFilterChange('location', tempFilters.locationId);
-    } else {
-      onFilterChange('location', '');
-    }
+    // Use onApplyFilters to batch all updates into a single state change
+    onApplyFilters({
+      start: startDate ? formatDateToISO(startDate) : '',
+      end: endDate ? formatDateToISO(endDate) : '',
+      employee: tempFilters.employeeId || '',
+      system: tempFilters.systemId || '',
+      location: tempFilters.locationId || ''
+    });
   };
 
   const handleClearAll = () => {

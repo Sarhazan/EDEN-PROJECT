@@ -25,10 +25,24 @@ export function useHistoryFilters() {
     setSearchParams(newParams);
   };
 
+  // Update multiple filters at once (prevents race conditions from sequential updates)
+  const updateFilters = (updates) => {
+    const newParams = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) {
+        newParams.set(key, value);
+      } else {
+        newParams.delete(key);
+      }
+    });
+    newParams.delete('offset'); // Reset pagination on filter change
+    setSearchParams(newParams);
+  };
+
   // Clear all filters
   const clearFilters = () => {
     setSearchParams(new URLSearchParams());
   };
 
-  return { filters, updateFilter, clearFilters };
+  return { filters, updateFilter, updateFilters, clearFilters };
 }

@@ -7,7 +7,7 @@ import HistoryTable from '../components/history/HistoryTable';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function HistoryPage() {
-  const { filters, updateFilter, clearFilters } = useHistoryFilters();
+  const { filters, updateFilter, updateFilters, clearFilters } = useHistoryFilters();
   const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -74,6 +74,7 @@ export default function HistoryPage() {
         systems={systems}
         locations={locations}
         onFilterChange={updateFilter}
+        onApplyFilters={updateFilters}
         onClear={clearFilters}
       />
 
