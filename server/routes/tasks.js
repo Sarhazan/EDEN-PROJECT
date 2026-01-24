@@ -357,8 +357,8 @@ router.post('/', (req, res) => {
       const createdTaskIds = [];
 
       if (frequency === 'daily' && weekly_days && weekly_days.length > 0) {
-        // Daily tasks with specific days
-        for (let i = 0; i < 30; i++) {
+        // Daily tasks with specific days - start from tomorrow (i=1) to avoid creating past instances
+        for (let i = 1; i <= 30; i++) {
           const checkDate = addDays(today, i);
           const dayOfWeek = checkDate.getDay();
 
@@ -374,8 +374,8 @@ router.post('/', (req, res) => {
           }
         }
       } else if (frequency === 'daily') {
-        // Daily tasks without specific days - every day
-        for (let i = 0; i < 30; i++) {
+        // Daily tasks without specific days - every day, start from tomorrow (i=1)
+        for (let i = 1; i <= 30; i++) {
           const checkDate = addDays(today, i);
           const dateStr = format(checkDate, 'yyyy-MM-dd');
 
