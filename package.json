@@ -24,6 +24,8 @@
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {
+    "@google-cloud/translate": "^9.3.0",
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.2",
     "better-sqlite3": "^12.6.0",
     "cors": "^2.8.5",
