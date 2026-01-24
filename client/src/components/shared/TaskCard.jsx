@@ -312,7 +312,6 @@ export default function TaskCard({ task, onEdit }) {
                 <select
                   value={task.location_id || ''}
                   onChange={handleLocationChange}
-                  onBlur={() => setIsChangingLocation(false)}
                   className="border border-gray-200 rounded-lg px-3 py-1 text-sm shadow-inner focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:border-primary transition-all duration-200"
                   autoFocus
                 >
