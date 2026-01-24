@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const whatsappService = require('../services/whatsapp');
 const htmlGenerator = require('../services/htmlGenerator');
+const urlShortener = require('../services/urlShortener');
 const axios = require('axios');
 const i18n = require('../services/i18n');
 const { db } = require('../database/schema');
@@ -236,6 +237,11 @@ router.post('/send-bulk', async (req, res) => {
 
         console.log('✓ Vercel deployment confirmed, proceeding with WhatsApp send');
 
+        // Shorten the URL for cleaner WhatsApp messages
+        console.log('Shortening URL for WhatsApp...');
+        const shortUrl = await urlShortener.shorten(htmlUrl);
+        console.log(`URL to send: ${shortUrl}`);
+
         // Build translated message
         let message = t('greeting', { name }) + '\n\n';
         message += t('taskListHeader', { date, count: tasks.length }) + '\n\n';
@@ -255,9 +261,9 @@ router.post('/send-bulk', async (req, res) => {
         await whatsappService.sendMessage(phone, message);
         console.log('Task list message sent successfully');
 
-        // Send the link as a separate message to ensure it's clickable
+        // Send the short link as a separate message to ensure it's clickable
         console.log('Sending link message...');
-        await whatsappService.sendMessage(phone, htmlUrl);
+        await whatsappService.sendMessage(phone, shortUrl);
         console.log('Link message sent successfully');
 
         results.push({
@@ -265,7 +271,8 @@ router.post('/send-bulk', async (req, res) => {
           name,
           success: true,
           taskCount: tasks.length,
-          confirmationUrl: htmlUrl
+          confirmationUrl: htmlUrl,
+          shortUrl: shortUrl
         });
         console.log(`✓ Successfully sent to ${name}`);
       } catch (error) {
