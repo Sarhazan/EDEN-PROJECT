@@ -125,10 +125,9 @@ Phase 5: Multi-Language Support [██████████] 8/8 ✅ COMPLET
 
 ### Pending Todos
 
-3 todos captured for future work (see `.planning/todos/pending/`):
+2 todos captured for future work (see `.planning/todos/pending/`):
 - Deploy to GitHub (deployment)
 - Use consistent port for entire project (infrastructure)
-- Replace localhost URLs with public shortened URLs for employee pages (infrastructure)
 
 ### Known Blockers
 
