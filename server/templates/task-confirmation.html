@@ -168,19 +168,9 @@
             color: #9a3412;
         }
 
-        .badge-urgent {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .badge-normal {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .badge-optional {
-            background: #f3f4f6;
-            color: #4b5563;
+        .badge-duration {
+            background: #e0e7ff;
+            color: #3730a3;
         }
 
         .badge-status {
@@ -420,7 +410,7 @@
                                     ${task.start_time}
                                 </span>
                                 ${task.system_name ? `<span class="badge badge-system">${task.system_name}</span>` : ''}
-                                <span class="badge badge-${task.priority}">${priorityLabel[task.priority]}</span>
+                                ${task.estimated_duration_minutes ? `<span class="badge badge-duration">⏱️ ${task.estimated_duration_minutes} דקות</span>` : ''}
                                 ${task.status === 'completed' ? '<span class="badge badge-status">הושלם</span>' : ''}
                             </div>
 

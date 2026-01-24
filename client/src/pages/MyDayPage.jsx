@@ -100,7 +100,7 @@ export default function MyDayPage() {
         description: task.description,
         start_time: task.start_time,
         system_name: task.system_name,
-        priority: task.priority,
+        estimated_duration_minutes: task.estimated_duration_minutes,
         status: task.status
       });
     });
