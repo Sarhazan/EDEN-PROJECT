@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="{{LANGUAGE}}" dir="{{TEXT_DIRECTION}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>משימות לביצוע - {{EMPLOYEE_NAME}}</title>
+    <title>{{PAGE_TITLE}} - {{EMPLOYEE_NAME}}</title>
     <style>
         * {
             margin: 0;
@@ -16,7 +16,6 @@
             background: linear-gradient(135deg, #fff5f0 0%, #ffe8dc 100%);
             min-height: 100vh;
             padding: 20px;
-            direction: rtl;
         }
 
         .container {
@@ -319,8 +318,8 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>משימות לביצוע</h1>
-            <p>שלום {{EMPLOYEE_NAME}}</p>
+            <h1>{{PAGE_TITLE}}</h1>
+            <p>{{GREETING}}</p>
         </div>
 
         <!-- Acknowledgment Banner -->
@@ -328,13 +327,13 @@
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>קבלת המשימות אושרה ב-<span id="acknowledgedTime"></span></span>
+            <span>{{ACKNOWLEDGED_AT_TEXT}}<span id="acknowledgedTime"></span></span>
         </div>
 
         <!-- Loading -->
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p style="margin-top: 10px;">טוען...</p>
+            <p style="margin-top: 10px;">{{LOADING}}</p>
         </div>
 
         <!-- Tasks Container -->
@@ -346,16 +345,16 @@
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>אישור קבלת כל המשימות</span>
+                <span>{{ACKNOWLEDGE_BUTTON}}</span>
             </button>
             <p style="text-align: center; margin-top: 10px; color: #6b7280; font-size: 14px;">
-                לחיצה על כפתור זה תאשר שקיבלת את כל המשימות ותעדכן את המנהל
+                {{ACKNOWLEDGE_DESCRIPTION}}
             </p>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            <p>מערכת ניהול תחזוקה - Eden</p>
+            <p>{{FOOTER_TEXT}}</p>
         </div>
     </div>
 
@@ -383,9 +382,9 @@
                 card.className = `task-card ${task.priority} ${task.status === 'completed' ? 'completed' : ''}`;
 
                 const priorityLabel = {
-                    'urgent': 'דחוף',
-                    'normal': 'רגיל',
-                    'optional': 'אופציונלי'
+                    'urgent': '{{PRIORITY_URGENT}}',
+                    'normal': '{{PRIORITY_NORMAL}}',
+                    'optional': '{{PRIORITY_OPTIONAL}}'
                 };
 
                 card.innerHTML = `
@@ -410,30 +409,30 @@
                                     ${task.start_time}
                                 </span>
                                 ${task.system_name ? `<span class="badge badge-system">${task.system_name}</span>` : ''}
-                                ${task.estimated_duration_minutes ? `<span class="badge badge-duration">⏱️ ${task.estimated_duration_minutes} דקות</span>` : ''}
-                                ${task.status === 'completed' ? '<span class="badge badge-status">הושלם</span>' : ''}
+                                ${task.estimated_duration_minutes ? `<span class="badge badge-duration">⏱️ {{BADGE_DURATION}}</span>`.replace('{{minutes}}', task.estimated_duration_minutes) : ''}
+                                ${task.status === 'completed' ? '<span class="badge badge-status">{{BADGE_COMPLETED}}</span>' : ''}
                             </div>
 
                             <div class="completion-form" id="completion-form-${task.id}" style="display: none;">
-                                <h3>פרטי השלמה</h3>
+                                <h3>{{COMPLETION_DETAILS}}</h3>
 
                                 <div class="form-group">
-                                    <label>צלם תמונה:</label>
+                                    <label>{{UPLOAD_IMAGE_LABEL}}:</label>
                                     <input
                                         type="file"
                                         accept="image/*"
                                         capture="environment"
                                         id="image-${task.id}"
                                     />
-                                    <div class="hint">עד 5MB, JPG או PNG בלבד</div>
+                                    <div class="hint">{{UPLOAD_IMAGE_HINT}}</div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label>הערות (אופציונלי):</label>
+                                    <label>{{ADD_NOTE_LABEL}}:</label>
                                     <textarea
                                         id="note-${task.id}"
                                         rows="3"
-                                        placeholder="הוסף הערות על המשימה..."
+                                        placeholder="{{ADD_NOTE_PLACEHOLDER}}"
                                     ></textarea>
                                 </div>
 
@@ -442,7 +441,7 @@
                                     class="submit-completion-btn"
                                     id="submit-btn-${task.id}"
                                 >
-                                    שלח השלמה
+                                    {{COMPLETE_BUTTON}}
                                 </button>
 
                                 <div class="completion-status" id="completion-status-${task.id}"></div>
@@ -486,7 +485,7 @@
             }
 
             // Show loading state
-            statusDiv.innerHTML = '<span style="color: #3b82f6;">שולח...</span>';
+            statusDiv.innerHTML = '<span style="color: #3b82f6;">{{SENDING}}</span>';
             submitBtn.disabled = true;
 
             try {
@@ -499,7 +498,7 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    statusDiv.innerHTML = '<span style="color: #10b981; font-weight: 600;">✓ המשימה הושלמה בהצלחה!</span>';
+                    statusDiv.innerHTML = '<span style="color: #10b981; font-weight: 600;">✓ {{TASK_COMPLETED}}</span>';
 
                     // Disable form after successful submission
                     const checkbox = document.querySelector(`input[onchange*="toggleTaskCompletion(${taskId}"]`);
@@ -516,12 +515,12 @@
                         task.status = 'completed';
                     }
                 } else {
-                    statusDiv.innerHTML = '<span style="color: #ef4444;">שגיאה: ' + (result.error || 'שגיאה לא ידועה') + '</span>';
+                    statusDiv.innerHTML = '<span style="color: #ef4444;">{{ERROR}}: ' + (result.error || '{{ERROR_UNKNOWN}}') + '</span>';
                     submitBtn.disabled = false;
                 }
             } catch (error) {
                 console.error('Error submitting completion:', error);
-                statusDiv.innerHTML = '<span style="color: #ef4444;">שגיאה בשליחת הנתונים</span>';
+                statusDiv.innerHTML = '<span style="color: #ef4444;">{{ERROR_SENDING}}</span>';
                 submitBtn.disabled = false;
             }
         }
@@ -529,7 +528,7 @@
         async function handleAcknowledge() {
             const btn = document.getElementById('acknowledgeBtn');
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner" style="width: 24px; height: 24px; border-width: 3px;"></div><span>מאשר...</span>';
+            btn.innerHTML = '<div class="spinner" style="width: 24px; height: 24px; border-width: 3px;"></div><span>{{ACKNOWLEDGING}}</span>';
 
             try {
                 const response = await fetch(`${CONFIG.apiUrl}/api/confirm/${CONFIG.token}/acknowledge`, {
@@ -553,12 +552,12 @@
                         }
                     });
 
-                    alert('קבלת המשימות אושרה בהצלחה!');
+                    alert('{{ACKNOWLEDGE_SUCCESS}}');
                 } else {
                     throw new Error('Failed to acknowledge');
                 }
             } catch (error) {
-                alert('שגיאה באישור קבלת המשימות');
+                alert('{{ACKNOWLEDGE_ERROR}}');
                 btn.disabled = false;
                 btn.innerHTML = `
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
