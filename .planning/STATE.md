@@ -252,14 +252,19 @@ None currently.
 ## Session Continuity
 
 **Last session:** 2026-01-24
-**Stopped at:** Completed 05-01-PLAN.md (i18n Infrastructure Setup) - Phase 5 started
+**Stopped at:** Completed 05-02-PLAN.md (Employee Language Preference)
 **Resume file:** None
 
 **What happened this session:**
-- Executed 05-01-PLAN.md (i18n Infrastructure Setup)
-- Installed i18next@25.8.0 and i18next-fs-backend@2.6.1
-- Created 12 translation JSON files (4 languages × 3 namespaces)
-- Created server/services/i18n.js with preload configuration
+- Executed 05-02-PLAN.md (Employee Language Preference)
+- Added language column to employees table with CHECK constraint
+- Updated employee CRUD API endpoints to handle language field
+- Added language dropdown to EmployeeForm component
+- Display employee language with flag emojis in EmployeesPage
+- Include employee.language in bulk send payload (MyDayPage)
+- Created 05-02-SUMMARY.md documenting completion
+- Updated STATE.md: Progress 80% (28/35 requirements), Phase 5 in progress
+- 3 commits: 34cb393 (database), f5a8338 (API), 221c7e3 (UI)
 - Verified all languages load correctly and interpolation works
 - Created 05-01-SUMMARY.md documenting completion
 - Updated STATE.md: Progress 80% (28/35 requirements), Phase 5 in progress
