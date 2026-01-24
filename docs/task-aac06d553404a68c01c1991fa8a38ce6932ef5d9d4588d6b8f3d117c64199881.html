@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>משימות לביצוע - {{EMPLOYEE_NAME}}</title>
+    <title>משימות לביצוע - עדן קנדי </title>
     <style>
         * {
             margin: 0;
@@ -320,7 +320,7 @@
         <!-- Header -->
         <div class="header">
             <h1>משימות לביצוע</h1>
-            <p>שלום {{EMPLOYEE_NAME}}</p>
+            <p>שלום עדן קנדי </p>
         </div>
 
         <!-- Acknowledgment Banner -->
@@ -362,12 +362,12 @@
     <script>
         // Configuration - will be replaced with actual values
         const CONFIG = {
-            apiUrl: '{{API_URL}}',
-            token: '{{TOKEN}}',
-            employeeName: '{{EMPLOYEE_NAME}}',
-            tasks: {{TASKS_JSON}},
-            isAcknowledged: {{IS_ACKNOWLEDGED}},
-            acknowledgedAt: '{{ACKNOWLEDGED_AT}}'
+            apiUrl: 'http://localhost:3002',
+            token: 'aac06d553404a68c01c1991fa8a38ce6932ef5d9d4588d6b8f3d117c64199881',
+            employeeName: 'עדן קנדי ',
+            tasks: [{"id":28,"title":"ניקוי לובי ","description":"ניקוי יסודי של הלובי ","start_time":"12:35","system_name":null,"estimated_duration_minutes":45,"status":"draft"},{"id":5,"title":"השקיה אוטומטית","description":"בדיקת מערכת השקיה בגינה הקדמית","start_time":"15:00","system_name":"גינון","estimated_duration_minutes":30,"status":"draft"}],
+            isAcknowledged: false,
+            acknowledgedAt: ''
         };
 
         // Initialize
@@ -393,10 +393,10 @@
                         <div class="checkbox-container">
                             <input
                                 type="checkbox"
-                                class="checkbox task-checkbox"
+                                class="checkbox"
                                 data-task-id="${task.id}"
                                 onchange="toggleTaskCompletion(${task.id}, this)"
-                                ${task.status === 'completed' ? 'checked disabled' : (!isAcknowledged ? 'disabled' : '')}
+                                ${task.status === 'completed' ? 'checked disabled' : ''}
                             >
                         </div>
                         <div class="task-content">
@@ -545,14 +545,6 @@
                     document.getElementById('acknowledgedTime').textContent = now;
                     document.getElementById('acknowledgmentBanner').classList.add('show');
                     btn.style.display = 'none';
-
-                    // Enable all non-completed task checkboxes
-                    document.querySelectorAll('.task-checkbox').forEach(checkbox => {
-                        if (!checkbox.checked) {
-                            checkbox.disabled = false;
-                        }
-                    });
-
                     alert('קבלת המשימות אושרה בהצלחה!');
                 } else {
                     throw new Error('Failed to acknowledge');
