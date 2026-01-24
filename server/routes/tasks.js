@@ -171,15 +171,21 @@ router.post('/:id/approve', (req, res) => {
       return res.status(400).json({ error: 'ניתן לאשר רק משימות הממתינות לאישור' });
     }
 
-    // Update task status to completed
+    // Calculate time delta for statistics
+    const estimatedEnd = calculateEstimatedEnd(task);
+    const actualEnd = task.completed_at ? new Date(task.completed_at) : new Date();
+    const timeDeltaMinutes = differenceInMinutes(actualEnd, estimatedEnd);
+
+    // Update task status to completed with time_delta_minutes
     // If completed_at is not already set (old tasks), set it to now
     db.prepare(`
       UPDATE tasks
       SET status = 'completed',
           completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+          time_delta_minutes = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(id);
+    `).run(timeDeltaMinutes, id);
 
     // If task is recurring, create next instance
     if (task.is_recurring) {
@@ -536,7 +542,7 @@ router.put('/:id/status', (req, res) => {
 
     // Update current task status
     // If status is 'sent', also update sent_at timestamp
-    // If status is 'completed', also update completed_at timestamp
+    // If status is 'completed', also update completed_at and time_delta_minutes
     if (status === 'sent') {
       const timestamp = getCurrentTimestampIsrael();
       db.prepare(`
@@ -546,11 +552,17 @@ router.put('/:id/status', (req, res) => {
       `).run(status, timestamp, timestamp, req.params.id);
     } else if (status === 'completed') {
       const timestamp = getCurrentTimestampIsrael();
+
+      // Calculate time delta for statistics
+      const estimatedEnd = calculateEstimatedEnd(task);
+      const actualEnd = new Date(timestamp);
+      const timeDeltaMinutes = differenceInMinutes(actualEnd, estimatedEnd);
+
       db.prepare(`
         UPDATE tasks
-        SET status = ?, completed_at = COALESCE(completed_at, ?), updated_at = ?
+        SET status = ?, completed_at = COALESCE(completed_at, ?), time_delta_minutes = ?, updated_at = ?
         WHERE id = ?
-      `).run(status, timestamp, timestamp, req.params.id);
+      `).run(status, timestamp, timeDeltaMinutes, timestamp, req.params.id);
     } else {
       db.prepare(`
         UPDATE tasks
