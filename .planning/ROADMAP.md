@@ -163,14 +163,15 @@ Plans:
 
 **Estimated Effort:** Medium-High (i18n infrastructure, translation service, RTL support)
 
-**Plans:** 5 plans
+**Plans:** 6 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — i18n Infrastructure & Translation Files
-- [ ] 05-02-PLAN.md — Employee Language Preference (DB & UI)
-- [ ] 05-03-PLAN.md — Multilingual Interactive HTML Pages
-- [ ] 05-04-PLAN.md — Multilingual WhatsApp Messages
-- [ ] 05-05-PLAN.md — Employee Note Translation to Hebrew
+- [x] 05-01-PLAN.md — i18n Infrastructure & Translation Files ✅
+- [x] 05-02-PLAN.md — Employee Language Preference (DB & UI) ✅
+- [x] 05-03-PLAN.md — Multilingual Interactive HTML Pages ✅
+- [x] 05-04-PLAN.md — Multilingual WhatsApp Messages ✅
+- [x] 05-05a-PLAN.md — Hybrid Translation Service (Gemini API + Google Translate) ✅
+- [ ] 05-05b-PLAN.md — Translation UI Indicators in Manager Interface
 
 **Details:**
 **Wave 1 (parallel):**

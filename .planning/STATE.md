@@ -1,6 +1,6 @@
 # State: Eden - מערכת ניהול אחזקת מבנים
 
-**Last updated:** 2026-01-24
+**Last updated:** 2026-01-25
 
 ## Project Reference
 
@@ -11,21 +11,21 @@
 ## Current Position
 
 **Phase:** 5 of 5 (Multi-Language Support) ⏳ IN PROGRESS
-**Plan:** 03 of 05
-**Status:** Phase 5 in progress - Multilingual HTML pages complete
-**Last activity:** 2026-01-24 - Completed 05-03-PLAN.md (Multilingual Interactive HTML Pages)
-**Next Phase:** Continue Phase 5 - Multi-Language Support
+**Plan:** 05a of 06
+**Status:** Phase 5 in progress - Hybrid translation service complete
+**Last activity:** 2026-01-25 - Completed 05-05a-PLAN.md (Hybrid Translation Service)
+**Next Plan:** 05-05b (Translation UI Indicators in Manager Interface)
 
 **Progress:**
 ```
 Milestone: v1 Feature Additions (Complete) + v2 Multi-Language
-[███████████████████░] 89% (31/35 requirements)
+[███████████████████░] 91% (32/35 requirements)
 
 Phase 1: Real-Time Infrastructure [██████████] 4/4 ✅ COMPLETE
 Phase 2: Enhanced Task Completion [██████████] 5/5 ✅ COMPLETE
 Phase 3: Status Tracking & Timing [██████████] 8/8 ✅ COMPLETE
 Phase 4: History & Archive [██████████] 8/8 ✅ COMPLETE
-Phase 5: Multi-Language Support [████░░░░░░] 3/8 ⏳ IN PROGRESS
+Phase 5: Multi-Language Support [█████░░░░░] 4/8 ⏳ IN PROGRESS
 ```
 
 ## Performance Metrics
@@ -34,13 +34,13 @@ Phase 5: Multi-Language Support [████░░░░░░] 3/8 ⏳ IN PROG
 
 | Metric | Value |
 |--------|-------|
-| Requirements completed | 31/35 (89%) |
-| Plans completed | 14 |
+| Requirements completed | 32/35 (91%) |
+| Plans completed | 15 |
 | Phases completed | 4/5 (80%) |
 | Phases planned | 5/5 (100%) |
-| Days in milestone | 6 (Jan 19-24) |
-| Blockers encountered | 0 |
-| Context reloads | 2 |
+| Days in milestone | 7 (Jan 19-25) |
+| Blockers encountered | 1 (Gemini API activation) |
+| Context reloads | 3 |
 
 ## Accumulated Context
 
@@ -94,6 +94,8 @@ Phase 5: Multi-Language Support [████░░░░░░] 3/8 ⏳ IN PROG
 | 2026-01-24 | Replace translation placeholders before data | Prevents accidentally replacing translated content that contains {{...}} syntax |
 | 2026-01-24 | RTL for Hebrew/Arabic, LTR for English/Russian | Matches standard text direction conventions for these language families |
 | 2026-01-24 | Remove hardcoded direction from CSS | Text direction controlled by html tag dir attribute for flexibility |
+| 2026-01-25 | Gemini 2.0 Flash Lite model for translation | Gemini 1.5 models retired in 2026, gemini-2.0-flash-lite is current stable free-tier model |
+| 2026-01-25 | Store original_language and translation_provider in DB | Track source language and API used for cost monitoring, debugging, and quality analysis |
 
 ### Roadmap Evolution
 
@@ -131,6 +133,20 @@ Phase 5: Multi-Language Support [████░░░░░░] 3/8 ⏳ IN PROG
 None currently.
 
 ### Recent Changes
+
+**2026-01-25:**
+- **Completed 05-05a-PLAN.md:** Hybrid Translation Service (Gemini API + Google Translate)
+  - Updated Gemini model from retired gemini-1.5-flash to gemini-2.0-flash-lite
+  - Hybrid translation service: Gemini API (FREE, primary) → Google Translate (PAID, fallback) → Original text
+  - Bidirectional translation: translateToHebrew (employee notes → Hebrew), translateFromHebrew (tasks → employee language)
+  - Database tracking: original_language, translation_provider columns in tasks table
+  - Task completion endpoint translates non-Hebrew notes before storing
+  - Graceful degradation: provider='none' when APIs unavailable
+  - Cost monitoring via getProviderStats()
+  - Duration: ~2 hours (including API troubleshooting)
+  - Commits: 07b8102 (model update), 6d25591 (README docs), 4b8ec09 (SUMMARY)
+  - Infrastructure complete ✅ | API activation pending ⚠️
+  - Requirements satisfied: ML-06 (employee note translation infrastructure)
 
 **2026-01-24 (Phase 5 continued):**
 - **Completed 05-03-PLAN.md:** Multilingual Interactive HTML Pages
@@ -311,9 +327,9 @@ None currently.
 - 3 commits: 134e962 (template), 8441de7 (htmlGenerator), c988268 (RTL verification)
 
 **What needs to happen next session:**
-- Continue Phase 5 execution
-- Plan 05-05: Implement auto-translation of employee notes to Hebrew
-- Complete remaining Phase 5 requirements
+- **API Activation (user action):** Activate GEMINI_API_KEY in Google AI Studio to enable translation
+- Execute Plan 05-05b: Translation UI Indicators in Manager Interface
+- Verify Phase 5 completion with all 8 requirements
 
 **Context to preserve:**
 - **History UI complete:**
