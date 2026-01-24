@@ -11,21 +11,21 @@
 ## Current Position
 
 **Phase:** 5 of 5 (Multi-Language Support) ⏳ IN PROGRESS
-**Plan:** 02 of 05
-**Status:** Phase 5 in progress - Employee language preference complete
-**Last activity:** 2026-01-24 - Completed 05-02-PLAN.md (Employee Language Preference)
+**Plan:** 04 of 05
+**Status:** Phase 5 in progress - WhatsApp message translation complete
+**Last activity:** 2026-01-24 - Completed 05-04-PLAN.md (WhatsApp Message Translation)
 **Next Phase:** Continue Phase 5 - Multi-Language Support
 
 **Progress:**
 ```
 Milestone: v1 Feature Additions (Complete) + v2 Multi-Language
-[███████████████░░░░░] 80% (28/35 requirements)
+[███████████████████░] 91% (32/35 requirements)
 
 Phase 1: Real-Time Infrastructure [██████████] 4/4 ✅ COMPLETE
 Phase 2: Enhanced Task Completion [██████████] 5/5 ✅ COMPLETE
 Phase 3: Status Tracking & Timing [██████████] 8/8 ✅ COMPLETE
 Phase 4: History & Archive [██████████] 8/8 ✅ COMPLETE
-Phase 5: Multi-Language Support [██░░░░░░░░] 1/8 ⏳ IN PROGRESS
+Phase 5: Multi-Language Support [█████░░░░░] 4/8 ⏳ IN PROGRESS
 ```
 
 ## Performance Metrics
@@ -34,8 +34,8 @@ Phase 5: Multi-Language Support [██░░░░░░░░] 1/8 ⏳ IN PROG
 
 | Metric | Value |
 |--------|-------|
-| Requirements completed | 28/35 (80%) |
-| Plans completed | 11 |
+| Requirements completed | 32/35 (91%) |
+| Plans completed | 13 |
 | Phases completed | 4/5 (80%) |
 | Phases planned | 5/5 (100%) |
 | Days in milestone | 6 (Jan 19-24) |
@@ -87,6 +87,9 @@ Phase 5: Multi-Language Support [██░░░░░░░░] 1/8 ⏳ IN PROG
 | 2026-01-24 | Use getFixedT for all employee-facing translations | Thread-safe, prevents race conditions when serving multiple employees concurrently |
 | 2026-01-24 | Organize translations into 3 namespaces (common, tasks, whatsapp) | Logical separation, allows loading only needed translations per context |
 | 2026-01-24 | Flag emojis for language display | Visual language identification faster than reading text - 🇮🇱 🇬🇧 🇷🇺 🇸🇦 in employee cards |
+| 2026-01-24 | getFixedT for WhatsApp translations | Thread-safe translation per employee prevents race conditions in concurrent bulk sends |
+| 2026-01-24 | Language fallback: payload → DB → 'he' | Backward compatible with old clients, graceful degradation if employee data missing |
+| 2026-01-24 | Preserve task data, translate UI text only | Task titles/descriptions are user input, not machine-translatable UI strings |
 
 ### Roadmap Evolution
 
@@ -125,9 +128,30 @@ None currently.
 
 ### Recent Changes
 
-**2026-01-24 (Phase 5):**
+**2026-01-24 (Phase 5 continued):**
+- **Completed 05-04-PLAN.md:** WhatsApp Message Translation
+  - Modified server/routes/whatsapp.js to use i18n service
+  - Extract language from request payload or query from employees table
+  - Use getFixedT(employeeLanguage, 'whatsapp') for thread-safe translation
+  - Translate greeting, task list header, click-to-view message
+  - Preserve task titles and descriptions (not translated)
+  - Fallback to Hebrew if language missing or invalid
+  - Each employee receives WhatsApp message in their configured language
+  - Duration: 1min 39sec
+  - Commits: 4832a04 (feat)
+  - Requirements satisfied: ML-02 (WhatsApp translations)
+- **Completed 05-02-PLAN.md:** Employee Language Preference
+  - Added language column to employees table with CHECK constraint
+  - Updated employee CRUD endpoints to accept and validate language field
+  - Added language dropdown to employee creation/editing form
+  - Display employee language with flag emojis in employee list
+  - Include employee language in bulk WhatsApp send request payload
+  - All changes maintain backward compatibility (default to Hebrew)
+  - Duration: 3min 53sec
+  - Commits: 34cb393 (database), f5a8338 (API), 221c7e3 (UI)
+  - Requirements satisfied: MLS-01 to MLS-05
 - **Started PHASE 5: Multi-Language Support**
-  - Progress: 1/8 requirements, 1/5 plans complete
+  - Progress: 4/8 requirements, 3/5 plans complete
   - Installed i18next@25.8.0 and i18next-fs-backend@2.6.1
   - Created 12 translation JSON files (4 languages × 3 namespaces)
   - Built server-side i18n service with thread-safe getFixedT
@@ -253,30 +277,25 @@ None currently.
 ## Session Continuity
 
 **Last session:** 2026-01-24
-**Stopped at:** Completed 05-02-PLAN.md (Employee Language Preference)
+**Stopped at:** Completed 05-04-PLAN.md (WhatsApp Message Translation)
 **Resume file:** None
 
 **What happened this session:**
-- Executed 05-02-PLAN.md (Employee Language Preference)
-- Added language column to employees table with CHECK constraint
-- Updated employee CRUD API endpoints to handle language field
-- Added language dropdown to EmployeeForm component
-- Display employee language with flag emojis in EmployeesPage
-- Include employee.language in bulk send payload (MyDayPage)
-- Created 05-02-SUMMARY.md documenting completion
-- Updated STATE.md: Progress 80% (28/35 requirements), Phase 5 in progress
-- 3 commits: 34cb393 (database), f5a8338 (API), 221c7e3 (UI)
-- Verified all languages load correctly and interpolation works
-- Created 05-01-SUMMARY.md documenting completion
-- Updated STATE.md: Progress 80% (28/35 requirements), Phase 5 in progress
-- 3 commits: 3eb021d, e94a9cc, f571540
+- Executed 05-04-PLAN.md (WhatsApp Message Translation)
+- Modified server/routes/whatsapp.js to use i18n service
+- Extract language from request payload or query from employees table
+- Use getFixedT for thread-safe translation per employee
+- Translate greeting, task list header, click-to-view message
+- Preserve task titles and descriptions (not translated)
+- Fallback to Hebrew if language missing or invalid
+- Created 05-04-SUMMARY.md documenting completion
+- Updated STATE.md: Progress 91% (32/35 requirements), Phase 5 in progress
+- 1 commit: 4832a04 (feat)
 
 **What needs to happen next session:**
 - Continue Phase 5 execution
-- Plan 05-02: Add language column to employees table
-- Plan 05-03: Update WhatsApp service for multi-language messages
-- Plan 05-04: Update HTML generator for multi-language pages
-- Plan 05-05: Implement auto-translation of employee notes
+- Plan 05-05: Update HTML generator for multi-language interactive pages
+- Plan 05-06: Implement auto-translation of employee notes to Hebrew
 
 **Context to preserve:**
 - **History UI complete:**
