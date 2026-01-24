@@ -126,7 +126,7 @@ Phase 5: Multi-Language Support [█████░░░░░] 4/8 ⏳ IN PROG
 ### Pending Todos
 
 1 todo captured for future work (see `.planning/todos/pending/`):
-- Add employee task completion statistics with circular progress bars (ui)
+- Deploy to GitHub (deployment)
 
 ### Known Blockers
 
