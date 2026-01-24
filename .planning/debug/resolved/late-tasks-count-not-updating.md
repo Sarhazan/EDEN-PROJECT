@@ -81,8 +81,3 @@ verification:
 - Fix verified and working correctly
 
 files_changed: ["server/routes/tasks.js"]
-
-root_cause:
-fix:
-verification:
-files_changed: []
