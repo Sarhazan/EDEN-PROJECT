@@ -49,7 +49,7 @@ export default function MyDayPage() {
     const currentTime = format(now, 'HH:mm');
 
     // Filter tasks to send (not sent yet, and time hasn't passed)
-    let tasksToSend = todaysTasks.filter(task => {
+    let tasksToSend = recurringTasks.filter(task => {
       // Only draft tasks (not sent yet)
       if (task.status !== 'draft') return false;
 
@@ -193,7 +193,8 @@ export default function MyDayPage() {
         tasksBySystem[task.system_id] = (tasksBySystem[task.system_id] || 0) + 1;
       }
     });
-    const generalTasks = todayTasks.filter((t) => !t.system_id).length;
+    const recurringTasksCount = todayTasks.filter((t) => t.is_recurring === 1).length;
+    const oneTimeTasksCount = todayTasks.filter((t) => t.is_recurring === 0).length;
 
     // 4. Tasks by status (today only, excluding completed)
     const newTasks = todayTasks.filter((t) => t.status === 'draft').length;
@@ -219,7 +220,8 @@ export default function MyDayPage() {
         optional: optionalToday
       },
       bySystem: tasksBySystem,
-      generalTasks: generalTasks,
+      recurringTasks: recurringTasksCount,
+      oneTimeTasks: oneTimeTasksCount,
       byStatus: {
         new: newTasks,
         sent: sentTasks,
@@ -231,13 +233,13 @@ export default function MyDayPage() {
     };
   }, [tasks, selectedDate]);
 
-  // Filter tasks with system assignment (selected date, not completed) and sort by time
-  const todaysTasks = useMemo(() => {
+  // Filter recurring tasks (all systems including general, selected date, not completed) and sort by time
+  const recurringTasks = useMemo(() => {
     let filtered = tasks.filter(
       (t) =>
         shouldTaskAppearOnDate(t, selectedDate) &&
         t.status !== 'completed' &&
-        t.system_id // Has system assignment
+        t.is_recurring === 1 // Recurring tasks only
     );
 
     // Apply filters based on selected category and value
@@ -270,14 +272,14 @@ export default function MyDayPage() {
     });
   }, [tasks, selectedDate, filterCategory, filterValue]);
 
-  // Filter general tasks (no system assignment, selected date, not completed) and sort by time
-  const generalTasks = useMemo(() => {
+  // Filter one-time tasks (selected date, not completed) and sort by time
+  const oneTimeTasks = useMemo(() => {
     return tasks
       .filter(
         (t) =>
           shouldTaskAppearOnDate(t, selectedDate) &&
           t.status !== 'completed' &&
-          !t.system_id // No system assignment
+          t.is_recurring === 0 // One-time tasks only
       )
       .sort((a, b) => {
         // Sort by start_time chronologically
@@ -287,15 +289,13 @@ export default function MyDayPage() {
       });
   }, [tasks, selectedDate]);
 
-  // Filter overdue tasks (one-time, before today, not completed) and sort by date and time
-  const overdueTasks = useMemo(() => {
-    const today = startOfDay(new Date());
+  // Filter late tasks (is_late = true, not completed) and sort by date and time
+  const lateTasks = useMemo(() => {
     return tasks
       .filter(
         (t) =>
-          isBefore(new Date(t.start_date), today) &&
-          t.status !== 'completed' &&
-          t.is_recurring === 0
+          t.is_late === true &&
+          t.status !== 'completed'
       )
       .sort((a, b) => {
         // Sort by date first, then by time
@@ -318,10 +318,10 @@ export default function MyDayPage() {
     ).length;
   }, [tasks, selectedDate]);
 
-  // Count overdue tasks
-  const overdueTasksCount = useMemo(() => {
-    return overdueTasks.length;
-  }, [overdueTasks]);
+  // Count late tasks
+  const lateTasksCount = useMemo(() => {
+    return lateTasks.length;
+  }, [lateTasks]);
 
   // Calculate timeline data for the next 7 days from selected date
   const timelineData = useMemo(() => {
@@ -361,9 +361,9 @@ export default function MyDayPage() {
                 משימות למחר: {tomorrowTasksCount}
               </span>
             )}
-            {overdueTasksCount > 0 && (
+            {lateTasksCount > 0 && (
               <span className="text-sm font-semibold text-red-600 bg-red-50 px-3 py-1 rounded-lg">
-                משימות באיחור: {overdueTasksCount}
+                משימות באיחור: {lateTasksCount}
               </span>
             )}
           </div>
@@ -482,7 +482,8 @@ export default function MyDayPage() {
 
               const maxCount = Math.max(
                 ...systems.map(s => stats.bySystem[s.id] || 0),
-                stats.generalTasks,
+                stats.recurringTasks,
+                stats.oneTimeTasks,
                 1
               );
 
@@ -504,18 +505,18 @@ export default function MyDayPage() {
               );
             })}
 
-            {stats.generalTasks > 0 && (
+            {stats.oneTimeTasks > 0 && (
               <div className="flex-1 flex flex-col items-center gap-1 min-w-[60px]">
                 <div className="w-full flex flex-col justify-end h-16">
                   <div
-                    className="w-full bg-orange-400 rounded-t-lg"
+                    className="w-full bg-blue-400 rounded-t-lg"
                     style={{
-                      height: `${(stats.generalTasks / Math.max(...systems.map(s => stats.bySystem[s.id] || 0), stats.generalTasks, 1)) * 100}%`
+                      height: `${(stats.oneTimeTasks / maxCount) * 100}%`
                     }}
                   />
                 </div>
-                <div className="text-sm font-bold text-orange-700">{stats.generalTasks}</div>
-                <div className="text-xs text-orange-600 text-center">כללי</div>
+                <div className="text-sm font-bold text-blue-700">{stats.oneTimeTasks}</div>
+                <div className="text-xs text-blue-600 text-center">חד פעמיות</div>
               </div>
             )}
           </div>
@@ -669,12 +670,12 @@ export default function MyDayPage() {
 
       {/* Main Content - Split Layout */}
       <div className="grid grid-cols-12 gap-6">
-        {/* Tasks with System Assignment (70%) - RIGHT SIDE */}
+        {/* Recurring Tasks (All Systems) - RIGHT SIDE */}
         <div className="col-span-8">
           <div className="bg-white rounded-lg shadow-md p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">
-                משימות לביצוע ({todaysTasks.length})
+                משימות קבועות ({recurringTasks.length})
               </h2>
               <button
                 onClick={handleSendAllTasks}
@@ -762,10 +763,10 @@ export default function MyDayPage() {
             </div>
 
             <div className="space-y-3">
-              {todaysTasks.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">אין משימות עם שיוך למערכת להיום</p>
+              {recurringTasks.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
               ) : (
-                todaysTasks.map((task) => (
+                recurringTasks.map((task) => (
                   <TaskCard key={task.id} task={task} onEdit={handleEdit} />
                 ))
               )}
@@ -773,29 +774,29 @@ export default function MyDayPage() {
           </div>
         </div>
 
-        {/* General Tasks (30%) - LEFT SIDE */}
+        {/* One-Time and Late Tasks - LEFT SIDE */}
         <div className="col-span-4">
           <div className="bg-white rounded-lg shadow-md p-4">
-            <h2 className="text-xl font-bold mb-4">משימות כלליות ({generalTasks.length})</h2>
+            <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
 
             <div className="space-y-3">
-              {generalTasks.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">אין משימות כלליות להיום</p>
+              {oneTimeTasks.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
               ) : (
-                generalTasks.map((task) => (
+                oneTimeTasks.map((task) => (
                   <TaskCard key={task.id} task={task} onEdit={handleEdit} />
                 ))
               )}
             </div>
 
-            {overdueTasks.length > 0 && (
+            {lateTasks.length > 0 && (
               <>
                 <div className="my-4 border-t border-gray-300" />
                 <h3 className="text-lg font-semibold text-red-600 mb-3">
                   משימות באיחור
                 </h3>
                 <div className="space-y-3">
-                  {overdueTasks.map((task) => (
+                  {lateTasks.map((task) => (
                     <div key={task.id} className="border-2 border-red-300 rounded-lg">
                       <TaskCard task={task} onEdit={handleEdit} />
                     </div>
