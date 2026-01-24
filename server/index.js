@@ -61,6 +61,8 @@ app.use('/api/data', require('./routes/data'));
 app.use('/api/whatsapp', require('./routes/whatsapp'));
 const taskConfirmationRouter = require('./routes/taskConfirmation');
 app.use('/api/confirm', taskConfirmationRouter);
+const historyRouter = require('./routes/history');
+app.use('/api/history', historyRouter);
 
 // Set io instance in routes after all routes are loaded
 tasksRouter.setIo(io);
