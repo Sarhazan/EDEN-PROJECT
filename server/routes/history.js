@@ -40,7 +40,7 @@ router.get('/', (req, res) => {
       conditions.push('t.completed_at >= ?');
       params.push(startDate);
     } else {
-      conditions.push('t.completed_at >= datetime("now", "-7 days")');
+      conditions.push("t.completed_at >= datetime('now', '-7 days')");
     }
 
     if (endDate) {
@@ -93,12 +93,13 @@ router.get('/', (req, res) => {
     const { total } = db.prepare(countQuery).get(...params);
 
     // Get statistics (using CASE aggregation for single query)
+    // Handle NULL time_delta_minutes by treating as on-time (0 or NULL = on-time, > 0 = late)
     const statsQuery = `
       SELECT
         COUNT(*) as total_completed,
-        SUM(CASE WHEN t.time_delta_minutes > 0 THEN 1 ELSE 0 END) as total_late,
+        SUM(CASE WHEN t.time_delta_minutes IS NOT NULL AND t.time_delta_minutes > 0 THEN 1 ELSE 0 END) as total_late,
         ROUND(
-          100.0 * SUM(CASE WHEN t.time_delta_minutes <= 0 THEN 1 ELSE 0 END) / COUNT(*),
+          100.0 * SUM(CASE WHEN t.time_delta_minutes IS NULL OR t.time_delta_minutes <= 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0),
           1
         ) as on_time_percentage
       FROM tasks t
