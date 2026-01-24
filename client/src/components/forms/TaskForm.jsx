@@ -21,7 +21,7 @@ const priorityOptions = [
 ];
 
 export default function TaskForm({ task, onClose }) {
-  const { addTask, updateTask, systems, employees } = useApp();
+  const { addTask, updateTask, systems, employees, locations } = useApp();
   const isEditing = !!task;
 
   const [formData, setFormData] = useState({
@@ -29,6 +29,7 @@ export default function TaskForm({ task, onClose }) {
     description: '',
     system_id: '',
     employee_id: '',
+    location_id: '',
     frequency: 'one-time',
     start_date: '',
     start_time: '',
@@ -59,6 +60,7 @@ export default function TaskForm({ task, onClose }) {
         description: task.description || '',
         system_id: task.system_id || '',
         employee_id: task.employee_id || '',
+        location_id: task.location_id || '',
         frequency: task.frequency || 'one-time',
         start_date: convertISOToDisplay(task.start_date) || '',
         start_time: task.start_time || '',
@@ -270,6 +272,23 @@ export default function TaskForm({ task, onClose }) {
             {employees.map((employee) => (
               <option key={employee.id} value={employee.id}>
                 {employee.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">מיקום (אופציונלי)</label>
+          <select
+            name="location_id"
+            value={formData.location_id}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          >
+            <option value="">ללא מיקום</option>
+            {locations && locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
               </option>
             ))}
           </select>

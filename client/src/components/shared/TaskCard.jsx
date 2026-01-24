@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FaEdit, FaTrash, FaPaperPlane, FaRedo, FaCheck } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPaperPlane, FaRedo, FaCheck, FaMapMarkerAlt } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 import { format } from 'date-fns';
 import axios from 'axios';
@@ -47,8 +47,9 @@ const frequencyLabels = {
 };
 
 export default function TaskCard({ task, onEdit }) {
-  const { updateTaskStatus, deleteTask, updateTask, employees } = useApp();
+  const { updateTaskStatus, deleteTask, updateTask, employees, locations } = useApp();
   const [isChangingEmployee, setIsChangingEmployee] = useState(false);
+  const [isChangingLocation, setIsChangingLocation] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
 
@@ -130,6 +131,16 @@ export default function TaskCard({ task, onEdit }) {
     try {
       await updateTask(task.id, { ...task, employee_id: newEmployeeId });
       setIsChangingEmployee(false);
+    } catch (error) {
+      alert('שגיאה: ' + error.message);
+    }
+  };
+
+  const handleLocationChange = async (e) => {
+    const newLocationId = e.target.value ? parseInt(e.target.value) : null;
+    try {
+      await updateTask(task.id, { ...task, location_id: newLocationId });
+      setIsChangingLocation(false);
     } catch (error) {
       alert('שגיאה: ' + error.message);
     }
@@ -271,6 +282,12 @@ export default function TaskCard({ task, onEdit }) {
                 {task.system_name}
               </span>
             )}
+            {task.location_name && (
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 flex items-center gap-1">
+                <FaMapMarkerAlt />
+                {task.location_name}
+              </span>
+            )}
             {task.frequency && (
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 flex items-center gap-1">
                 {task.is_recurring === 1 && <FaRedo className="text-xs" />}
@@ -289,6 +306,35 @@ export default function TaskCard({ task, onEdit }) {
                 <span className="text-base">🕐</span>
                 {task.start_time}
               </span>
+
+              {/* Location Pin Icon */}
+              {isChangingLocation ? (
+                <select
+                  value={task.location_id || ''}
+                  onChange={handleLocationChange}
+                  onBlur={() => setIsChangingLocation(false)}
+                  className="border border-gray-200 rounded-lg px-3 py-1 text-sm shadow-inner focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:border-primary transition-all duration-200"
+                  autoFocus
+                >
+                  <option value="">ללא מיקום</option>
+                  {locations && locations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span
+                  onClick={() => setIsChangingLocation(true)}
+                  className={`cursor-pointer hover:text-primary transition-colors duration-150 flex items-center gap-1 ${
+                    task.location_id ? 'text-teal-600 font-semibold' : ''
+                  }`}
+                  title={task.location_id ? 'שנה מיקום' : 'קשר למיקום'}
+                >
+                  <FaMapMarkerAlt className={task.location_id ? 'text-teal-600' : ''} />
+                  {task.location_name || 'ללא מיקום'}
+                </span>
+              )}
             </div>
 
             {isChangingEmployee ? (
