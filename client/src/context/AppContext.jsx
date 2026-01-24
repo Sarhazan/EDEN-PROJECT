@@ -79,6 +79,9 @@ export function AppProvider({ children }) {
         console.log('   Tasks after update:', updated.length, 'tasks');
         return updated;
       });
+
+      // Refresh employee stats when task status changes
+      fetchEmployees();
     });
 
     // Listen for task deleted
@@ -167,6 +170,7 @@ export function AppProvider({ children }) {
     });
     if (!response.ok) throw new Error('שגיאה בעדכון סטטוס');
     await fetchTasks();
+    await fetchEmployees(); // Refresh employee stats when task status changes
   };
 
   const deleteTask = async (id) => {
@@ -214,9 +218,13 @@ export function AppProvider({ children }) {
 
   // Employees
   const fetchEmployees = async () => {
+    console.log('[DEBUG fetchEmployees] Starting fetch...');
     const response = await fetch(`${API_URL}/employees`);
     const data = await response.json();
+    console.log('[DEBUG fetchEmployees] Received data:', data);
+    console.log('[DEBUG fetchEmployees] Sample employee:', data[0]);
     setEmployees(data);
+    console.log('[DEBUG fetchEmployees] State updated');
   };
 
   const addEmployee = async (employee) => {
@@ -230,13 +238,17 @@ export function AppProvider({ children }) {
   };
 
   const updateEmployee = async (id, employee) => {
+    console.log('[DEBUG updateEmployee] Updating employee', id, 'with data:', employee);
     const response = await fetch(`${API_URL}/employees/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(employee)
     });
     if (!response.ok) throw new Error('שגיאה בעדכון עובד');
+    const updatedEmployee = await response.json();
+    console.log('[DEBUG updateEmployee] Server returned:', updatedEmployee);
     await fetchEmployees();
+    console.log('[DEBUG updateEmployee] fetchEmployees completed');
   };
 
   const deleteEmployee = async (id) => {
