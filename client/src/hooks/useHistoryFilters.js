@@ -1,16 +1,17 @@
 import { useSearchParams } from 'react-router-dom';
+import { useMemo } from 'react';
 
 export function useHistoryFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Parse filters from URL
-  const filters = {
+  // Parse filters from URL - memoized to prevent infinite loops
+  const filters = useMemo(() => ({
     startDate: searchParams.get('start') || '',
     endDate: searchParams.get('end') || '',
     employeeId: searchParams.get('employee') || '',
     systemId: searchParams.get('system') || '',
     locationId: searchParams.get('location') || '',
-  };
+  }), [searchParams]);
 
   // Update single filter
   const updateFilter = (key, value) => {
