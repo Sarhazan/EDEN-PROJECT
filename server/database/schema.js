@@ -258,6 +258,17 @@ function initializeDatabase() {
     }
   }
 
+  // Add location_id column to tasks table (optional location linking)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN location_id INTEGER REFERENCES locations(id)`);
+    console.log('Added location_id column to tasks table');
+  } catch (e) {
+    // Column already exists, skip
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
   // Create composite indexes for history query performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_tasks_history
