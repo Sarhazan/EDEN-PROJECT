@@ -29,7 +29,6 @@ user_setup:
 must_haves:
   truths:
     - "Employee notes written in their language automatically translated to Hebrew for manager"
-    - "Translation happens when note is saved (not on every view)"
     - "If translation fails, manager sees original note with error indicator"
   artifacts:
     - path: "server/services/translation.js"
@@ -232,6 +231,9 @@ async function test() {
   // Test language detection
   const lang1 = await translation.detectLanguage('Water leak');
   console.log('Detected:', lang1, '(should be en)');
+
+  // Test without credentials: should log warning and return original text
+  console.log('\\nWithout credentials test: see warnings above');
 }
 
 test().catch(console.error);

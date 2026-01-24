@@ -7,7 +7,7 @@ depends_on: [05-05a]
 files_modified:
   - client/src/components/TaskCard.jsx
   - client/src/components/HistoryTable.jsx
-autonomous: true
+autonomous: false
 
 must_haves:
   truths:
@@ -148,6 +148,72 @@ Visual verification in manager UI:
   <done>Manager UI displays translation indicators (flag emoji + "מתורגם מ...") for translated notes, no indicator for Hebrew notes, indicators visible in both TaskCard and HistoryTable components.</done>
 </task>
 
+<task type="checkpoint:human-verify" gate="blocking">
+  <what-built>
+Translation indicators in manager UI showing which employee notes were automatically translated from other languages (English, Russian, Arabic).
+  </what-built>
+  <how-to-verify>
+**Prerequisites:**
+1. Complete tasks from Plan 05a with translated notes in database
+2. Ensure test employees exist with different languages
+3. Ensure some tasks have completion notes in database
+
+**Test steps:**
+
+1. **Create test data if needed:**
+   - Create employee with language='en'
+   - Assign and complete task with English note
+   - Create employee with language='ru'
+   - Assign and complete task with Russian note
+   - Create employee with language='he'
+   - Assign and complete task with Hebrew note
+
+2. **Dashboard view:**
+   - Open manager dashboard in browser
+   - Navigate to tasks page
+   - Find task with translated English note
+   - **Verify:** 🇬🇧 flag emoji visible
+   - **Verify:** "מתורגם מאנגלית" text appears above note
+   - **Verify:** Note content is in Hebrew (translated)
+
+3. **Russian note:**
+   - Find task with Russian note
+   - **Verify:** 🇷🇺 flag emoji visible
+   - **Verify:** "מתורגם מרוסית" text appears
+
+4. **Hebrew note (no translation):**
+   - Find task with Hebrew note
+   - **Verify:** NO flag emoji
+   - **Verify:** NO "מתורגם מ..." text
+   - **Verify:** Just the note content
+
+5. **History page:**
+   - Navigate to history/completed tasks page
+   - Verify indicators appear consistently
+   - Check that flag emojis render correctly (not □ or missing)
+
+6. **Responsive design:**
+   - Resize browser to mobile width
+   - Verify indicators don't break layout
+   - Verify flag emojis still visible
+
+7. **Edge cases:**
+   - Task without note: no indicator shown
+   - Task with original_language=NULL: no indicator
+   - Multiple translated notes in view: all show correct flags
+
+**Expected results:**
+- Translation indicators visible for en/ru/ar notes
+- No indicators for Hebrew notes
+- Flag emojis render correctly
+- Layout not broken
+- Consistent across TaskCard and HistoryTable
+  </how-to-verify>
+  <resume-signal>
+Type "approved" if translation indicators display correctly, or describe any issues (missing indicators, wrong flags, layout problems, etc.)
+  </resume-signal>
+</task>
+
 </tasks>
 
 <verification>
@@ -194,6 +260,7 @@ End-to-end UI verification:
 6. Indicators visible in both desktop and mobile views
 7. Layout not broken by translation indicators
 8. Consistent styling across components
+9. Checkpoint approved: UI displays correctly
 </success_criteria>
 
 <output>
