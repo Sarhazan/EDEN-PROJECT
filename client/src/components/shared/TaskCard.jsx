@@ -52,18 +52,18 @@ export default function TaskCard({ task, onEdit }) {
   const [isSending, setIsSending] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
 
-  // Check if task time is in the future
+  // Check if task start time is in the future (not yet started)
   const isTaskInFuture = () => {
     const now = new Date();
 
-    // For recurring tasks, only check if the time today is in the future
+    // For recurring tasks, check if today's occurrence hasn't started yet
     if (task.is_recurring === 1) {
-      const today = now.toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-      const taskDateTimeToday = new Date(`${today}T${task.start_time}`);
-      return taskDateTimeToday > now;
+      const today = now.toISOString().split('T')[0];
+      const taskStartDateTime = new Date(`${today}T${task.start_time}`);
+      return taskStartDateTime > now;
     }
 
-    // For one-time tasks, check the actual date and time
+    // For one-time tasks, check the actual start date and time
     const taskDateTime = new Date(`${task.start_date}T${task.start_time}`);
     return taskDateTime > now;
   };
