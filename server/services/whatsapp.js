@@ -11,64 +11,85 @@ class WhatsAppService {
   }
 
   initialize() {
+    console.log('=== WhatsAppService.initialize() called ===');
+
     if (this.client) {
       console.log('WhatsApp client already initialized');
       return;
     }
 
-    // Create WhatsApp client with local authentication
-    this.client = new Client({
-      authStrategy: new LocalAuth({
-        dataPath: path.join(__dirname, '..', '.wwebjs_auth')
-      }),
-      puppeteer: {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      }
-    });
+    console.log('Creating new WhatsApp client...');
+    const authPath = path.join(__dirname, '..', '.wwebjs_auth');
+    console.log('Auth data path:', authPath);
 
-    // QR Code event - for initial authentication
-    this.client.on('qr', (qr) => {
-      console.log('QR Code received');
-      this.qrCode = qr;
-      this.isReady = false;
+    try {
+      // Create WhatsApp client with local authentication
+      this.client = new Client({
+        authStrategy: new LocalAuth({
+          dataPath: authPath
+        }),
+        puppeteer: {
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        }
+      });
+      console.log('Client object created successfully');
 
-      // Generate QR in terminal for debugging
-      qrcode.generate(qr, { small: true });
+      // QR Code event - for initial authentication
+      this.client.on('qr', (qr) => {
+        console.log('✓ QR Code event fired - QR received!');
+        this.qrCode = qr;
+        this.isReady = false;
 
-      // Notify all waiting callbacks
-      this.qrCodeCallbacks.forEach(callback => callback(qr));
-      this.qrCodeCallbacks = [];
-    });
+        // Generate QR in terminal for debugging
+        console.log('Displaying QR in terminal:');
+        qrcode.generate(qr, { small: true });
 
-    // Ready event - client is authenticated and ready
-    this.client.on('ready', () => {
-      console.log('WhatsApp client is ready');
-      this.isReady = true;
-      this.qrCode = null;
-    });
+        // Notify all waiting callbacks
+        console.log(`Notifying ${this.qrCodeCallbacks.length} waiting callbacks`);
+        this.qrCodeCallbacks.forEach(callback => callback(qr));
+        this.qrCodeCallbacks = [];
+      });
 
-    // Authenticated event
-    this.client.on('authenticated', () => {
-      console.log('WhatsApp client authenticated');
-    });
+      // Ready event - client is authenticated and ready
+      this.client.on('ready', () => {
+        console.log('✓ WhatsApp client is ready');
+        this.isReady = true;
+        this.qrCode = null;
+      });
 
-    // Authentication failure event
-    this.client.on('auth_failure', (msg) => {
-      console.error('WhatsApp authentication failed:', msg);
-      this.isReady = false;
-    });
+      // Authenticated event
+      this.client.on('authenticated', () => {
+        console.log('✓ WhatsApp client authenticated');
+      });
 
-    // Disconnected event
-    this.client.on('disconnected', (reason) => {
-      console.log('WhatsApp client disconnected:', reason);
-      this.isReady = false;
-      this.client.destroy();
-      this.client = null;
-    });
+      // Authentication failure event
+      this.client.on('auth_failure', (msg) => {
+        console.error('✗ WhatsApp authentication failed:', msg);
+        this.isReady = false;
+      });
 
-    // Initialize the client
-    this.client.initialize();
+      // Disconnected event
+      this.client.on('disconnected', (reason) => {
+        console.log('✗ WhatsApp client disconnected:', reason);
+        this.isReady = false;
+        this.client.destroy();
+        this.client = null;
+      });
+
+      // Loading screen event
+      this.client.on('loading_screen', (percent, message) => {
+        console.log(`Loading: ${percent}% - ${message}`);
+      });
+
+      // Initialize the client
+      console.log('Calling client.initialize()...');
+      this.client.initialize();
+      console.log('client.initialize() called successfully');
+    } catch (error) {
+      console.error('✗ Error during client initialization:', error);
+      throw error;
+    }
   }
 
   // Get current connection status
@@ -116,6 +137,9 @@ class WhatsAppService {
       throw new Error('WhatsApp client is not ready. Please authenticate first.');
     }
 
+    // Wait a bit to ensure frame is attached after navigation
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     // Format phone number for WhatsApp (remove spaces, dashes, etc.)
     let formattedNumber = phoneNumber.replace(/\D/g, '');
 
@@ -129,17 +153,51 @@ class WhatsAppService {
     const chatId = `${formattedNumber}@c.us`;
 
     try {
-      // Send the message directly without checking if registered
-      // The sendMessage will fail if number is not registered
-      await this.client.sendMessage(chatId, message);
+      // Send the message with options to avoid markedUnread issue
+      const result = await this.client.sendMessage(chatId, message, {
+        sendSeen: false // Don't try to mark as read/unread
+      });
 
+      // Validate that we got a result back
+      if (!result) {
+        throw new Error('WhatsApp sendMessage returned no result');
+      }
+
+      console.log('✓ Message sent successfully to', chatId);
       return { success: true };
     } catch (error) {
-      console.error('Error sending WhatsApp message:', error);
+      console.error('✗ Error sending WhatsApp message:', error);
 
       // Check if error is because number is not registered
       if (error.message && error.message.includes('phone number is not registered')) {
         throw new Error('מספר הטלפון אינו רשום בוואטסאפ');
+      }
+
+      // If still getting markedUnread error OR detached frame, try alternative method
+      if (error.message && (error.message.includes('markedUnread') || error.message.includes('detached Frame'))) {
+        console.log('⚠ Retrying with alternative method...');
+        // Wait a bit longer if it's a detached frame issue
+        if (error.message.includes('detached Frame')) {
+          console.log('   Waiting for frame to reattach...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        try {
+          // Try a more basic send
+          const chat = await this.client.getChatById(chatId);
+          const retryResult = await chat.sendMessage(message);
+
+          // Validate retry result
+          if (!retryResult) {
+            throw new Error('Retry sendMessage returned no result');
+          }
+
+          console.log('✓ Message sent successfully on retry to', chatId);
+          return { success: true };
+        } catch (retryError) {
+          console.error('✗ Retry also failed:', retryError);
+          throw new Error(`שגיאה בשליחת הודעת וואטסאפ: ${retryError.message}`);
+        }
       }
 
       throw new Error(`שגיאה בשליחת הודעת וואטסאפ: ${error.message}`);

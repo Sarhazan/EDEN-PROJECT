@@ -4,15 +4,31 @@ const whatsappService = require('../services/whatsapp');
 const htmlGenerator = require('../services/htmlGenerator');
 const axios = require('axios');
 
-// Function to shorten URL using TinyURL
-async function shortenUrl(longUrl) {
-  try {
-    const response = await axios.get(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error shortening URL:', error);
-    return longUrl; // Return original URL if shortening fails
+// Function to check if URL is accessible
+async function waitForUrlAvailable(url, maxAttempts = 30, intervalMs = 4000) {
+  console.log(`⏳ Waiting for URL to become available: ${url}`);
+  console.log(`   Will try ${maxAttempts} times with ${intervalMs/1000}s intervals (max ${maxAttempts * intervalMs / 1000}s total)`);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await axios.head(url, { timeout: 8000 });
+      if (response.status === 200) {
+        console.log(`✓ URL is available after ${attempt} attempts (${attempt * intervalMs / 1000}s elapsed)`);
+        return true;
+      }
+    } catch (error) {
+      const errorMsg = error.response?.status || error.code || 'unknown error';
+      console.log(`   Attempt ${attempt}/${maxAttempts}: Not ready yet (${errorMsg})`);
+
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+      }
+    }
   }
+
+  console.error(`✗ URL STILL NOT AVAILABLE after ${maxAttempts} attempts (${maxAttempts * intervalMs / 1000}s total)`);
+  console.error(`   This means Vercel deployment is taking too long or failed.`);
+  return false;
 }
 
 // Get WhatsApp connection status
@@ -28,32 +44,50 @@ router.get('/status', (req, res) => {
 // Initialize WhatsApp connection and get QR code
 router.post('/connect', async (req, res) => {
   try {
+    console.log('=== WHATSAPP CONNECT REQUEST ===');
+
+    // Check current status
+    const statusBefore = whatsappService.getStatus();
+    console.log('Status before initialization:', JSON.stringify(statusBefore));
+
     // Initialize if not already initialized
-    if (!whatsappService.getStatus().isInitialized) {
+    if (!statusBefore.isInitialized) {
+      console.log('Client not initialized, calling initialize()...');
       whatsappService.initialize();
+      console.log('Initialize() called successfully');
+    } else {
+      console.log('Client already initialized, skipping initialization');
     }
 
     // Get QR code
+    console.log('Requesting QR code...');
     const qrCode = await whatsappService.getQRCode();
+    console.log('QR code result:', qrCode ? 'QR code received' : 'No QR code (null)');
 
     if (!qrCode) {
       // Already authenticated or timeout
       const status = whatsappService.getStatus();
+      console.log('No QR code - checking status:', JSON.stringify(status));
+
       if (status.isReady) {
+        console.log('Already authenticated and ready');
         return res.json({
           success: true,
           message: 'כבר מחובר לוואטסאפ',
           isReady: true
         });
       } else {
+        console.log('Timeout or error - QR code not generated');
         return res.status(408).json({
           error: 'נסה שוב - לא הצלחנו ליצור קוד QR'
         });
       }
     }
 
+    console.log('Sending QR code to client');
     res.json({ qrCode });
   } catch (error) {
+    console.error('Error in /connect endpoint:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -177,10 +211,16 @@ router.post('/send-bulk', async (req, res) => {
         });
         console.log(`HTML generated successfully: ${htmlUrl}`);
 
-        // Shorten the URL for better WhatsApp compatibility
-        console.log('Shortening URL...');
-        const shortUrl = await shortenUrl(htmlUrl);
-        console.log(`URL shortened: ${shortUrl}`);
+        // Wait for URL to become available on Vercel
+        console.log('⏳ Waiting for Vercel deployment to complete...');
+        const isAvailable = await waitForUrlAvailable(htmlUrl);
+
+        if (!isAvailable) {
+          console.error(`Failed to deploy for employee ${name}`);
+          throw new Error('הדף לא עלה ל-Vercel. ייתכן שה-deployment נכשל או לוקח יותר מדי זמן. בדוק את הלוגים של Vercel.');
+        }
+
+        console.log('✓ Vercel deployment confirmed, proceeding with WhatsApp send');
 
         // Build message with all tasks
         let message = `שלום ${name},\n\n`;
@@ -201,9 +241,9 @@ router.post('/send-bulk', async (req, res) => {
         await whatsappService.sendMessage(phone, message);
         console.log('Task list message sent successfully');
 
-        // Send the shortened link as a separate message to ensure it's clickable
+        // Send the link as a separate message to ensure it's clickable
         console.log('Sending link message...');
-        await whatsappService.sendMessage(phone, shortUrl);
+        await whatsappService.sendMessage(phone, htmlUrl);
         console.log('Link message sent successfully');
 
         results.push({

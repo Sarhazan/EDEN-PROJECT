@@ -536,11 +536,19 @@ router.put('/:id/status', (req, res) => {
 
     // Update current task status
     // If status is 'sent', also update sent_at timestamp
+    // If status is 'completed', also update completed_at timestamp
     if (status === 'sent') {
       const timestamp = getCurrentTimestampIsrael();
       db.prepare(`
         UPDATE tasks
         SET status = ?, sent_at = ?, updated_at = ?
+        WHERE id = ?
+      `).run(status, timestamp, timestamp, req.params.id);
+    } else if (status === 'completed') {
+      const timestamp = getCurrentTimestampIsrael();
+      db.prepare(`
+        UPDATE tasks
+        SET status = ?, completed_at = COALESCE(completed_at, ?), updated_at = ?
         WHERE id = ?
       `).run(status, timestamp, timestamp, req.params.id);
     } else {

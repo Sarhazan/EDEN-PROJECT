@@ -37,7 +37,27 @@
       "Bash(set NODE_ENV=development)",
       "Bash(npm run dev:server:*)",
       "Bash(choco install:*)",
-      "Bash(git --version:*)"
+      "Bash(git --version:*)",
+      "Bash(gh api:*)",
+      "Bash(ls:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git ls-files:*)",
+      "Bash(vercel login)",
+      "Bash(vercel:*)",
+      "Bash(gh repo view:*)",
+      "Bash(npm start)",
+      "Skill(frontend-design)",
+      "Skill(frontend-design:*)",
+      "WebSearch",
+      "mcp__plugin_playwright_playwright__browser_run_code",
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "mcp__plugin_playwright_playwright__browser_type",
+      "Bash(start \"\" \"c:\\\\dev\\\\projects\\\\claude projects\\\\eden claude\\\\docs\\\\task-09510f5e00f2d48233a1fd0b69e15bfac339e6837e6ad24d8b437550b039c01e.html\")",
+      "Bash(python -m http.server:*)",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_select_option",
+      "mcp__plugin_playwright_playwright__browser_tabs"
     ],
     "additionalDirectories": [
       "c:\\dev\\projects\\claude projects\\eden claude"

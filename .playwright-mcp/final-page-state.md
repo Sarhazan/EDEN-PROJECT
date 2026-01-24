@@ -1,0 +1,653 @@
+### Page state
+- Page URL: http://localhost:5184/
+- Page Title: מערכת ניהול תחזוקה
+- Page Snapshot:
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - heading "ניהול תחזוקה" [level=1] [ref=e6]
+    - navigation [ref=e7]:
+      - link "היום שלי" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - img [ref=e9]
+        - generic [ref=e11]: היום שלי
+      - link "משימות" [ref=e12] [cursor=pointer]:
+        - /url: /tasks
+        - img [ref=e13]
+        - generic [ref=e15]: משימות
+      - link "מערכות" [ref=e16] [cursor=pointer]:
+        - /url: /systems
+        - img [ref=e17]
+        - generic [ref=e19]: מערכות
+      - link "ספקים" [ref=e20] [cursor=pointer]:
+        - /url: /suppliers
+        - img [ref=e21]
+        - generic [ref=e23]: ספקים
+      - link "עובדים" [ref=e24] [cursor=pointer]:
+        - /url: /employees
+        - img [ref=e25]
+        - generic [ref=e27]: עובדים
+      - link "מיקומים" [ref=e28] [cursor=pointer]:
+        - /url: /locations
+        - img [ref=e29]
+        - generic [ref=e31]: מיקומים
+      - link "הגדרות" [ref=e32] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e33]
+        - generic [ref=e35]: הגדרות
+    - generic [ref=e39]: מחובר
+  - generic [ref=e40]:
+    - button "טען נתוני דמה" [ref=e41] [cursor=pointer]
+    - button "נקה נתונים" [ref=e42] [cursor=pointer]
+  - main [ref=e43]:
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - heading "היום שלי" [level=1] [ref=e48]
+            - generic [ref=e146]: "משימות למחר: 6"
+            - generic [ref=e147]: "משימות באיחור: 3"
+          - paragraph [ref=e49]: יום חמישי, 22/01/2026
+        - generic [ref=e50]:
+          - button "היום" [ref=e51] [cursor=pointer]
+          - button "←" [ref=e52] [cursor=pointer]
+          - textbox [ref=e55]: 22/01/2026
+          - button "→" [disabled] [ref=e56]
+      - generic [ref=e57]:
+        - generic [ref=e59]:
+          - img [ref=e60]
+          - generic [ref=e62]:
+            - generic [ref=e63]: "14"
+            - generic [ref=e64]: משימות להיום
+        - generic [ref=e65]:
+          - generic [ref=e66]: לפי עדיפות
+          - generic [ref=e67]:
+            - generic [ref=e148]:
+              - generic [ref=e151]: "4"
+              - generic [ref=e152]: דחוף
+            - generic [ref=e153]:
+              - generic [ref=e156]: "8"
+              - generic [ref=e157]: רגיל
+            - generic [ref=e158]:
+              - generic [ref=e161]: "2"
+              - generic [ref=e162]: נמוכה
+        - generic [ref=e68]:
+          - generic [ref=e69]: לפי מערכת
+          - generic [ref=e70]:
+            - generic [ref=e163]:
+              - generic [ref=e166]: "2"
+              - generic "אבטחה" [ref=e167]
+            - generic [ref=e168]:
+              - generic [ref=e171]: "2"
+              - generic "אינסטלציה" [ref=e172]
+            - generic [ref=e173]:
+              - generic [ref=e176]: "3"
+              - generic "גינון" [ref=e177]
+            - generic [ref=e178]:
+              - generic [ref=e181]: "2"
+              - generic "חשמל" [ref=e182]
+            - generic [ref=e183]:
+              - generic [ref=e186]: "2"
+              - generic "מיזוג אוויר" [ref=e187]
+            - generic [ref=e188]:
+              - generic [ref=e191]: "3"
+              - generic [ref=e192]: כללי
+        - generic [ref=e71]:
+          - generic [ref=e72]: לפי סטטוס
+          - generic [ref=e73]:
+            - generic [ref=e193]:
+              - generic [ref=e196]: "11"
+              - generic [ref=e197]: חדש
+            - generic [ref=e198]:
+              - generic [ref=e201]: "2"
+              - generic [ref=e202]: נשלח
+            - generic [ref=e203]:
+              - generic [ref=e206]: "1"
+              - generic [ref=e207]: בביצוע
+            - generic [ref=e760]:
+              - generic [ref=e763]: "1"
+              - generic [ref=e764]: הושלם
+      - generic [ref=e74]:
+        - heading "משימות לשבוע הקרוב" [level=3] [ref=e75]
+        - generic [ref=e76]:
+          - generic [ref=e77] [cursor=pointer]:
+            - generic [ref=e79]: "9"
+            - generic [ref=e80]:
+              - generic [ref=e81]: יום ה׳
+              - generic [ref=e82]: 22/01
+          - generic [ref=e83] [cursor=pointer]:
+            - generic [ref=e85]: "3"
+            - generic [ref=e86]:
+              - generic [ref=e87]: יום ו׳
+              - generic [ref=e88]: 23/01
+          - generic [ref=e89] [cursor=pointer]:
+            - generic [ref=e91]: "2"
+            - generic [ref=e92]:
+              - generic [ref=e93]: שבת
+              - generic [ref=e94]: 24/01
+          - generic [ref=e95] [cursor=pointer]:
+            - generic [ref=e97]: "3"
+            - generic [ref=e98]:
+              - generic [ref=e99]: יום א׳
+              - generic [ref=e100]: 25/01
+          - generic [ref=e101] [cursor=pointer]:
+            - generic [ref=e103]: "2"
+            - generic [ref=e104]:
+              - generic [ref=e105]: יום ב׳
+              - generic [ref=e106]: 26/01
+          - generic [ref=e107] [cursor=pointer]:
+            - generic [ref=e109]: "2"
+            - generic [ref=e110]:
+              - generic [ref=e111]: יום ג׳
+              - generic [ref=e112]: 27/01
+          - generic [ref=e113] [cursor=pointer]:
+            - generic [ref=e115]: "2"
+            - generic [ref=e116]:
+              - generic [ref=e117]: יום ד׳
+              - generic [ref=e118]: 28/01
+      - generic [ref=e119]:
+        - generic [ref=e120]:
+          - heading "התקדמות משימות היום" [level=3] [ref=e121]
+          - generic [ref=e122]: 1 מתוך 14 הושלמו
+        - paragraph [ref=e124]: 7%
+      - generic [ref=e125]:
+        - generic [ref=e127]:
+          - generic [ref=e128]:
+            - heading "משימות לביצוע (11)" [level=2] [ref=e766]
+            - button "שלח כל המשימות" [ref=e130] [cursor=pointer]:
+              - img [ref=e131]
+              - generic [ref=e133]: שלח כל המשימות
+          - combobox [ref=e135]:
+            - option "כל המשימות" [selected]
+            - option "סנן לפי עדיפות"
+            - option "סנן לפי מערכת"
+            - option "סנן לפי סטטוס"
+            - option "סנן לפי עובד"
+          - generic [ref=e136]:
+            - generic [ref=e217]:
+              - checkbox [ref=e219] [cursor=pointer]
+              - generic [ref=e220]:
+                - generic [ref=e221]:
+                  - heading "בדיקת מצלמות אבטחה" [level=3] [ref=e222]
+                  - generic [ref=e223]:
+                    - button "ערוך" [ref=e224] [cursor=pointer]:
+                      - img [ref=e225]
+                    - button "מחק" [ref=e227] [cursor=pointer]:
+                      - img [ref=e228]
+                - paragraph [ref=e230]: בדיקת תקינות כל מצלמות האבטחה והקלטה
+                - generic [ref=e231]:
+                  - generic [ref=e232]: דחוף
+                  - generic [ref=e233]: חדש
+                  - generic [ref=e234]: אבטחה
+                  - generic [ref=e235]:
+                    - img [ref=e236]
+                    - text: שבועי
+                - generic [ref=e238]:
+                  - generic [ref=e239]:
+                    - generic [ref=e240]:
+                      - generic [ref=e241]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e242]:
+                      - generic [ref=e243]: 🕐
+                      - text: 07:30
+                  - generic [ref=e244] [cursor=pointer]:
+                    - generic [ref=e245]: 👤
+                    - text: דוד כהן
+            - generic [ref=e247]:
+              - checkbox [ref=e249] [cursor=pointer]
+              - generic [ref=e250]:
+                - generic [ref=e251]:
+                  - heading "ניקוי שירותים" [level=3] [ref=e252]
+                  - generic [ref=e253]:
+                    - button "ערוך" [ref=e254] [cursor=pointer]:
+                      - img [ref=e255]
+                    - button "מחק" [ref=e257] [cursor=pointer]:
+                      - img [ref=e258]
+                - paragraph [ref=e260]: ניקוי יומי של כל השירותים במבנה
+                - generic [ref=e261]:
+                  - generic [ref=e262]: רגיל
+                  - generic [ref=e263]: בביצוע
+                  - generic [ref=e264]: אינסטלציה
+                  - generic [ref=e265]:
+                    - img [ref=e266]
+                    - text: יומי
+                - generic [ref=e268]:
+                  - generic [ref=e269]:
+                    - generic [ref=e270]:
+                      - generic [ref=e271]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e272]:
+                      - generic [ref=e273]: 🕐
+                      - text: 08:00
+                  - generic [ref=e274] [cursor=pointer]:
+                    - generic [ref=e275]: 👤
+                    - text: מיכל ישראלי
+            - generic [ref=e277]:
+              - checkbox [ref=e279] [cursor=pointer]
+              - generic [ref=e280]:
+                - generic [ref=e281]:
+                  - heading "בדיקת מערכות מיזוג" [level=3] [ref=e282]
+                  - generic [ref=e283]:
+                    - button "ערוך" [ref=e284] [cursor=pointer]:
+                      - img [ref=e285]
+                    - button "מחק" [ref=e287] [cursor=pointer]:
+                      - img [ref=e288]
+                - paragraph [ref=e290]: בדיקה חודשית של כל מערכות המיזוג בקומות 1-5
+                - generic [ref=e291]:
+                  - generic [ref=e292]: דחוף
+                  - generic [ref=e293]: מיזוג אוויר
+                  - generic [ref=e294]:
+                    - img [ref=e295]
+                    - text: חודשי
+                - generic [ref=e297]:
+                  - generic [ref=e298]:
+                    - generic [ref=e299]:
+                      - generic [ref=e300]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e301]:
+                      - generic [ref=e302]: 🕐
+                      - text: 09:00
+                  - generic [ref=e303] [cursor=pointer]:
+                    - generic [ref=e304]: 👤
+                    - text: דוד כהן
+            - generic [ref=e306]:
+              - checkbox [ref=e308] [cursor=pointer]
+              - generic [ref=e309]:
+                - generic [ref=e310]:
+                  - heading "בדיקת פילטרים" [level=3] [ref=e311]
+                  - generic [ref=e312]:
+                    - button "ערוך" [ref=e313] [cursor=pointer]:
+                      - img [ref=e314]
+                    - button "מחק" [ref=e316] [cursor=pointer]:
+                      - img [ref=e317]
+                - paragraph [ref=e319]: החלפת פילטרים במערכת המיזוג - קומות 2,3,4
+                - generic [ref=e320]:
+                  - generic [ref=e321]: רגיל
+                  - generic [ref=e322]: חדש
+                  - generic [ref=e323]: מיזוג אוויר
+                  - generic [ref=e324]:
+                    - img [ref=e325]
+                    - text: שבועי
+                - generic [ref=e327]:
+                  - generic [ref=e328]:
+                    - generic [ref=e329]:
+                      - generic [ref=e330]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e331]:
+                      - generic [ref=e332]: 🕐
+                      - text: 10:30
+                  - generic [ref=e333] [cursor=pointer]:
+                    - generic [ref=e334]: 👤
+                    - text: אבי דוד
+            - generic [ref=e336]:
+              - checkbox [ref=e338] [cursor=pointer]
+              - generic [ref=e339]:
+                - generic [ref=e340]:
+                  - heading "בדיקת לחץ מים" [level=3] [ref=e341]
+                  - generic [ref=e342]:
+                    - button "ערוך" [ref=e343] [cursor=pointer]:
+                      - img [ref=e344]
+                    - button "מחק" [ref=e346] [cursor=pointer]:
+                      - img [ref=e347]
+                - paragraph [ref=e349]: בדיקת לחץ מים בקומות העליונות
+                - generic [ref=e350]:
+                  - generic [ref=e351]: רגיל
+                  - generic [ref=e352]: חדש
+                  - generic [ref=e353]: אינסטלציה
+                  - generic [ref=e354]: חד-פעמי
+                - generic [ref=e355]:
+                  - generic [ref=e356]:
+                    - generic [ref=e357]:
+                      - generic [ref=e358]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e359]:
+                      - generic [ref=e360]: 🕐
+                      - text: 12:00
+                  - generic [ref=e361] [cursor=pointer]:
+                    - generic [ref=e362]: 👤
+                    - text: שרה לוי
+            - generic [ref=e399]:
+              - checkbox [ref=e401] [cursor=pointer]
+              - generic [ref=e402]:
+                - generic [ref=e403]:
+                  - heading "בדיקת נורות בקומה 3" [level=3] [ref=e404]
+                  - generic [ref=e405]:
+                    - button "שלח משימה בוואטסאפ" [ref=e406] [cursor=pointer]:
+                      - img [ref=e407]
+                    - button "ערוך" [ref=e409] [cursor=pointer]:
+                      - img [ref=e410]
+                    - button "מחק" [ref=e412] [cursor=pointer]:
+                      - img [ref=e413]
+                - paragraph [ref=e415]: החלפת נורות שרופות בקומה השלישית - חדר מדרגות
+                - generic [ref=e416]:
+                  - generic [ref=e417]: רגיל
+                  - generic [ref=e418]: חדש
+                  - generic [ref=e419]: חשמל
+                  - generic [ref=e420]: חד-פעמי
+                - generic [ref=e421]:
+                  - generic [ref=e422]:
+                    - generic [ref=e423]:
+                      - generic [ref=e424]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e425]:
+                      - generic [ref=e426]: 🕐
+                      - text: 14:00
+                  - generic [ref=e427] [cursor=pointer]:
+                    - generic [ref=e428]: 👤
+                    - text: יוסי אברהם
+            - generic [ref=e430]:
+              - checkbox [ref=e432] [cursor=pointer]
+              - generic [ref=e433]:
+                - generic [ref=e434]:
+                  - heading "השקיה אוטומטית" [level=3] [ref=e435]
+                  - generic [ref=e436]:
+                    - button "שלח משימה בוואטסאפ" [ref=e437] [cursor=pointer]:
+                      - img [ref=e438]
+                    - button "ערוך" [ref=e440] [cursor=pointer]:
+                      - img [ref=e441]
+                    - button "מחק" [ref=e443] [cursor=pointer]:
+                      - img [ref=e444]
+                - paragraph [ref=e446]: בדיקת מערכת השקיה בגינה הקדמית
+                - generic [ref=e447]:
+                  - generic [ref=e448]: רגיל
+                  - generic [ref=e449]: חדש
+                  - generic [ref=e450]: גינון
+                  - generic [ref=e451]:
+                    - img [ref=e452]
+                    - text: יומי
+                - generic [ref=e454]:
+                  - generic [ref=e455]:
+                    - generic [ref=e456]:
+                      - generic [ref=e457]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e458]:
+                      - generic [ref=e459]: 🕐
+                      - text: 15:00
+                  - generic [ref=e460] [cursor=pointer]:
+                    - generic [ref=e461]: 👤
+                    - text: עדן קנדי
+            - generic [ref=e463]:
+              - checkbox [ref=e465] [cursor=pointer]
+              - generic [ref=e466]:
+                - generic [ref=e467]:
+                  - heading "ניקוי גינה קדמית" [level=3] [ref=e468]
+                  - generic [ref=e469]:
+                    - button "שלח משימה בוואטסאפ" [ref=e470] [cursor=pointer]:
+                      - img [ref=e471]
+                    - button "ערוך" [ref=e473] [cursor=pointer]:
+                      - img [ref=e474]
+                    - button "מחק" [ref=e476] [cursor=pointer]:
+                      - img [ref=e477]
+                - paragraph [ref=e479]: הסרת עלים ופסולת מהגינה הקדמית
+                - generic [ref=e480]:
+                  - generic [ref=e481]: עדיפות נמוכה
+                  - generic [ref=e482]: חדש
+                  - generic [ref=e483]: גינון
+                  - generic [ref=e484]: חד-פעמי
+                - generic [ref=e485]:
+                  - generic [ref=e486]:
+                    - generic [ref=e487]:
+                      - generic [ref=e488]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e489]:
+                      - generic [ref=e490]: 🕐
+                      - text: 15:00
+                  - generic [ref=e491] [cursor=pointer]:
+                    - generic [ref=e492]: 👤
+                    - text: אבי דוד
+            - generic [ref=e494]:
+              - checkbox [ref=e496] [cursor=pointer]
+              - generic [ref=e497]:
+                - generic [ref=e498]:
+                  - heading "בדיקת גינה אחורית" [level=3] [ref=e499]
+                  - generic [ref=e500]:
+                    - button "שלח משימה בוואטסאפ" [ref=e501] [cursor=pointer]:
+                      - img [ref=e502]
+                    - button "ערוך" [ref=e504] [cursor=pointer]:
+                      - img [ref=e505]
+                    - button "מחק" [ref=e507] [cursor=pointer]:
+                      - img [ref=e508]
+                - paragraph [ref=e510]: בדיקה והסרת פסולת בגינה האחורית
+                - generic [ref=e511]:
+                  - generic [ref=e512]: עדיפות נמוכה
+                  - generic [ref=e513]: חדש
+                  - generic [ref=e514]: גינון
+                  - generic [ref=e515]: חד-פעמי
+                - generic [ref=e516]:
+                  - generic [ref=e517]:
+                    - generic [ref=e518]:
+                      - generic [ref=e519]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e520]:
+                      - generic [ref=e521]: 🕐
+                      - text: 15:30
+                  - generic [ref=e522] [cursor=pointer]:
+                    - generic [ref=e523]: 👤
+                    - text: עדן קנדי
+            - generic [ref=e525]:
+              - checkbox [ref=e527] [cursor=pointer]
+              - generic [ref=e528]:
+                - generic [ref=e529]:
+                  - heading "תיקון נורה בלובי" [level=3] [ref=e530]
+                  - generic [ref=e531]:
+                    - button "שלח משימה בוואטסאפ" [ref=e532] [cursor=pointer]:
+                      - img [ref=e533]
+                    - button "ערוך" [ref=e535] [cursor=pointer]:
+                      - img [ref=e536]
+                    - button "מחק" [ref=e538] [cursor=pointer]:
+                      - img [ref=e539]
+                - paragraph [ref=e541]: החלפת נורה שרופה בלובי הראשי
+                - generic [ref=e542]:
+                  - generic [ref=e543]: רגיל
+                  - generic [ref=e544]: חדש
+                  - generic [ref=e545]: חשמל
+                  - generic [ref=e546]: חד-פעמי
+                - generic [ref=e547]:
+                  - generic [ref=e548]:
+                    - generic [ref=e549]:
+                      - generic [ref=e550]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e551]:
+                      - generic [ref=e552]: 🕐
+                      - text: 16:00
+                  - generic [ref=e553] [cursor=pointer]:
+                    - generic [ref=e554]: 👤
+                    - text: יוסי אברהם
+            - generic [ref=e556]:
+              - checkbox [ref=e558] [cursor=pointer]
+              - generic [ref=e559]:
+                - generic [ref=e560]:
+                  - heading "בדיקת מנעול שער חניון" [level=3] [ref=e561]
+                  - generic [ref=e562]:
+                    - button "שלח משימה בוואטסאפ" [ref=e563] [cursor=pointer]:
+                      - img [ref=e564]
+                    - button "ערוך" [ref=e566] [cursor=pointer]:
+                      - img [ref=e567]
+                    - button "מחק" [ref=e569] [cursor=pointer]:
+                      - img [ref=e570]
+                - paragraph [ref=e572]: בדיקת תקינות מנעול השער החשמלי
+                - generic [ref=e573]:
+                  - generic [ref=e574]: רגיל
+                  - generic [ref=e575]: חדש
+                  - generic [ref=e576]: אבטחה
+                  - generic [ref=e577]: חד-פעמי
+                - generic [ref=e578]:
+                  - generic [ref=e579]:
+                    - generic [ref=e580]:
+                      - generic [ref=e581]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e582]:
+                      - generic [ref=e583]: 🕐
+                      - text: 18:00
+                  - generic [ref=e584] [cursor=pointer]:
+                    - generic [ref=e585]: 👤
+                    - text: דוד כהן
+        - generic [ref=e139]:
+          - heading "משימות כלליות (3)" [level=2] [ref=e586]
+          - generic [ref=e141]:
+            - generic [ref=e588]:
+              - checkbox [ref=e590] [cursor=pointer]
+              - generic [ref=e591]:
+                - generic [ref=e592]:
+                  - heading "ניקוי חדר מדרגות א" [level=3] [ref=e593]
+                  - generic [ref=e594]:
+                    - button "ערוך" [ref=e595] [cursor=pointer]:
+                      - img [ref=e596]
+                    - button "מחק" [ref=e598] [cursor=pointer]:
+                      - img [ref=e599]
+                - paragraph [ref=e601]: ניקוי יומי של חדר מדרגות א
+                - generic [ref=e602]:
+                  - generic [ref=e603]: רגיל
+                  - generic [ref=e604]: חדש
+                  - generic [ref=e605]: חד-פעמי
+                - generic [ref=e606]:
+                  - generic [ref=e607]:
+                    - generic [ref=e608]:
+                      - generic [ref=e609]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e610]:
+                      - generic [ref=e611]: 🕐
+                      - text: 08:30
+                  - generic [ref=e612] [cursor=pointer]:
+                    - generic [ref=e613]: 👤
+                    - text: מיכל ישראלי
+            - generic [ref=e615]:
+              - checkbox [ref=e617] [cursor=pointer]
+              - generic [ref=e618]:
+                - generic [ref=e619]:
+                  - heading "תיקון דלת כניסה" [level=3] [ref=e620]
+                  - generic [ref=e621]:
+                    - button "ערוך" [ref=e622] [cursor=pointer]:
+                      - img [ref=e623]
+                    - button "מחק" [ref=e625] [cursor=pointer]:
+                      - img [ref=e626]
+                - paragraph [ref=e628]: תיקון מנגנון סגירה של דלת הכניסה הראשית
+                - generic [ref=e629]:
+                  - generic [ref=e630]: דחוף
+                  - generic [ref=e631]: חד-פעמי
+                - generic [ref=e632]:
+                  - generic [ref=e633]:
+                    - generic [ref=e634]:
+                      - generic [ref=e635]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e636]:
+                      - generic [ref=e637]: 🕐
+                      - text: 11:00
+                  - generic [ref=e638] [cursor=pointer]:
+                    - generic [ref=e639]: 👤
+                    - text: דוד כהן
+            - generic [ref=e641]:
+              - checkbox [ref=e643] [cursor=pointer]
+              - generic [ref=e644]:
+                - generic [ref=e645]:
+                  - heading "בדיקת מעקות בגג" [level=3] [ref=e646]
+                  - generic [ref=e647]:
+                    - button "שלח משימה בוואטסאפ" [ref=e648] [cursor=pointer]:
+                      - img [ref=e649]
+                    - button "ערוך" [ref=e651] [cursor=pointer]:
+                      - img [ref=e652]
+                    - button "מחק" [ref=e654] [cursor=pointer]:
+                      - img [ref=e655]
+                - paragraph [ref=e657]: בדיקת תקינות מעקות הבטיחות בגג
+                - generic [ref=e658]:
+                  - generic [ref=e659]: דחוף
+                  - generic [ref=e660]: חדש
+                  - generic [ref=e661]: חד-פעמי
+                - generic [ref=e662]:
+                  - generic [ref=e663]:
+                    - generic [ref=e664]:
+                      - generic [ref=e665]: 📅
+                      - text: 22/01/2026
+                    - generic [ref=e666]:
+                      - generic [ref=e667]: 🕐
+                      - text: 17:00
+                  - generic [ref=e668] [cursor=pointer]:
+                    - generic [ref=e669]: 👤
+                    - text: דוד כהן
+          - heading "משימות באיחור" [level=3] [ref=e671]
+          - generic [ref=e672]:
+            - generic [ref=e675]:
+              - checkbox [ref=e677] [cursor=pointer]
+              - generic [ref=e678]:
+                - generic [ref=e679]:
+                  - heading "תיקון ברז דולף" [level=3] [ref=e680]
+                  - generic [ref=e681]:
+                    - button "ערוך" [ref=e682] [cursor=pointer]:
+                      - img [ref=e683]
+                    - button "מחק" [ref=e685] [cursor=pointer]:
+                      - img [ref=e686]
+                - paragraph [ref=e688]: תיקון ברז דולף בשירותי קומה 2 - דחוף!
+                - generic [ref=e689]:
+                  - generic [ref=e690]: דחוף
+                  - generic [ref=e691]: חדש
+                  - generic [ref=e692]: אינסטלציה
+                  - generic [ref=e693]: חד-פעמי
+                - generic [ref=e694]:
+                  - generic [ref=e695]:
+                    - generic [ref=e696]:
+                      - generic [ref=e697]: 📅
+                      - text: 21/01/2026
+                    - generic [ref=e698]:
+                      - generic [ref=e699]: 🕐
+                      - text: 09:00
+                  - generic [ref=e700] [cursor=pointer]:
+                    - generic [ref=e701]: 👤
+                    - text: שרה לוי
+            - generic [ref=e704]:
+              - checkbox [ref=e706] [cursor=pointer]
+              - generic [ref=e707]:
+                - generic [ref=e708]:
+                  - heading "החלפת סוללות גלאי עשן" [level=3] [ref=e709]
+                  - generic [ref=e710]:
+                    - button "ערוך" [ref=e711] [cursor=pointer]:
+                      - img [ref=e712]
+                    - button "מחק" [ref=e714] [cursor=pointer]:
+                      - img [ref=e715]
+                - paragraph [ref=e717]: החלפת סוללות בגלאי עשן קומה 4
+                - generic [ref=e718]:
+                  - generic [ref=e719]: דחוף
+                  - generic [ref=e720]: חדש
+                  - generic [ref=e721]: כיבוי אש
+                  - generic [ref=e722]: חד-פעמי
+                - generic [ref=e723]:
+                  - generic [ref=e724]:
+                    - generic [ref=e725]:
+                      - generic [ref=e726]: 📅
+                      - text: 21/01/2026
+                    - generic [ref=e727]:
+                      - generic [ref=e728]: 🕐
+                      - text: 10:00
+                  - generic [ref=e729] [cursor=pointer]:
+                    - generic [ref=e730]: 👤
+                    - text: דוד כהן
+            - generic [ref=e733]:
+              - checkbox [ref=e735] [cursor=pointer]
+              - generic [ref=e736]:
+                - generic [ref=e737]:
+                  - heading "בדיקת לוח חשמל" [level=3] [ref=e738]
+                  - generic [ref=e739]:
+                    - button "ערוך" [ref=e740] [cursor=pointer]:
+                      - img [ref=e741]
+                    - button "מחק" [ref=e743] [cursor=pointer]:
+                      - img [ref=e744]
+                - paragraph [ref=e746]: בדיקת חיבורים בלוח החשמל הראשי בחדר מכונות
+                - generic [ref=e747]:
+                  - generic [ref=e748]: רגיל
+                  - generic [ref=e749]: חדש
+                  - generic [ref=e750]: חשמל
+                  - generic [ref=e751]: חד-פעמי
+                - generic [ref=e752]:
+                  - generic [ref=e753]:
+                    - generic [ref=e754]:
+                      - generic [ref=e755]: 📅
+                      - text: 21/01/2026
+                    - generic [ref=e756]:
+                      - generic [ref=e757]: 🕐
+                      - text: 15:00
+                  - generic [ref=e758] [cursor=pointer]:
+                    - generic [ref=e759]: 👤
+                    - text: יוסי אברהם
+  - button "הוסף משימה" [ref=e143] [cursor=pointer]:
+    - img [ref=e144]
+    - generic: הוסף משימה
+```

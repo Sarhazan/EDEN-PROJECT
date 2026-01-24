@@ -6,8 +6,10 @@ class HtmlGeneratorService {
   constructor() {
     this.templatePath = path.join(__dirname, '..', 'templates', 'task-confirmation.html');
     this.outputDir = path.join(__dirname, '..', '..', 'docs');
-    // Use Vercel URL if available, fallback to GitHub Pages
-    this.baseUrl = process.env.VERCEL_PROJECT_URL || 'https://sarhazan.github.io/EDEN-PROJECT';
+    // For local testing, serve from local server
+    // For production, use Vercel or ngrok URL
+    const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://localhost:3002';
+    this.baseUrl = process.env.VERCEL_PROJECT_URL || `${apiUrl}/docs`;
   }
 
   /**
@@ -43,10 +45,11 @@ class HtmlGeneratorService {
       fs.writeFileSync(filepath, html, 'utf8');
       console.log('HTML file written:', filepath);
 
-      // Commit and push to GitHub
-      await this.pushToGitHub(filename);
+      // Skip git operations for local testing - just serve directly
+      // For production, uncomment this:
+      // await this.pushToGitHub(filename);
 
-      // Return public URL
+      // Return local URL (served directly from Express static middleware)
       const publicUrl = `${this.baseUrl}/${filename}`;
       console.log('Generated URL:', publicUrl);
       return publicUrl;

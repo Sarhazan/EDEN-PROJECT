@@ -139,3 +139,16 @@ html {
     scroll-behavior: auto !important;
   }
 }
+
+/* Pending approval tasks - strikethrough styling */
+.task-pending-approval {
+  position: relative;
+}
+
+.task-pending-approval .task-title,
+.task-pending-approval .task-description {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: #9CA3AF;
+  opacity: 0.7;
+}
