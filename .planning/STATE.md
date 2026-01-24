@@ -125,8 +125,9 @@ Phase 5: Multi-Language Support [█████░░░░░] 4/8 ⏳ IN PROG
 
 ### Pending Todos
 
-1 todo captured for future work (see `.planning/todos/pending/`):
+2 todos captured for future work (see `.planning/todos/pending/`):
 - Deploy to GitHub (deployment)
+- Use consistent port for entire project (infrastructure)
 
 ### Known Blockers
 
