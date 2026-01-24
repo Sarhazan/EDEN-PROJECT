@@ -3,6 +3,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 const i18n = require('./i18n');
 const { db } = require('../database/schema');
+const translationService = require('./translation');
 
 class HtmlGeneratorService {
   constructor() {
@@ -12,6 +13,52 @@ class HtmlGeneratorService {
     // For production, use Vercel or ngrok URL
     const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://localhost:3002';
     this.baseUrl = process.env.VERCEL_PROJECT_URL || `${apiUrl}/docs`;
+  }
+
+  /**
+   * Translate task content from Hebrew to target language
+   * @param {Array} tasks - Array of task objects
+   * @param {string} targetLanguage - Target language code (en, ru, ar)
+   * @returns {Promise<Array>} - Array of tasks with translated content
+   * @private
+   */
+  async _translateTasks(tasks, targetLanguage) {
+    if (targetLanguage === 'he' || !tasks || tasks.length === 0) {
+      return tasks; // No translation needed for Hebrew or empty tasks
+    }
+
+    console.log(`Translating ${tasks.length} tasks from Hebrew to ${targetLanguage}...`);
+    const translatedTasks = [];
+
+    for (const task of tasks) {
+      const translatedTask = { ...task };
+
+      // Translate title
+      if (task.title) {
+        const titleResult = await translationService.translateFromHebrew(task.title, targetLanguage);
+        translatedTask.title = titleResult.translation;
+        console.log(`  - Title: "${task.title}" → "${translatedTask.title}" (${titleResult.provider})`);
+      }
+
+      // Translate description
+      if (task.description) {
+        const descResult = await translationService.translateFromHebrew(task.description, targetLanguage);
+        translatedTask.description = descResult.translation;
+        console.log(`  - Desc: "${task.description.substring(0, 40)}..." → "${translatedTask.description.substring(0, 40)}..." (${descResult.provider})`);
+      }
+
+      // Translate system name
+      if (task.system_name) {
+        const systemResult = await translationService.translateFromHebrew(task.system_name, targetLanguage);
+        translatedTask.system_name = systemResult.translation;
+        console.log(`  - System: "${task.system_name}" → "${translatedTask.system_name}" (${systemResult.provider})`);
+      }
+
+      translatedTasks.push(translatedTask);
+    }
+
+    console.log(`✓ Translated all ${tasks.length} tasks successfully`);
+    return translatedTasks;
   }
 
   /**
@@ -86,6 +133,9 @@ class HtmlGeneratorService {
         TEXT_DIRECTION: textDirection
       };
 
+      // Translate task content if language is not Hebrew
+      const tasksToInject = await this._translateTasks(data.tasks, language);
+
       // Replace translation placeholders
       let html = template;
       Object.keys(translations).forEach(key => {
@@ -98,7 +148,7 @@ class HtmlGeneratorService {
         .replace(/\{\{API_URL\}\}/g, apiUrl)
         .replace(/\{\{TOKEN\}\}/g, data.token)
         .replace(/\{\{EMPLOYEE_NAME\}\}/g, data.employeeName)
-        .replace(/\{\{TASKS_JSON\}\}/g, JSON.stringify(data.tasks))
+        .replace(/\{\{TASKS_JSON\}\}/g, JSON.stringify(tasksToInject))
         .replace(/\{\{IS_ACKNOWLEDGED\}\}/g, data.isAcknowledged ? 'true' : 'false')
         .replace(/\{\{ACKNOWLEDGED_AT\}\}/g, data.acknowledgedAt || '');
 

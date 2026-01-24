@@ -50,23 +50,33 @@ class TranslationService {
   }
 
   /**
-   * Translate text to Hebrew using Gemini API
+   * Translate text using Gemini API (supports any language pair)
    * @private
    */
-  async _translateWithGemini(text, sourceLanguage) {
+  async _translateWithGemini(text, sourceLanguage, targetLanguage) {
     if (!this.geminiModel) {
       return null;
     }
 
     try {
-      const prompt = `Translate the following ${sourceLanguage} text to Hebrew. Return ONLY the Hebrew translation, no explanations or additional text:\n\n${text}`;
+      const languageNames = {
+        he: 'Hebrew',
+        en: 'English',
+        ru: 'Russian',
+        ar: 'Arabic'
+      };
+
+      const sourceName = languageNames[sourceLanguage] || sourceLanguage;
+      const targetName = languageNames[targetLanguage] || targetLanguage;
+
+      const prompt = `Translate the following ${sourceName} text to ${targetName}. Return ONLY the ${targetName} translation, no explanations or additional text:\n\n${text}`;
 
       const result = await this.geminiModel.generateContent(prompt);
       const response = await result.response;
       const translation = response.text().trim();
 
       this.stats.gemini.success++;
-      console.log(`✓ Gemini (${sourceLanguage}→he): "${text.substring(0, 40)}..." → "${translation.substring(0, 40)}..."`);
+      console.log(`✓ Gemini (${sourceLanguage}→${targetLanguage}): "${text.substring(0, 40)}..." → "${translation.substring(0, 40)}..."`);
       return { translation, provider: 'gemini' };
     } catch (error) {
       this.stats.gemini.failed++;
@@ -83,10 +93,10 @@ class TranslationService {
   }
 
   /**
-   * Translate text to Hebrew using Google Cloud Translation API
+   * Translate text using Google Cloud Translation API (supports any language pair)
    * @private
    */
-  async _translateWithGoogleTranslate(text, sourceLanguage) {
+  async _translateWithGoogleTranslate(text, sourceLanguage, targetLanguage) {
     if (!this.googleTranslate) {
       return null;
     }
@@ -94,11 +104,11 @@ class TranslationService {
     try {
       const [translation] = await this.googleTranslate.translate(text, {
         from: sourceLanguage,
-        to: 'he'
+        to: targetLanguage
       });
 
       this.stats.googleTranslate.success++;
-      console.log(`✓ Google Translate (${sourceLanguage}→he): "${text.substring(0, 40)}..." → "${translation.substring(0, 40)}..."`);
+      console.log(`✓ Google Translate (${sourceLanguage}→${targetLanguage}): "${text.substring(0, 40)}..." → "${translation.substring(0, 40)}..."`);
       return { translation, provider: 'google-translate' };
     } catch (error) {
       this.stats.googleTranslate.failed++;
@@ -114,22 +124,43 @@ class TranslationService {
    * @returns {Promise<{translation: string, provider: string}>} - Translated text + provider used
    */
   async translateToHebrew(text, sourceLanguage) {
+    return this.translate(text, sourceLanguage, 'he');
+  }
+
+  /**
+   * Translate text from Hebrew to target language (hybrid: tries Gemini, then Google Translate, then original text)
+   * @param {string} text - Text to translate
+   * @param {string} targetLanguage - Target language code (en, ru, ar)
+   * @returns {Promise<{translation: string, provider: string}>} - Translated text + provider used
+   */
+  async translateFromHebrew(text, targetLanguage) {
+    return this.translate(text, 'he', targetLanguage);
+  }
+
+  /**
+   * Translate text between any supported languages (hybrid: tries Gemini, then Google Translate, then original text)
+   * @param {string} text - Text to translate
+   * @param {string} sourceLanguage - Source language code (he, en, ru, ar)
+   * @param {string} targetLanguage - Target language code (he, en, ru, ar)
+   * @returns {Promise<{translation: string, provider: string}>} - Translated text + provider used
+   */
+  async translate(text, sourceLanguage, targetLanguage) {
     if (!text || !text.trim()) {
       return { translation: '', provider: 'none' };
     }
 
-    if (sourceLanguage === 'he') {
-      return { translation: text, provider: 'none' }; // Already Hebrew
+    if (sourceLanguage === targetLanguage) {
+      return { translation: text, provider: 'none' }; // Same language, no translation needed
     }
 
     // Try Gemini API first (FREE)
-    let result = await this._translateWithGemini(text, sourceLanguage);
+    let result = await this._translateWithGemini(text, sourceLanguage, targetLanguage);
     if (result) {
       return result;
     }
 
     // Fallback to Google Cloud Translation API (PAID)
-    result = await this._translateWithGoogleTranslate(text, sourceLanguage);
+    result = await this._translateWithGoogleTranslate(text, sourceLanguage, targetLanguage);
     if (result) {
       return result;
     }
