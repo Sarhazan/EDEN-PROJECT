@@ -68,9 +68,10 @@ export default function HistoryFilters({ filters, employees, systems, locations,
     <div className="bg-white rounded-lg shadow p-4 mb-6">
       <h2 className="font-semibold mb-4">סינון</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* שורה ראשונה: תאריכים וכפתורים */}
+      <div className="flex flex-wrap gap-3 items-end mb-4">
         {/* Start Date */}
-        <div>
+        <div className="flex-1 min-w-[180px]">
           <label className="block text-sm font-medium mb-2">מתאריך</label>
           <DatePicker
             selected={startDate}
@@ -83,7 +84,7 @@ export default function HistoryFilters({ filters, employees, systems, locations,
         </div>
 
         {/* End Date */}
-        <div>
+        <div className="flex-1 min-w-[180px]">
           <label className="block text-sm font-medium mb-2">עד תאריך</label>
           <DatePicker
             selected={endDate}
@@ -96,6 +97,23 @@ export default function HistoryFilters({ filters, employees, systems, locations,
           />
         </div>
 
+        {/* Buttons */}
+        <button
+          onClick={handleApplyFilters}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium whitespace-nowrap"
+        >
+          הצג
+        </button>
+        <button
+          onClick={handleClearAll}
+          className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 underline whitespace-nowrap"
+        >
+          נקה הכל
+        </button>
+      </div>
+
+      {/* שורה שנייה: פילטרים */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Employee Filter */}
         <div>
           <label className="block text-sm font-medium mb-2">עובד</label>
@@ -140,21 +158,6 @@ export default function HistoryFilters({ filters, employees, systems, locations,
             ))}
           </select>
         </div>
-      </div>
-
-      <div className="flex gap-3 mt-4">
-        <button
-          onClick={handleApplyFilters}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-        >
-          הצג
-        </button>
-        <button
-          onClick={handleClearAll}
-          className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 underline"
-        >
-          נקה הכל
-        </button>
       </div>
     </div>
   );
