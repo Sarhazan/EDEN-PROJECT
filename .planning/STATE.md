@@ -10,20 +10,20 @@
 
 ## Current Position
 
-**Phase:** 3 of 4 (Status Tracking & Timing) ✅ COMPLETE
-**Plan:** 3 of 3 - All plans executed and verified
-**Status:** Phase complete, ready for Phase 4
-**Last activity:** 2026-01-24 - Phase 3 verification complete
+**Phase:** 4 of 4 (History & Archive) 🚧 IN PROGRESS
+**Plan:** 1 of 2 - Backend History Infrastructure complete
+**Status:** Phase 4 started, 04-01 complete
+**Last activity:** 2026-01-24 - Completed 04-01-PLAN.md
 
 **Progress:**
 ```
 Milestone: v1 Feature Additions
-[████████████████░░░░] 63% (17/27 requirements)
+[████████████████████] 70% (19/27 requirements)
 
 Phase 1: Real-Time Infrastructure [██████████] 4/4 ✅ COMPLETE
 Phase 2: Enhanced Task Completion [██████████] 5/5 ✅ COMPLETE
 Phase 3: Status Tracking & Timing [██████████] 8/8 ✅ COMPLETE
-Phase 4: History & Archive [░░░░░░░░░░] 0/8
+Phase 4: History & Archive [███░░░░░░░] 2/8 (04-01 complete)
 ```
 
 ## Performance Metrics
@@ -32,10 +32,10 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 
 | Metric | Value |
 |--------|-------|
-| Requirements completed | 17/27 |
-| Plans completed | 8 |
+| Requirements completed | 19/27 |
+| Plans completed | 9 |
 | Phases completed | 3/4 ✅ |
-| Days in current phase | 1 (Phase 4 pending) |
+| Days in current phase | 1 (Phase 4 in progress) |
 | Blockers encountered | 0 |
 | Context reloads | 2 |
 
@@ -65,6 +65,12 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 | 2026-01-23 | Near-deadline threshold: 10 minutes | Gives workers urgent attention window before task becomes late |
 | 2026-01-23 | Hebrew time variance text | Manager UI localized - show "הושלם מוקדם ב-X דקות" for completed task variance |
 | 2026-01-24 | MyDayPage layout: recurring vs one-time | Clear visual separation - right side for recurring tasks, left for one-time + late tasks |
+| 2026-01-24 | Composite index order for history queries | status (constant) → completed_at (selective) → employee_id → system_id for optimal SQLite performance |
+| 2026-01-24 | WAL mode for better concurrency | Allow reads during writes, prevents cleanup job from blocking history queries |
+| 2026-01-24 | Default 7-day history view | Most managers want recent history, explicit date range for deeper analysis |
+| 2026-01-24 | Decimal division in statistics | Use 100.0 not 100 to prevent integer division returning 0% |
+| 2026-01-24 | NULL time_delta_minutes = on-time | Older tasks don't have delta populated, treating as late would skew statistics |
+| 2026-01-24 | Transaction-wrapped cleanup | All-or-nothing deletion with automatic rollback on error for data safety |
 
 ### Active TODOs
 
@@ -80,8 +86,10 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 - [x] Complete 02-02 Frontend Upload Form & Display
 - [x] Complete Phase 3 (Status Tracking & Timing)
 - [x] Create Phase 3 VERIFICATION.md
-- [ ] Run `/gsd:plan-phase 4` to plan History & Archive phase
-- [ ] Execute Phase 4 plan
+- [x] Run `/gsd:plan-phase 4` to plan History & Archive phase
+- [x] Execute 04-01 Backend History Infrastructure
+- [ ] Execute 04-02 Frontend History Page
+- [ ] Verify Phase 4 completion
 - [ ] Complete milestone v1
 
 ### Known Blockers
@@ -89,6 +97,19 @@ Phase 4: History & Archive [░░░░░░░░░░] 0/8
 None currently.
 
 ### Recent Changes
+
+**2026-01-24 (continued):**
+- **Completed 04-01-PLAN.md:** Backend History Infrastructure
+  - Created GET /api/history endpoint with multi-filter support (date, employee, system, location)
+  - Built composite indexes for optimal query performance (idx_tasks_history, idx_tasks_retention)
+  - Implemented scheduled data retention with node-cron (2-year cleanup, daily at 2 AM)
+  - Added location_id to systems table for location filtering
+  - Added time_delta_minutes to tasks table for statistics
+  - Enabled WAL mode for concurrent reads during writes
+  - Fixed SQL quoting and NULL handling bugs
+  - Duration: 6min 48sec
+  - Commits: 4d4ffc4 (history endpoint), 6501e11 (indexes), 3f0b474 (retention), 1708efd (bug fixes)
+  - Requirements satisfied: HA-01 (API endpoint), HA-02 (filters), HA-06 (location), HA-07 (stats), HA-08 (retention)
 
 **2026-01-24:**
 - **✅ COMPLETED PHASE 3: Status Tracking & Timing**
@@ -169,24 +190,41 @@ None currently.
 ## Session Continuity
 
 **Last session:** 2026-01-24
-**Stopped at:** Phase 3 complete, documentation updated
+**Stopped at:** Completed 04-01-PLAN.md (Backend History Infrastructure)
 **Resume file:** None
 
 **What happened this session:**
-- Completed Phase 3 UAT (13/18 passed, 5 technical skipped)
-- Implemented MyDayPage layout reorganization (recurring vs one-time tasks)
-- Created VERIFICATION.md for Phase 3
-- Updated ROADMAP.md: Phase 3 marked complete, 17/27 requirements (63%)
-- Updated STATE.md: Progress metrics, recent changes, todos
-- 2 commits for MyDayPage reorganization (a67670e, 2f9aa33)
-- Phase 3 fully documented and verified
+- Executed 04-01-PLAN.md (Backend History Infrastructure)
+- Created history REST API with multi-filter support
+- Implemented composite indexes for performance optimization
+- Installed and configured node-cron for scheduled data retention
+- Added location_id column to systems table
+- Fixed SQL quoting and NULL handling bugs
+- Created 04-01-SUMMARY.md documenting completion
+- Updated STATE.md: Progress 70% (19/27 requirements)
+- 4 commits: 4d4ffc4, 6501e11, 3f0b474, 1708efd
 
 **What needs to happen next session:**
-- Run `/gsd:plan-phase 4` to plan History & Archive phase
-- Execute Phase 4 plan
+- Execute 04-02 Frontend History Page plan
+- Verify Phase 4 completion
 - Complete milestone v1
 
 **Context to preserve:**
+- **History API ready:**
+  - GET /api/history with filters: startDate, endDate, employeeId, systemId, locationId
+  - Returns: tasks[], pagination{}, stats{}
+  - Default: last 7 days, limit 50, offset 0
+  - Statistics: total_completed, total_late, on_time_percentage (decimal division)
+  - Composite indexes: idx_tasks_history (performance < 100ms for 10k tasks)
+  - WAL mode enabled for concurrent reads during writes
+- **Data retention service:**
+  - node-cron scheduled daily at 2:00 AM Israel time
+  - Deletes completed tasks > 2 years old
+  - Transaction-wrapped for atomicity
+  - Manual trigger available: cleanupOldTasks()
+- **Schema additions:**
+  - systems.location_id (INTEGER REFERENCES locations) for location filtering
+  - tasks.time_delta_minutes (INTEGER) for statistics (NULL = on-time)
 - Backend infrastructure ready for image uploads and completion notes
 - Upload endpoint: POST /api/confirm/:token/complete (multipart/form-data)
 - Accepts fields: taskId (required), note (optional), image (optional file)
