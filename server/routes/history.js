@@ -45,7 +45,8 @@ router.get('/', (req, res) => {
 
     if (endDate) {
       conditions.push('t.completed_at <= ?');
-      params.push(endDate);
+      // Append time to make the date inclusive (end of day)
+      params.push(`${endDate} 23:59:59`);
     }
 
     if (employeeId) {
