@@ -449,6 +449,16 @@ export default function TaskCard({ task, onEdit }) {
                   fontSize: '14px',
                   lineHeight: '1.5'
                 }}>
+                  {task.original_language && task.original_language !== 'he' && (
+                    <div className="mb-1 text-xs text-gray-500 flex items-center gap-1">
+                      {task.original_language === 'en' && '🇬🇧'}
+                      {task.original_language === 'ru' && '🇷🇺'}
+                      {task.original_language === 'ar' && '🇸🇦'}
+                      <span>
+                        מתורגם מ{task.original_language === 'en' ? 'אנגלית' : task.original_language === 'ru' ? 'רוסית' : 'ערבית'}
+                      </span>
+                    </div>
+                  )}
                   <strong>הערה:</strong> {task.completion_note}
                 </div>
               )}

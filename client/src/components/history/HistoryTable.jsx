@@ -39,9 +39,19 @@ export default function HistoryTable({ tasks, loading }) {
                   <p className="text-sm text-gray-600 mb-2">{task.description}</p>
                 )}
                 {task.completion_note && (
-                  <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
-                    <strong>הערה:</strong> {task.completion_note}
-                  </p>
+                  <div className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
+                    {task.original_language && task.original_language !== 'he' && (
+                      <div className="mb-1 text-xs text-gray-500 flex items-center gap-1">
+                        {task.original_language === 'en' && '🇬🇧'}
+                        {task.original_language === 'ru' && '🇷🇺'}
+                        {task.original_language === 'ar' && '🇸🇦'}
+                        <span>
+                          מתורגם מ{task.original_language === 'en' ? 'אנגלית' : task.original_language === 'ru' ? 'רוסית' : 'ערבית'}
+                        </span>
+                      </div>
+                    )}
+                    <p><strong>הערה:</strong> {task.completion_note}</p>
+                  </div>
                 )}
                 {task.attachments && task.attachments.length > 0 && (
                   <div className="mt-2">
