@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory } from 'react-icons/fa';
+import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
 export default function Sidebar() {
-  const { connectionStatus } = useApp();
+  const { connectionStatus, logout } = useApp();
 
   const navItems = [
     { path: '/', icon: FaHome, label: 'היום שלי' },
@@ -64,10 +64,19 @@ export default function Sidebar() {
 
       {/* Connection Status Indicator */}
       <div className="px-4 py-3 border-t border-gray-700/50">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm mb-3">
           <div className={`w-2 h-2 rounded-full ${getStatusColor()} ${connectionStatus === 'connected' ? 'animate-pulse' : ''}`}></div>
           <span className="text-gray-300">{getStatusText()}</span>
         </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-red-600/20 hover:text-red-400 transition-all duration-200"
+        >
+          <FaSignOutAlt className="text-lg" />
+          <span className="text-sm font-medium">התנתק</span>
+        </button>
       </div>
     </div>
   );

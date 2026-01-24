@@ -9,6 +9,7 @@ import SystemForm from './components/forms/SystemForm';
 import SupplierForm from './components/forms/SupplierForm';
 import EmployeeForm from './components/forms/EmployeeForm';
 import LocationForm from './components/forms/LocationForm';
+import LoginPage from './pages/LoginPage';
 import MyDayPage from './pages/MyDayPage';
 import AllTasksPage from './pages/AllTasksPage';
 import HistoryPage from './pages/HistoryPage';
@@ -21,7 +22,7 @@ import TaskConfirmationPage from './pages/TaskConfirmationPage';
 import { FaPlus } from 'react-icons/fa';
 
 function MainContent() {
-  const { isTaskModalOpen, setIsTaskModalOpen, editingTask, setEditingTask } = useApp();
+  const { isTaskModalOpen, setIsTaskModalOpen, editingTask, setEditingTask, isAuthenticated, login } = useApp();
   const location = useLocation();
 
   // State for entity modals
@@ -102,6 +103,11 @@ function MainContent() {
 
   // Check if we're on the confirmation page (public route)
   const isPublicRoute = location.pathname.startsWith('/confirm/');
+
+  // Show login page if not authenticated and not on public route
+  if (!isAuthenticated && !isPublicRoute) {
+    return <LoginPage onLogin={login} />;
+  }
 
   return (
     <div className="flex min-h-screen bg-background">

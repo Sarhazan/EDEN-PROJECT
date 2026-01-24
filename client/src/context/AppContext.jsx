@@ -20,6 +20,10 @@ export function AppProvider({ children }) {
   const [editingTask, setEditingTask] = useState(null);
   const [whatsappConnected, setWhatsappConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // Check localStorage on initial load
+    return localStorage.getItem('isAuthenticated') === 'true';
+  });
   const socketRef = useRef(null);
 
   // Fetch all data on mount
@@ -350,6 +354,17 @@ export function AppProvider({ children }) {
     }
   };
 
+  // Authentication methods
+  const login = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('isAuthenticated');
+  };
+
   const value = {
     tasks,
     systems,
@@ -392,7 +407,11 @@ export function AppProvider({ children }) {
     whatsappConnected,
     checkWhatsAppConnection,
     // WebSocket
-    connectionStatus
+    connectionStatus,
+    // Authentication
+    isAuthenticated,
+    login,
+    logout
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
