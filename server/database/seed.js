@@ -89,9 +89,9 @@ function seedDatabase() {
   // Today's recurring tasks
   insertTask.run('בדיקת מערכות מיזוג', 'בדיקה חודשית של כל מערכות המיזוג בקומות 1-5', 1, 1, 'monthly', today, '09:00', 'urgent', 'sent', 1);
   insertTask.run('בדיקת פילטרים', 'החלפת פילטרים במערכת המיזוג - קומות 2,3,4', 1, 6, 'weekly', today, '10:30', 'normal', 'draft', 1);
-  insertTask.run('ניקוי שירותים', 'ניקוי יומי של כל השירותים במבנה', 2, 4, 'daily', today, '08:00', 'normal', 'in_progress', 1);
+  insertTask.run('ניקוי שירותים', 'ניקוי יומי של כל השירותים במבנה', 2, 4, 'daily', today, '08:00', 'normal', 'draft', 1);
   insertTask.run('בדיקת מצלמות אבטחה', 'בדיקת תקינות כל מצלמות האבטחה והקלטה', 6, 1, 'weekly', today, '07:30', 'urgent', 'draft', 1);
-  insertTask.run('השקיה אוטומטית', 'בדיקת מערכת השקיה בגינה הקדמית', 5, 5, 'daily', today, '06:00', 'normal', 'sent', 1);
+  insertTask.run('השקיה אוטומטית', 'בדיקת מערכת השקיה בגינה הקדמית', 5, 5, 'daily', today, '15:00', 'normal', 'draft', 1);
 
   // Today's one-time tasks
   insertTask.run('בדיקת נורות בקומה 3', 'החלפת נורות שרופות בקומה השלישית - חדר מדרגות', 3, 3, 'one-time', today, '14:00', 'normal', 'draft', 0);
