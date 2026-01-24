@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="{{LANGUAGE}}" dir="{{TEXT_DIRECTION}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{PAGE_TITLE}} - עדן קנדי </title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #fff5f0 0%, #ffe8dc 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #1f2937;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 20px;
+        }
+
+        .acknowledgment-banner {
+            background: #d1fae5;
+            border: 2px solid #34d399;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .acknowledgment-banner.show {
+            display: flex;
+        }
+
+        .acknowledgment-banner svg {
+            width: 24px;
+            height: 24px;
+            color: #059669;
+        }
+
+        .acknowledgment-banner span {
+            color: #065f46;
+            font-weight: 600;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .task-card.completed {
+            opacity: 0.6;
+            background: #f9fafb;
+        }
+
+        .task-card.urgent {
+            border-right: 4px solid #ef4444;
+        }
+
+        .task-card.normal {
+            border-right: 4px solid #3b82f6;
+        }
+
+        .task-card.optional {
+            border-right: 4px solid #9ca3af;
+        }
+
+        .task-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-container {
+            flex-shrink: 0;
+            margin-top: 3px;
+        }
+
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: #10b981;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .task-card.completed .task-title {
+            text-decoration: line-through;
+            color: #9ca3af;
+        }
+
+        .task-description {
+            color: #6b7280;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .task-card.completed .task-description {
+            text-decoration: line-through;
+        }
+
+        .task-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge-time {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-system {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+
+        .badge-duration {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .badge-status {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .completion-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .completion-form h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input[type="file"],
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+        }
+
+        .form-group .hint {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 3px;
+        }
+
+        .submit-completion-btn {
+            width: 100%;
+            padding: 12px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .submit-completion-btn:hover {
+            background: #059669;
+        }
+
+        .submit-completion-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .completion-status {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .acknowledge-button {
+            width: 100%;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .acknowledge-button:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+
+        .acknowledge-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .acknowledge-button svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #f97316;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>{{PAGE_TITLE}}</h1>
+            <p>{{GREETING}}</p>
+        </div>
+
+        <!-- Acknowledgment Banner -->
+        <div class="acknowledgment-banner" id="acknowledgmentBanner">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{{ACKNOWLEDGED_AT_TEXT}}<span id="acknowledgedTime"></span></span>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px;">{{LOADING}}</p>
+        </div>
+
+        <!-- Tasks Container -->
+        <div id="tasksContainer"></div>
+
+        <!-- Acknowledge Button -->
+        <div style="margin-top: 30px;">
+            <button class="acknowledge-button" id="acknowledgeBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{{ACKNOWLEDGE_BUTTON}}</span>
+            </button>
+            <p style="text-align: center; margin-top: 10px; color: #6b7280; font-size: 14px;">
+                {{ACKNOWLEDGE_DESCRIPTION}}
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>{{FOOTER_TEXT}}</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - will be replaced with actual values
+        const CONFIG = {
+            apiUrl: 'http://localhost:3002',
+            token: 'c2e581e652a7907446a53c7508d38c8fb861eb780a5c372872c99b9479f7f694',
+            employeeName: 'עדן קנדי ',
+            tasks: [{"id":3,"title":"ניקוי שירותים","description":"ניקוי יומי של כל השירותים במבנה","start_time":"23:55","system_name":"אינסטלציה","estimated_duration_minutes":30,"status":"draft"},{"id":4,"title":"בדיקת מצלמות אבטחה","description":"בדיקת תקינות כל מצלמות האבטחה והקלטה","start_time":"23:55","system_name":"אבטחה","estimated_duration_minutes":30,"status":"draft"}],
+            isAcknowledged: false,
+            acknowledgedAt: ''
+        };
+
+        // Initialize
+        let tasks = CONFIG.tasks;
+        let isAcknowledged = CONFIG.isAcknowledged;
+
+        function renderTasks() {
+            const container = document.getElementById('tasksContainer');
+            container.innerHTML = '';
+
+            tasks.forEach(task => {
+                const card = document.createElement('div');
+                card.className = `task-card ${task.priority} ${task.status === 'completed' ? 'completed' : ''}`;
+
+                const priorityLabel = {
+                    'urgent': '{{PRIORITY_URGENT}}',
+                    'normal': '{{PRIORITY_NORMAL}}',
+                    'optional': '{{PRIORITY_OPTIONAL}}'
+                };
+
+                card.innerHTML = `
+                    <div class="task-header">
+                        <div class="checkbox-container">
+                            <input
+                                type="checkbox"
+                                class="checkbox task-checkbox"
+                                data-task-id="${task.id}"
+                                onchange="toggleTaskCompletion(${task.id}, this)"
+                                ${task.status === 'completed' ? 'checked disabled' : (!isAcknowledged ? 'disabled' : '')}
+                            >
+                        </div>
+                        <div class="task-content">
+                            <div class="task-title">${task.title}</div>
+                            ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                            <div class="task-meta">
+                                <span class="badge badge-time">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    ${task.start_time}
+                                </span>
+                                ${task.system_name ? `<span class="badge badge-system">${task.system_name}</span>` : ''}
+                                ${task.estimated_duration_minutes ? `<span class="badge badge-duration">⏱️ {{BADGE_DURATION}}</span>`.replace('{{minutes}}', task.estimated_duration_minutes) : ''}
+                                ${task.status === 'completed' ? '<span class="badge badge-status">{{BADGE_COMPLETED}}</span>' : ''}
+                            </div>
+
+                            <div class="completion-form" id="completion-form-${task.id}" style="display: none;">
+                                <h3>{{COMPLETION_DETAILS}}</h3>
+
+                                <div class="form-group">
+                                    <label>{{UPLOAD_IMAGE_LABEL}}:</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        capture="environment"
+                                        id="image-${task.id}"
+                                    />
+                                    <div class="hint">{{UPLOAD_IMAGE_HINT}}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ADD_NOTE_LABEL}}:</label>
+                                    <textarea
+                                        id="note-${task.id}"
+                                        rows="3"
+                                        placeholder="{{ADD_NOTE_PLACEHOLDER}}"
+                                    ></textarea>
+                                </div>
+
+                                <button
+                                    onclick="submitCompletion(${task.id})"
+                                    class="submit-completion-btn"
+                                    id="submit-btn-${task.id}"
+                                >
+                                    {{COMPLETE_BUTTON}}
+                                </button>
+
+                                <div class="completion-status" id="completion-status-${task.id}"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function toggleTaskCompletion(taskId, checkbox) {
+            const completionForm = document.getElementById('completion-form-' + taskId);
+
+            if (checkbox.checked) {
+                // Show completion form when checked
+                completionForm.style.display = 'block';
+            } else {
+                // Hide form when unchecked
+                completionForm.style.display = 'none';
+            }
+        }
+
+        async function submitCompletion(taskId) {
+            const imageInput = document.getElementById('image-' + taskId);
+            const noteInput = document.getElementById('note-' + taskId);
+            const statusDiv = document.getElementById('completion-status-' + taskId);
+            const submitBtn = document.getElementById('submit-btn-' + taskId);
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('taskId', taskId);
+
+            if (noteInput.value.trim()) {
+                formData.append('note', noteInput.value.trim());
+            }
+
+            if (imageInput.files.length > 0) {
+                formData.append('image', imageInput.files[0]);
+            }
+
+            // Show loading state
+            statusDiv.innerHTML = '<span style="color: #3b82f6;">{{SENDING}}</span>';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${CONFIG.apiUrl}/api/confirm/${CONFIG.token}/complete`, {
+                    method: 'POST',
+                    body: formData
+                    // CRITICAL: Do NOT set Content-Type header
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    statusDiv.innerHTML = '<span style="color: #10b981; font-weight: 600;">✓ {{TASK_COMPLETED}}</span>';
+
+                    // Disable form after successful submission
+                    const checkbox = document.querySelector(`input[onchange*="toggleTaskCompletion(${taskId}"]`);
+                    if (checkbox) {
+                        checkbox.disabled = true;
+                    }
+                    imageInput.disabled = true;
+                    noteInput.disabled = true;
+                    submitBtn.style.display = 'none';
+
+                    // Update local state
+                    const task = tasks.find(t => t.id == taskId);
+                    if (task) {
+                        task.status = 'completed';
+                    }
+                } else {
+                    statusDiv.innerHTML = '<span style="color: #ef4444;">{{ERROR}}: ' + (result.error || '{{ERROR_UNKNOWN}}') + '</span>';
+                    submitBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error submitting completion:', error);
+                statusDiv.innerHTML = '<span style="color: #ef4444;">{{ERROR_SENDING}}</span>';
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function handleAcknowledge() {
+            const btn = document.getElementById('acknowledgeBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width: 24px; height: 24px; border-width: 3px;"></div><span>{{ACKNOWLEDGING}}</span>';
+
+            try {
+                const response = await fetch(`${CONFIG.apiUrl}/api/confirm/${CONFIG.token}/acknowledge`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    isAcknowledged = true;
+                    const now = new Date().toLocaleString('he-IL');
+                    document.getElementById('acknowledgedTime').textContent = now;
+                    document.getElementById('acknowledgmentBanner').classList.add('show');
+                    btn.style.display = 'none';
+
+                    // Enable all non-completed task checkboxes
+                    document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+                        if (!checkbox.checked) {
+                            checkbox.disabled = false;
+                        }
+                    });
+
+                    alert('{{ACKNOWLEDGE_SUCCESS}}');
+                } else {
+                    throw new Error('Failed to acknowledge');
+                }
+            } catch (error) {
+                alert('{{ACKNOWLEDGE_ERROR}}');
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>אישור קבלת כל המשימות</span>
+                `;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTasks();
+
+            // Show acknowledgment banner if already acknowledged
+            if (isAcknowledged && CONFIG.acknowledgedAt) {
+                const acknowledgedDate = new Date(CONFIG.acknowledgedAt);
+                document.getElementById('acknowledgedTime').textContent = acknowledgedDate.toLocaleString('he-IL');
+                document.getElementById('acknowledgmentBanner').classList.add('show');
+                document.getElementById('acknowledgeBtn').style.display = 'none';
+            }
+
+            // Add acknowledge button listener
+            document.getElementById('acknowledgeBtn').addEventListener('click', handleAcknowledge);
+        });
+    </script>
+</body>
+</html>

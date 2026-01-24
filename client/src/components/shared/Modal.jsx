@@ -27,8 +27,8 @@ export default function Modal({ isOpen, onClose, title, children }) {
         onClick={onClose}
       />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden animate-scale-in">
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-8 py-5 flex items-center justify-between">
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden animate-scale-in flex flex-col">
+        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-8 py-5 flex items-center justify-between flex-shrink-0">
           <h2 className="text-2xl font-bold text-gray-900 font-alef">
             {title}
           </h2>
@@ -40,7 +40,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
           </button>
         </div>
 
-        <div className="p-8 overflow-y-auto">
+        <div className="p-8 overflow-y-auto flex-1">
           {children}
         </div>
       </div>

@@ -4,10 +4,66 @@ import { FaPlus, FaEdit, FaTrash, FaUserTie } from 'react-icons/fa';
 import Modal from '../components/shared/Modal';
 import EmployeeForm from '../components/forms/EmployeeForm';
 
+// Circular Progress Component
+function CircularProgress({ percentage = 0, size = 120 }) {
+  const radius = 50;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  // Color based on percentage
+  const getColor = () => {
+    if (percentage >= 80) return '#10b981'; // green-500
+    if (percentage >= 50) return '#f59e0b'; // amber-500
+    return '#ef4444'; // red-500
+  };
+
+  const color = getColor();
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg width={size} height={size} className="transform -rotate-90">
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#e5e7eb"
+          strokeWidth="10"
+          fill="none"
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color}
+          strokeWidth="10"
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      {/* Percentage text in center */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-bold" style={{ color }}>
+          {Math.round(percentage)}%
+        </span>
+        <span className="text-xs text-gray-500 mt-1">הושלמו</span>
+      </div>
+    </div>
+  );
+}
+
 export default function EmployeesPage() {
   const { employees, deleteEmployee } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
+
+  // Debug: Log employees when they change
+  console.log('[DEBUG EmployeesPage] Rendering with employees:', employees);
+  console.log('[DEBUG EmployeesPage] First employee:', employees[0]);
 
   const handleEdit = (employee) => {
     setEditingEmployee(employee);
@@ -101,12 +157,33 @@ export default function EmployeesPage() {
                 {!employee.language && '🇮🇱 עברית'}
               </div>
 
-              <div className="border-t pt-3 mt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">משימות פעילות:</span>
-                  <span className="text-2xl font-bold text-primary">
-                    {employee.active_tasks_count || 0}
-                  </span>
+              <div className="border-t pt-4 mt-4">
+                {/* Circular Progress */}
+                <div className="flex justify-center mb-4">
+                  <CircularProgress
+                    percentage={employee.stats?.completion_percentage || 0}
+                  />
+                </div>
+
+                {/* Task Statistics */}
+                <div className="grid grid-cols-2 gap-2 text-center text-sm">
+                  <div className="bg-gray-50 rounded-lg p-2">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {employee.stats?.completed_tasks || 0}
+                    </div>
+                    <div className="text-xs text-gray-600">הושלמו</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {employee.active_tasks_count || 0}
+                    </div>
+                    <div className="text-xs text-gray-600">פעילות</div>
+                  </div>
+                </div>
+
+                {/* Total Tasks */}
+                <div className="mt-2 text-center text-xs text-gray-500">
+                  סה"כ {employee.stats?.total_tasks || 0} משימות
                 </div>
               </div>
             </div>

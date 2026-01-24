@@ -12,7 +12,28 @@ router.get('/', (req, res) => {
       ORDER BY e.name ASC
     `).all();
 
-    res.json(employees);
+    // Add statistics for each employee
+    const employeesWithStats = employees.map(employee => {
+      const stats = db.prepare(`
+        SELECT
+          COUNT(*) as total_tasks,
+          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
+          ROUND(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as completion_percentage
+        FROM tasks
+        WHERE employee_id = ?
+      `).get(employee.id);
+
+      return {
+        ...employee,
+        stats: {
+          total_tasks: stats.total_tasks || 0,
+          completed_tasks: stats.completed_tasks || 0,
+          completion_percentage: stats.completion_percentage || 0
+        }
+      };
+    });
+
+    res.json(employeesWithStats);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -67,23 +88,31 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   try {
     const { name, phone, position, language } = req.body;
+    console.log('[DEBUG PUT /employees/:id] Received update for employee', req.params.id);
+    console.log('[DEBUG PUT /employees/:id] Request body:', { name, phone, position, language });
 
     // Validate language if provided
     if (language && !['he', 'en', 'ru', 'ar'].includes(language)) {
       return res.status(400).json({ error: 'שפה לא חוקית. בחר: he, en, ru, ar' });
     }
 
+    const finalLanguage = language || 'he';
+    console.log('[DEBUG PUT /employees/:id] Final language value:', finalLanguage);
+
     const result = db.prepare(`
       UPDATE employees
       SET name = ?, phone = ?, position = ?, language = ?
       WHERE id = ?
-    `).run(name, phone, position, language || 'he', req.params.id);
+    `).run(name, phone, position, finalLanguage, req.params.id);
+
+    console.log('[DEBUG PUT /employees/:id] Update result:', result);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'עובד לא נמצא' });
     }
 
     const updatedEmployee = db.prepare('SELECT * FROM employees WHERE id = ?').get(req.params.id);
+    console.log('[DEBUG PUT /employees/:id] Updated employee from DB:', updatedEmployee);
     res.json(updatedEmployee);
   } catch (error) {
     res.status(500).json({ error: error.message });
