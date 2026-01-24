@@ -269,6 +269,28 @@ function initializeDatabase() {
     }
   }
 
+  // Add original_language column if it doesn't exist (migration for Phase 5 note translation)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN original_language TEXT CHECK(original_language IN ('he', 'en', 'ru', 'ar'))`);
+    console.log('✓ Added original_language column to tasks table');
+  } catch (e) {
+    // Column already exists, ignore error
+    if (!e.message.includes('duplicate column name')) {
+      console.error('Error adding original_language column:', e.message);
+    }
+  }
+
+  // Add translation_provider column to track which API was used (migration for Phase 5)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN translation_provider TEXT CHECK(translation_provider IN ('gemini', 'google-translate', 'none'))`);
+    console.log('✓ Added translation_provider column to tasks table');
+  } catch (e) {
+    // Column already exists, ignore error
+    if (!e.message.includes('duplicate column name')) {
+      console.error('Error adding translation_provider column:', e.message);
+    }
+  }
+
   // Create composite indexes for history query performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_tasks_history
