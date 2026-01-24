@@ -90,7 +90,8 @@ export default function MyDayPage() {
           phone: employee.phone,
           name: employee.name,
           tasks: [],
-          date: format(new Date(task.start_date), 'dd/MM/yyyy')
+          date: format(new Date(task.start_date), 'dd/MM/yyyy'),
+          language: employee.language || 'he'
         };
       }
 

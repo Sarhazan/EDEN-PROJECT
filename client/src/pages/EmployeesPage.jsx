@@ -92,6 +92,15 @@ export default function EmployeesPage() {
                 <p className="text-sm text-gray-600 mb-3">📞 {employee.phone}</p>
               )}
 
+              <div className="text-sm text-gray-600 mb-3">
+                <span className="font-medium">שפה:</span>{' '}
+                {employee.language === 'he' && '🇮🇱 עברית'}
+                {employee.language === 'en' && '🇬🇧 English'}
+                {employee.language === 'ru' && '🇷🇺 Русский'}
+                {employee.language === 'ar' && '🇸🇦 العربية'}
+                {!employee.language && '🇮🇱 עברית'}
+              </div>
+
               <div className="border-t pt-3 mt-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">משימות פעילות:</span>

@@ -8,7 +8,8 @@ export default function EmployeeForm({ employee, onClose }) {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    position: ''
+    position: '',
+    language: 'he'
   });
 
   useEffect(() => {
@@ -16,7 +17,8 @@ export default function EmployeeForm({ employee, onClose }) {
       setFormData({
         name: employee.name || '',
         phone: employee.phone || '',
-        position: employee.position || ''
+        position: employee.position || '',
+        language: employee.language || 'he'
       });
     }
   }, [employee]);
@@ -82,6 +84,24 @@ export default function EmployeeForm({ employee, onClose }) {
           onChange={handleChange}
           className="w-full border border-gray-300 rounded-lg px-3 py-2"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">שפה</label>
+        <select
+          name="language"
+          value={formData.language}
+          onChange={handleChange}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="he">עברית (Hebrew)</option>
+          <option value="en">English</option>
+          <option value="ru">Русский (Russian)</option>
+          <option value="ar">العربية (Arabic)</option>
+        </select>
+        <p className="mt-1 text-sm text-gray-500">
+          השפה שבה העובד יקבל הודעות ודפים אינטראקטיביים
+        </p>
       </div>
 
       <div className="flex gap-3 pt-4">
