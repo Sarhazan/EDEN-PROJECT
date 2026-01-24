@@ -476,10 +476,8 @@ export default function MyDayPage() {
         <div className="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4">
           <div className="text-lg font-bold text-orange-700 mb-3 text-center">לפי מערכת</div>
           <div className="flex items-end justify-between gap-1 h-24">
-            {systems.map((system) => {
-              const count = stats.bySystem[system.id] || 0;
-              if (count === 0) return null;
-
+            {(() => {
+              // Calculate maxCount once for all bars
               const maxCount = Math.max(
                 ...systems.map(s => stats.bySystem[s.id] || 0),
                 stats.recurringTasks,
@@ -488,37 +486,46 @@ export default function MyDayPage() {
               );
 
               return (
-                <div key={system.id} className="flex-1 flex flex-col items-center gap-1 min-w-[60px]">
-                  <div className="w-full flex flex-col justify-end h-16">
-                    <div
-                      className="w-full bg-orange-500 rounded-t-lg"
-                      style={{
-                        height: `${(count / maxCount) * 100}%`
-                      }}
-                    />
-                  </div>
-                  <div className="text-sm font-bold text-orange-700">{count}</div>
-                  <div className="text-xs text-orange-600 text-center truncate w-full" title={system.name}>
-                    {system.name}
-                  </div>
-                </div>
-              );
-            })}
+                <>
+                  {systems.map((system) => {
+                    const count = stats.bySystem[system.id] || 0;
+                    if (count === 0) return null;
 
-            {stats.oneTimeTasks > 0 && (
-              <div className="flex-1 flex flex-col items-center gap-1 min-w-[60px]">
-                <div className="w-full flex flex-col justify-end h-16">
-                  <div
-                    className="w-full bg-blue-400 rounded-t-lg"
-                    style={{
-                      height: `${(stats.oneTimeTasks / maxCount) * 100}%`
-                    }}
-                  />
-                </div>
-                <div className="text-sm font-bold text-blue-700">{stats.oneTimeTasks}</div>
-                <div className="text-xs text-blue-600 text-center">חד פעמיות</div>
-              </div>
-            )}
+                    return (
+                      <div key={system.id} className="flex-1 flex flex-col items-center gap-1 min-w-[60px]">
+                        <div className="w-full flex flex-col justify-end h-16">
+                          <div
+                            className="w-full bg-orange-500 rounded-t-lg"
+                            style={{
+                              height: `${(count / maxCount) * 100}%`
+                            }}
+                          />
+                        </div>
+                        <div className="text-sm font-bold text-orange-700">{count}</div>
+                        <div className="text-xs text-orange-600 text-center truncate w-full" title={system.name}>
+                          {system.name}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {stats.oneTimeTasks > 0 && (
+                    <div className="flex-1 flex flex-col items-center gap-1 min-w-[60px]">
+                      <div className="w-full flex flex-col justify-end h-16">
+                        <div
+                          className="w-full bg-blue-400 rounded-t-lg"
+                          style={{
+                            height: `${(stats.oneTimeTasks / maxCount) * 100}%`
+                          }}
+                        />
+                      </div>
+                      <div className="text-sm font-bold text-blue-700">{stats.oneTimeTasks}</div>
+                      <div className="text-xs text-blue-600 text-center">חד פעמיות</div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 
