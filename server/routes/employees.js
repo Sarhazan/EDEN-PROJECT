@@ -40,16 +40,21 @@ router.get('/:id', (req, res) => {
 // Create employee
 router.post('/', (req, res) => {
   try {
-    const { name, phone, position } = req.body;
+    const { name, phone, position, language } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: 'שם העובד הוא שדה חובה' });
     }
 
+    // Validate language if provided
+    if (language && !['he', 'en', 'ru', 'ar'].includes(language)) {
+      return res.status(400).json({ error: 'שפה לא חוקית. בחר: he, en, ru, ar' });
+    }
+
     const result = db.prepare(`
-      INSERT INTO employees (name, phone, position)
-      VALUES (?, ?, ?)
-    `).run(name, phone, position);
+      INSERT INTO employees (name, phone, position, language)
+      VALUES (?, ?, ?, ?)
+    `).run(name, phone, position, language || 'he');
 
     const newEmployee = db.prepare('SELECT * FROM employees WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(newEmployee);
@@ -61,13 +66,18 @@ router.post('/', (req, res) => {
 // Update employee
 router.put('/:id', (req, res) => {
   try {
-    const { name, phone, position } = req.body;
+    const { name, phone, position, language } = req.body;
+
+    // Validate language if provided
+    if (language && !['he', 'en', 'ru', 'ar'].includes(language)) {
+      return res.status(400).json({ error: 'שפה לא חוקית. בחר: he, en, ru, ar' });
+    }
 
     const result = db.prepare(`
       UPDATE employees
-      SET name = ?, phone = ?, position = ?
+      SET name = ?, phone = ?, position = ?, language = ?
       WHERE id = ?
-    `).run(name, phone, position, req.params.id);
+    `).run(name, phone, position, language || 'he', req.params.id);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'עובד לא נמצא' });
