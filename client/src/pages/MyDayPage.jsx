@@ -98,7 +98,10 @@ export default function MyDayPage() {
         id: task.id,
         title: task.title,
         description: task.description,
-        start_time: task.start_time
+        start_time: task.start_time,
+        system_name: task.system_name,
+        priority: task.priority,
+        status: task.status
       });
     });
 
