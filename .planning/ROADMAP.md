@@ -103,37 +103,37 @@ Plans:
 
 ---
 
-### Phase 4: History & Archive
+### Phase 4: History & Archive ✅
 
 **Goal:** מנהל יכול לחפש ולצפות במשימות שהושלמו בעבר עד 2 שנים אחורה
 
 **Dependencies:** Phase 3 (needs full completion data with timing)
 
 **Requirements:**
-- HA-01: משימות שהושלמו נשמרות במסד הנתונים למשך 2 שנים
-- HA-02: עמוד היסטוריה מציג משימות שהושלמו בעבר
-- HA-03: סינון היסטוריה לפי תאריך (טווח תאריכים)
-- HA-04: סינון היסטוריה לפי עובד
-- HA-05: סינון היסטוריה לפי מערכת
-- HA-06: סינון היסטוריה לפי מיקום
-- HA-07: סטטיסטיקות בסיסיות: כמה משימות הושלמו, כמה מאוחרות, אחוז הצלחה
-- HA-08: ניקוי אוטומטי של משימות ישנות מ-2 שנים (cron job או scheduled task)
+- HA-01: ✅ משימות שהושלמו נשמרות במסד הנתונים למשך 2 שנים
+- HA-02: ✅ עמוד היסטוריה מציג משימות שהושלמו בעבר
+- HA-03: ✅ סינון היסטוריה לפי תאריך (טווח תאריכים)
+- HA-04: ✅ סינון היסטוריה לפי עובד
+- HA-05: ✅ סינון היסטוריה לפי מערכת
+- HA-06: ✅ סינון היסטוריה לפי מיקום
+- HA-07: ✅ סטטיסטיקות בסיסיות: כמה משימות הושלמו, כמה מאוחרות, אחוז הצלחה
+- HA-08: ✅ ניקוי אוטומטי של משימות ישנות מ-2 שנים (cron job או scheduled task)
 
 **Success Criteria:**
-1. מנהל נכנס לעמוד "היסטוריה" ורואה רשימת משימות שהושלמו בשבוע האחרון
-2. מנהל בוחר טווח תאריכים 01/01/2025 - 31/01/2025 - רואה רק משימות שהושלמו בינואר
-3. מנהל מסנן לפי עובד ספציפי - רואה רק משימות של אותו עובד
-4. בראש עמוד ההיסטוריה רשום: "102 משימות הושלמו, 12 באיחור (88% בזמן)"
-5. משימה מ-15/01/2024 (2 שנים + יום) נמחקת אוטומטית מהמסד נתונים
-6. מנהל מחפש משימה לפי מערכת "מיזוג אוויר" ומיקום "קומה 3" - רואה רק משימות מתאימות
+1. ✅ מנהל נכנס לעמוד "היסטוריה" ורואה רשימת משימות שהושלמו בשבוע האחרון
+2. ✅ מנהל בוחר טווח תאריכים 01/01/2025 - 31/01/2025 - רואה רק משימות שהושלמו בינואר
+3. ✅ מנהל מסנן לפי עובד ספציפי - רואה רק משימות של אותו עובד
+4. ✅ בראש עמוד ההיסטוריה רשום: "102 משימות הושלמו, 12 באיחור (88% בזמן)"
+5. ✅ משימה מ-15/01/2024 (2 שנים + יום) נמחקת אוטומטית מהמסד נתונים
+6. ✅ מנהל מחפש משימה לפי מערכת "מיזוג אוויר" ומיקום "קומה 3" - רואה רק משימות מתאימות
 
 **Estimated Effort:** Medium (archive table, filters, cleanup job, stats calculations)
 
 **Plans:** 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Backend history API, indexes, and data retention
-- [ ] 04-02-PLAN.md — Frontend history page with filters and statistics
+- [x] 04-01-PLAN.md — Backend history API, indexes, and data retention ✅
+- [x] 04-02-PLAN.md — Frontend history page with filters and statistics ✅
 
 ---
 
@@ -144,9 +144,9 @@ Plans:
 | 1 - Real-Time Infrastructure | ✅ Complete | RT-01 ✅, RT-02 ✅, RT-03 ✅, RT-04 ✅ | 4/4 |
 | 2 - Enhanced Task Completion | ✅ Complete | TC-01 ✅, TC-02 ✅, TC-03 ✅, TC-04 ✅, TC-05 ✅ | 5/5 |
 | 3 - Status Tracking & Timing | ✅ Complete | TS-01 ✅, TS-02 ✅, TS-03 ✅, TS-04 ✅, TS-05 ✅, TS-06 ✅, TS-07 ✅, TS-08 ✅ | 8/8 |
-| 4 - History & Archive | Pending | HA-01, HA-02, HA-03, HA-04, HA-05, HA-06, HA-07, HA-08 | 0/8 |
+| 4 - History & Archive | ✅ Complete | HA-01 ✅, HA-02 ✅, HA-03 ✅, HA-04 ✅, HA-05 ✅, HA-06 ✅, HA-07 ✅, HA-08 ✅ | 8/8 |
 
-**Overall:** 17/27 requirements completed (63%)
+**Overall:** 27/27 requirements completed (100%)
 
 ---
 
@@ -160,9 +160,9 @@ Plans:
 6. ✅ ~~Run `/gsd:plan-phase 3` to create execution plan for Status Tracking & Timing~~
 7. ✅ ~~Execute Phase 3 plan~~
 8. ✅ ~~Verify Phase 3 success criteria~~
-9. **Run `/gsd:plan-phase 4` to create execution plan for History & Archive**
-10. Execute Phase 4 plan
-11. Complete milestone v1
+9. ✅ ~~Run `/gsd:plan-phase 4` to create execution plan for History & Archive~~
+10. ✅ ~~Execute Phase 4 plan~~
+11. **Complete milestone v1**
 
 ---
 
