@@ -172,9 +172,12 @@ router.post('/:id/approve', (req, res) => {
     }
 
     // Update task status to completed
+    // If completed_at is not already set (old tasks), set it to now
     db.prepare(`
       UPDATE tasks
-      SET status = 'completed', updated_at = CURRENT_TIMESTAMP
+      SET status = 'completed',
+          completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+          updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(id);
 

@@ -71,7 +71,7 @@ export default function HistoryFilters({ filters, employees, systems, locations,
       {/* שורה ראשונה: תאריכים וכפתורים */}
       <div className="flex flex-wrap gap-3 items-end mb-4">
         {/* Start Date */}
-        <div className="flex-1 min-w-[180px]">
+        <div className="w-[200px]">
           <label className="block text-sm font-medium mb-2">מתאריך</label>
           <DatePicker
             selected={startDate}
@@ -84,7 +84,7 @@ export default function HistoryFilters({ filters, employees, systems, locations,
         </div>
 
         {/* End Date */}
-        <div className="flex-1 min-w-[180px]">
+        <div className="w-[200px]">
           <label className="block text-sm font-medium mb-2">עד תאריך</label>
           <DatePicker
             selected={endDate}
