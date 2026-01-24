@@ -1,0 +1,22 @@
+{
+  "pageTitle": "المهام المطلوب إكمالها",
+  "greeting": "مرحبا {{name}}",
+  "acknowledgeButton": "تأكيد استلام جميع المهام",
+  "acknowledgeDescription": "النقر على هذا الزر يؤكد أنك استلمت جميع المهام وسيتم إخطار المدير",
+  "completeButton": "إرسال الإكمال",
+  "addNoteLabel": "ملاحظات (اختياري)",
+  "addNotePlaceholder": "أضف ملاحظات حول المهمة...",
+  "uploadImageLabel": "تحميل صورة",
+  "uploadImageHint": "حتى 5 ميجابايت، JPG أو PNG فقط",
+  "taskCompleted": "تم إكمال المهمة بنجاح!",
+  "priority": {
+    "urgent": "عاجل",
+    "normal": "عادي",
+    "optional": "اختياري"
+  },
+  "badge": {
+    "time": "الوقت",
+    "duration": "{{minutes}} دقائق",
+    "completed": "مكتمل"
+  }
+}

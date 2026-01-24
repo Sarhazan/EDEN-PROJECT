@@ -1,0 +1,22 @@
+{
+  "pageTitle": "Задачи для выполнения",
+  "greeting": "Привет {{name}}",
+  "acknowledgeButton": "Подтвердить получение всех задач",
+  "acknowledgeDescription": "Нажатие этой кнопки подтвердит, что вы получили все задачи и уведомит менеджера",
+  "completeButton": "Отправить выполнение",
+  "addNoteLabel": "Примечания (необязательно)",
+  "addNotePlaceholder": "Добавьте примечания к задаче...",
+  "uploadImageLabel": "Загрузить изображение",
+  "uploadImageHint": "До 5 МБ, только JPG или PNG",
+  "taskCompleted": "Задача успешно выполнена!",
+  "priority": {
+    "urgent": "Срочно",
+    "normal": "Обычный",
+    "optional": "Необязательный"
+  },
+  "badge": {
+    "time": "Время",
+    "duration": "{{minutes}} минут",
+    "completed": "Завершено"
+  }
+}

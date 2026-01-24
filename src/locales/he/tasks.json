@@ -1,0 +1,22 @@
+{
+  "pageTitle": "משימות לביצוע",
+  "greeting": "שלום {{name}}",
+  "acknowledgeButton": "אישור קבלת כל המשימות",
+  "acknowledgeDescription": "לחיצה על כפתור זה תאשר שקיבלת את כל המשימות ותעדכן את המנהל",
+  "completeButton": "שלח השלמה",
+  "addNoteLabel": "הערות (אופציונלי)",
+  "addNotePlaceholder": "הוסף הערות על המשימה...",
+  "uploadImageLabel": "צלם תמונה",
+  "uploadImageHint": "עד 5MB, JPG או PNG בלבד",
+  "taskCompleted": "המשימה הושלמה בהצלחה!",
+  "priority": {
+    "urgent": "דחוף",
+    "normal": "רגיל",
+    "optional": "אופציונלי"
+  },
+  "badge": {
+    "time": "שעה",
+    "duration": "{{minutes}} דקות",
+    "completed": "הושלם"
+  }
+}

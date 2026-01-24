@@ -1,0 +1,22 @@
+{
+  "pageTitle": "Tasks to Complete",
+  "greeting": "Hello {{name}}",
+  "acknowledgeButton": "Acknowledge Receipt of All Tasks",
+  "acknowledgeDescription": "Clicking this button confirms you received all tasks and will notify the manager",
+  "completeButton": "Submit Completion",
+  "addNoteLabel": "Notes (optional)",
+  "addNotePlaceholder": "Add notes about the task...",
+  "uploadImageLabel": "Upload Image",
+  "uploadImageHint": "Up to 5MB, JPG or PNG only",
+  "taskCompleted": "Task completed successfully!",
+  "priority": {
+    "urgent": "Urgent",
+    "normal": "Normal",
+    "optional": "Optional"
+  },
+  "badge": {
+    "time": "Time",
+    "duration": "{{minutes}} minutes",
+    "completed": "Completed"
+  }
+}

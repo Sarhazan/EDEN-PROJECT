@@ -1,0 +1,7 @@
+{
+  "greeting": "مرحبا {{name}}",
+  "taskListHeader": "مهام {{date}}",
+  "time": "الوقت",
+  "description": "الوصف",
+  "clickToView": "انقر على الرابط أدناه للعرض والتأكيد"
+}
