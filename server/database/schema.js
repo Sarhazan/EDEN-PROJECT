@@ -225,7 +225,47 @@ function initializeDatabase() {
     )
   `);
 
+  // Add location_id column to systems table (for location filtering)
+  try {
+    db.exec(`ALTER TABLE systems ADD COLUMN location_id INTEGER REFERENCES locations(id)`);
+    console.log('Added location_id column to systems table');
+  } catch (e) {
+    // Column already exists, skip
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  // Add time_delta_minutes column to tasks table (for statistics)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN time_delta_minutes INTEGER`);
+    console.log('Added time_delta_minutes column to tasks table');
+  } catch (e) {
+    // Column already exists, skip
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  // Create composite indexes for history query performance
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_tasks_history
+    ON tasks(status, completed_at DESC, employee_id, system_id)
+  `);
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_tasks_retention
+    ON tasks(status, completed_at)
+  `);
+
+  // Enable WAL mode for better concurrency (reads during writes)
+  db.pragma('journal_mode = WAL');
+
+  // Increase cache size for better performance (~200MB)
+  db.pragma('cache_size = 50000');
+
   console.log('Database tables initialized successfully');
+  console.log('History indexes created successfully');
 }
 
 module.exports = { db, initializeDatabase };
