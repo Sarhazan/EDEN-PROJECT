@@ -2,8 +2,8 @@
 
 **Created:** 2026-01-19
 **Depth:** quick
-**Phases:** 4
-**Total Requirements:** 27
+**Phases:** 5
+**Total Requirements:** 27+
 
 ## Overview
 
@@ -137,6 +137,55 @@ Plans:
 
 ---
 
+### Phase 5: Multi-Language Support
+
+**Goal:** תמיכה רב-לשונית - מנהל יכול לבחור שפה לכל עובד, המערכת שולחת הודעות בשפת העובד, ותרגום אוטומטי להערות שחוזרות למנהל
+
+**Dependencies:** Phase 4 (needs full task flow with history)
+
+**Requirements:**
+- ML-01: הוספת שדה `language` לטבלת employees (עברית/אנגלית/רוסית/ערבית)
+- ML-02: מנהל יכול לבחור שפת עובד בממשק ניהול העובדים
+- ML-03: הודעות WhatsApp נשלחות בשפת העובד (תרגום דינמי)
+- ML-04: דפי אישור אינטראקטיביים מוצגים בשפת העובד
+- ML-05: כפתורים, תוויות, והודעות בדף האינטראקטיבי מתורגמים אוטומטית
+- ML-06: הערות שעובד כותב בשפתו מתורגמות לעברית למנהל
+- ML-07: ממשק המנהל תמיד בעברית עם תרגום אוטומטי להערות מעובדים
+- ML-08: תמיכה ב-RTL (Right-to-Left) לעברית וערבית, LTR לאנגלית ורוסית
+
+**Success Criteria:**
+1. מנהל מגדיר עובד עם שפה "English" - עובד מקבל הודעת WhatsApp באנגלית
+2. עובד אנגלי פותח דף אינטראקטיבי - רואה "Task List", "Complete", "Add Note" באנגלית
+3. עובד רוסי כותב הערה "Обнаружена утечка воды" - מנהל רואה "נמצאה דליפת מים" בעברית
+4. מנהל רואה הערה מתורגמת עם אינדיקטור "🇷🇺 מתורגם מרוסית"
+5. כל 4 השפות (עברית, אנגלית, רוסית, ערבית) עובדות בדפים האינטראקטיביים וב-WhatsApp
+6. כיוון טקסט (RTL/LTR) משתנה אוטומטית לפי שפת העובד
+
+**Estimated Effort:** Medium-High (i18n infrastructure, translation service, RTL support)
+
+**Plans:** 5 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — i18n Infrastructure & Translation Files
+- [ ] 05-02-PLAN.md — Employee Language Preference (DB & UI)
+- [ ] 05-03-PLAN.md — Multilingual Interactive HTML Pages
+- [ ] 05-04-PLAN.md — Multilingual WhatsApp Messages
+- [ ] 05-05-PLAN.md — Employee Note Translation to Hebrew
+
+**Details:**
+**Wave 1 (parallel):**
+- Plan 01: Install i18next, create translation JSON files (he, en, ru, ar), server-side i18n service
+- Plan 02: Add employees.language column, manager UI language selector
+
+**Wave 2 (depends on Wave 1):**
+- Plan 03: Modify htmlGenerator to translate interactive pages based on employee language, RTL/LTR support
+- Plan 04: Translate WhatsApp messages using i18n service
+
+**Wave 3 (depends on Wave 2):**
+- Plan 05: Google Cloud Translation API integration, translate employee notes to Hebrew, display with language indicators
+
+---
+
 ## Progress
 
 | Phase | Status | Requirements | Completed |
@@ -145,8 +194,9 @@ Plans:
 | 2 - Enhanced Task Completion | ✅ Complete | TC-01 ✅, TC-02 ✅, TC-03 ✅, TC-04 ✅, TC-05 ✅ | 5/5 |
 | 3 - Status Tracking & Timing | ✅ Complete | TS-01 ✅, TS-02 ✅, TS-03 ✅, TS-04 ✅, TS-05 ✅, TS-06 ✅, TS-07 ✅, TS-08 ✅ | 8/8 |
 | 4 - History & Archive | ✅ Complete | HA-01 ✅, HA-02 ✅, HA-03 ✅, HA-04 ✅, HA-05 ✅, HA-06 ✅, HA-07 ✅, HA-08 ✅ | 8/8 |
+| 5 - Multi-Language Support | ⏳ Planned | ML-01, ML-02, ML-03, ML-04, ML-05, ML-06, ML-07, ML-08 | 0/8 |
 
-**Overall:** 27/27 requirements completed (100%)
+**Overall:** 27/35 requirements completed (77%)
 
 ---
 
@@ -162,7 +212,8 @@ Plans:
 8. ✅ ~~Verify Phase 3 success criteria~~
 9. ✅ ~~Run `/gsd:plan-phase 4` to create execution plan for History & Archive~~
 10. ✅ ~~Execute Phase 4 plan~~
-11. **Complete milestone v1**
+11. ✅ ~~Complete milestone v1~~
+12. **Plan and execute Phase 5 - Multi-Language Support**
 
 ---
 
