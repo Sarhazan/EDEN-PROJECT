@@ -137,21 +137,21 @@ Plans:
 
 ---
 
-### Phase 5: Multi-Language Support
+### Phase 5: Multi-Language Support ✅
 
 **Goal:** תמיכה רב-לשונית - מנהל יכול לבחור שפה לכל עובד, המערכת שולחת הודעות בשפת העובד, ותרגום אוטומטי להערות שחוזרות למנהל
 
 **Dependencies:** Phase 4 (needs full task flow with history)
 
 **Requirements:**
-- ML-01: הוספת שדה `language` לטבלת employees (עברית/אנגלית/רוסית/ערבית)
-- ML-02: מנהל יכול לבחור שפת עובד בממשק ניהול העובדים
-- ML-03: הודעות WhatsApp נשלחות בשפת העובד (תרגום דינמי)
-- ML-04: דפי אישור אינטראקטיביים מוצגים בשפת העובד
-- ML-05: כפתורים, תוויות, והודעות בדף האינטראקטיבי מתורגמים אוטומטית
-- ML-06: הערות שעובד כותב בשפתו מתורגמות לעברית למנהל
-- ML-07: ממשק המנהל תמיד בעברית עם תרגום אוטומטי להערות מעובדים
-- ML-08: תמיכה ב-RTL (Right-to-Left) לעברית וערבית, LTR לאנגלית ורוסית
+- ML-01: ✅ הוספת שדה `language` לטבלת employees (עברית/אנגלית/רוסית/ערבית)
+- ML-02: ✅ מנהל יכול לבחור שפת עובד בממשק ניהול העובדים
+- ML-03: ✅ הודעות WhatsApp נשלחות בשפת העובד (תרגום דינמי)
+- ML-04: ✅ דפי אישור אינטראקטיביים מוצגים בשפת העובד
+- ML-05: ✅ כפתורים, תוויות, והודעות בדף האינטראקטיבי מתורגמים אוטומטית
+- ML-06: ✅ הערות שעובד כותב בשפתו מתורגמות לעברית למנהל
+- ML-07: ✅ ממשק המנהל תמיד בעברית עם תרגום אוטומטי להערות מעובדים
+- ML-08: ✅ תמיכה ב-RTL (Right-to-Left) לעברית וערבית, LTR לאנגלית ורוסית
 
 **Success Criteria:**
 1. מנהל מגדיר עובד עם שפה "English" - עובד מקבל הודעת WhatsApp באנגלית
@@ -171,7 +171,7 @@ Plans:
 - [x] 05-03-PLAN.md — Multilingual Interactive HTML Pages ✅
 - [x] 05-04-PLAN.md — Multilingual WhatsApp Messages ✅
 - [x] 05-05a-PLAN.md — Hybrid Translation Service (Gemini API + Google Translate) ✅
-- [ ] 05-05b-PLAN.md — Translation UI Indicators in Manager Interface
+- [x] 05-05b-PLAN.md — Translation UI Indicators in Manager Interface ✅
 
 **Details:**
 **Wave 1 (parallel):**
