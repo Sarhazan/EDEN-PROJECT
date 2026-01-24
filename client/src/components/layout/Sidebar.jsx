@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
 export default function Sidebar() {
@@ -8,6 +8,7 @@ export default function Sidebar() {
   const navItems = [
     { path: '/', icon: FaHome, label: 'היום שלי' },
     { path: '/tasks', icon: FaTasks, label: 'משימות' },
+    { path: '/history', icon: FaHistory, label: 'היסטוריה' },
     { path: '/systems', icon: FaCog, label: 'מערכות' },
     { path: '/suppliers', icon: FaTruck, label: 'ספקים' },
     { path: '/employees', icon: FaUsers, label: 'עובדים' },

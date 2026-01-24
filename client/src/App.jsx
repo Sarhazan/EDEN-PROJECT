@@ -11,6 +11,7 @@ import EmployeeForm from './components/forms/EmployeeForm';
 import LocationForm from './components/forms/LocationForm';
 import MyDayPage from './pages/MyDayPage';
 import AllTasksPage from './pages/AllTasksPage';
+import HistoryPage from './pages/HistoryPage';
 import SystemsPage from './pages/SystemsPage';
 import SuppliersPage from './pages/SuppliersPage';
 import EmployeesPage from './pages/EmployeesPage';
@@ -103,14 +104,15 @@ function MainContent() {
   const isPublicRoute = location.pathname.startsWith('/confirm/');
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-background">
       {!isPublicRoute && <Sidebar />}
       {!isPublicRoute && <DataControls />}
 
-      <main className={isPublicRoute ? 'flex-1' : 'mr-64 flex-1'}>
+      <main className={isPublicRoute ? 'flex-1' : 'mr-72 flex-1'}>
         <Routes>
           <Route path="/" element={<MyDayPage />} />
           <Route path="/tasks" element={<AllTasksPage />} />
+          <Route path="/history" element={<HistoryPage />} />
           <Route path="/systems" element={<SystemsPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
@@ -124,7 +126,7 @@ function MainContent() {
       {!isPublicRoute && buttonConfig.show && (
         <button
           onClick={buttonConfig.onClick}
-          className="fixed top-1/2 -translate-y-1/2 right-6 bg-primary hover:bg-orange-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all flex items-center gap-2 group z-50"
+          className="fixed top-1/2 -translate-y-1/2 right-6 bg-primary hover:bg-indigo-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center gap-2 group z-50"
           title={buttonConfig.label}
         >
           <FaPlus className="text-2xl" />
