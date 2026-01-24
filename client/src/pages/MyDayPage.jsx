@@ -12,7 +12,7 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function MyDayPage() {
-  const { tasks, systems, employees, setIsTaskModalOpen, setEditingTask, updateTaskStatus } = useApp();
+  const { tasks, systems, employees, locations, setIsTaskModalOpen, setEditingTask, updateTaskStatus } = useApp();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const today = startOfDay(new Date());
   const [isSendingBulk, setIsSendingBulk] = useState(false);
@@ -260,6 +260,13 @@ export default function MyDayPage() {
             filtered = filtered.filter((t) => !t.employee_id);
           } else {
             filtered = filtered.filter((t) => t.employee_id === parseInt(filterValue));
+          }
+          break;
+        case 'location':
+          if (filterValue === 'none') {
+            filtered = filtered.filter((t) => !t.location_id);
+          } else {
+            filtered = filtered.filter((t) => t.location_id === parseInt(filterValue));
           }
           break;
       }
@@ -708,6 +715,7 @@ export default function MyDayPage() {
                 <option value="system">סנן לפי מערכת</option>
                 <option value="status">סנן לפי סטטוס</option>
                 <option value="employee">סנן לפי עובד</option>
+                <option value="location">סנן לפי מיקום</option>
               </select>
 
               {/* Secondary filter - Value selection based on category */}
@@ -749,6 +757,17 @@ export default function MyDayPage() {
                       {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>
                           {emp.name}
+                        </option>
+                      ))}
+                    </>
+                  )}
+
+                  {filterCategory === 'location' && (
+                    <>
+                      <option value="none">ללא מיקום</option>
+                      {locations && locations.map((loc) => (
+                        <option key={loc.id} value={loc.id}>
+                          {loc.name}
                         </option>
                       ))}
                     </>
