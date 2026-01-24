@@ -173,14 +173,30 @@ class WhatsAppService {
         throw new Error('מספר הטלפון אינו רשום בוואטסאפ');
       }
 
-      // If still getting markedUnread error OR detached frame, try alternative method
-      if (error.message && (error.message.includes('markedUnread') || error.message.includes('detached Frame'))) {
-        console.log('⚠ Retrying with alternative method...');
-        // Wait a bit longer if it's a detached frame issue
-        if (error.message.includes('detached Frame')) {
-          console.log('   Waiting for frame to reattach...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
+      // If detached frame error, mark client as broken and require reconnection
+      if (error.message && error.message.includes('detached Frame')) {
+        console.error('⚠ CRITICAL: Puppeteer frame detached - client is now unusable');
+        console.error('   Marking client as not ready and destroying...');
+
+        // Mark as not ready to prevent further send attempts
+        this.isReady = false;
+
+        // Destroy the broken client
+        try {
+          if (this.client) {
+            await this.client.destroy();
+            this.client = null;
+          }
+        } catch (destroyError) {
+          console.error('Error destroying broken client:', destroyError);
         }
+
+        throw new Error('חיבור WhatsApp התנתק. יש להתחבר מחדש דרך ההגדרות.');
+      }
+
+      // If still getting markedUnread error, try alternative method
+      if (error.message && error.message.includes('markedUnread')) {
+        console.log('⚠ Retrying with alternative method...');
 
         try {
           // Try a more basic send
@@ -196,6 +212,22 @@ class WhatsAppService {
           return { success: true };
         } catch (retryError) {
           console.error('✗ Retry also failed:', retryError);
+
+          // Check if retry also had frame detachment
+          if (retryError.message && retryError.message.includes('detached Frame')) {
+            console.error('⚠ CRITICAL: Frame detached during retry - destroying client');
+            this.isReady = false;
+            try {
+              if (this.client) {
+                await this.client.destroy();
+                this.client = null;
+              }
+            } catch (destroyError) {
+              console.error('Error destroying broken client:', destroyError);
+            }
+            throw new Error('חיבור WhatsApp התנתק. יש להתחבר מחדש דרך ההגדרות.');
+          }
+
           throw new Error(`שגיאה בשליחת הודעת וואטסאפ: ${retryError.message}`);
         }
       }
