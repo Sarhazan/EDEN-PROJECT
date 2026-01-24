@@ -3,6 +3,8 @@ const router = express.Router();
 const whatsappService = require('../services/whatsapp');
 const htmlGenerator = require('../services/htmlGenerator');
 const axios = require('axios');
+const i18n = require('../services/i18n');
+const { db } = require('../database/schema');
 
 // Function to check if URL is accessible
 async function waitForUrlAvailable(url, maxAttempts = 30, intervalMs = 4000) {
@@ -158,14 +160,26 @@ router.post('/send-bulk', async (req, res) => {
 
     const results = [];
     const crypto = require('crypto');
-    const { db } = require('../database/schema');
 
     // Send to each employee
     for (const [employeeId, data] of Object.entries(tasksByEmployee)) {
       try {
         console.log(`\n--- Processing employee ${employeeId} ---`);
-        const { phone, name, tasks, date } = data;
+        let { phone, name, tasks, date, language } = data;
         console.log(`Employee: ${name}, Phone: ${phone}, Tasks: ${tasks.length}`);
+
+        // Fallback: if client doesn't send language, query from database
+        if (!language) {
+          const employee = db.prepare('SELECT language FROM employees WHERE id = ?').get(employeeId);
+          language = employee?.language || 'he';
+          console.log(`Language not provided in request, queried from DB: ${language}`);
+        }
+
+        const employeeLanguage = language || 'he';
+        console.log(`Employee ${name} language: ${employeeLanguage}`);
+
+        // Get translations for this employee's language
+        const t = i18n.getFixedT(employeeLanguage, 'whatsapp');
 
         if (!phone) {
           console.error(`No phone number for employee ${name}`);
@@ -222,9 +236,9 @@ router.post('/send-bulk', async (req, res) => {
 
         console.log('✓ Vercel deployment confirmed, proceeding with WhatsApp send');
 
-        // Build message with all tasks
-        let message = `שלום ${name},\n\n`;
-        message += `משימות ליום ${date}:\n\n`;
+        // Build translated message
+        let message = t('greeting', { name }) + '\n\n';
+        message += t('taskListHeader', { date, count: tasks.length }) + '\n\n';
 
         sortedTasks.forEach((task, index) => {
           message += `${index + 1}. ${task.start_time} - ${task.title}\n`;
@@ -234,7 +248,7 @@ router.post('/send-bulk', async (req, res) => {
           message += '\n';
         });
 
-        message += `\n📱 *לצפייה אינטרקטיבית ואישור קבלה - קישור יגיע בהודעה הבאה*`;
+        message += '\n📱 ' + t('clickToView');
 
         // Send the message
         console.log('Sending task list message...');
