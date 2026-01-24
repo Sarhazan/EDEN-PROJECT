@@ -129,10 +129,11 @@ Plans:
 
 **Estimated Effort:** Medium (archive table, filters, cleanup job, stats calculations)
 
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (created by /gsd:plan-phase 4)
+- [ ] 04-01-PLAN.md — Backend history API, indexes, and data retention
+- [ ] 04-02-PLAN.md — Frontend history page with filters and statistics
 
 ---
 
