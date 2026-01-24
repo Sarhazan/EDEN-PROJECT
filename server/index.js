@@ -39,6 +39,10 @@ app.use('/docs', express.static(path.join(__dirname, '..', 'docs')));
 // Initialize database
 initializeDatabase();
 
+// Initialize data retention (scheduled cleanup)
+const { initializeDataRetention } = require('./services/dataRetention');
+initializeDataRetention();
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
