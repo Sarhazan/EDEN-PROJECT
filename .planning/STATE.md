@@ -10,20 +10,22 @@
 
 ## Current Position
 
-**Phase:** 4 of 4 (History & Archive) ✅ COMPLETE
-**Plan:** All plans executed and verified
-**Status:** Milestone v1 complete - all 4 phases finished
-**Last activity:** 2026-01-24 - Phase 4 verified
+**Phase:** 5 of 5 (Multi-Language Support) ⏳ PLANNED
+**Plan:** Not yet planned
+**Status:** Milestone v1 complete - Phase 5 added for v2
+**Last activity:** 2026-01-24 - Phase 5 added to roadmap
+**Next Phase:** Phase 5 - Multi-Language Support
 
 **Progress:**
 ```
-Milestone: v1 Feature Additions
-[████████████████████] 100% (27/27 requirements)
+Milestone: v1 Feature Additions (Complete) + v2 Multi-Language
+[███████████████░░░░░] 77% (27/35 requirements)
 
 Phase 1: Real-Time Infrastructure [██████████] 4/4 ✅ COMPLETE
 Phase 2: Enhanced Task Completion [██████████] 5/5 ✅ COMPLETE
 Phase 3: Status Tracking & Timing [██████████] 8/8 ✅ COMPLETE
 Phase 4: History & Archive [██████████] 8/8 ✅ COMPLETE
+Phase 5: Multi-Language Support [░░░░░░░░░░] 0/8 ⏳ PLANNED
 ```
 
 ## Performance Metrics
@@ -32,9 +34,10 @@ Phase 4: History & Archive [██████████] 8/8 ✅ COMPLETE
 
 | Metric | Value |
 |--------|-------|
-| Requirements completed | 27/27 ✅ |
+| Requirements completed | 27/35 (77%) |
 | Plans completed | 10 |
-| Phases completed | 4/4 ✅ |
+| Phases completed | 4/5 (80%) |
+| Phases planned | 5/5 (100%) |
 | Days in milestone | 6 (Jan 19-24) |
 | Blockers encountered | 0 |
 | Context reloads | 2 |
@@ -75,6 +78,10 @@ Phase 4: History & Archive [██████████] 8/8 ✅ COMPLETE
 | 2026-01-24 | react-tailwindcss-datepicker for date range | Hebrew localization support, responsive design, built-in shortcuts |
 | 2026-01-24 | Component composition for history page | HistoryStats → HistoryFilters → HistoryTable pattern for separation of concerns |
 
+### Roadmap Evolution
+
+- **2026-01-24:** Phase 5 added - Multi-Language Support (8 requirements: employee language preference, translated WhatsApp messages, translated interactive pages, auto-translation of worker notes to Hebrew, RTL/LTR support)
+
 ### Active TODOs
 
 - [x] Review and approve roadmap structure
@@ -93,7 +100,15 @@ Phase 4: History & Archive [██████████] 8/8 ✅ COMPLETE
 - [x] Execute 04-01 Backend History Infrastructure
 - [x] Execute 04-02 Frontend History Page
 - [x] Verify Phase 4 completion
-- [ ] Complete milestone v1 (audit and archive)
+- [x] Complete milestone v1
+- [ ] Plan Phase 5 (Multi-Language Support)
+- [ ] Execute Phase 5
+
+### Pending Todos
+
+2 todos captured for future work (see `.planning/todos/pending/`):
+- Add optional location linking to tasks with pin icon (ui)
+- [1 other todo]
 
 ### Known Blockers
 
