@@ -14,6 +14,7 @@
 
 הפיצ'רים הבאים כבר קיימים ועובדים במערכת:
 
+**Base System (existing):**
 - ✓ יצירת משימות (חד-פעמיות וחוזרות: יומי/שבועי/חודשי/שנתי) — existing
 - ✓ ניהול עובדים עם מספרי טלפון — existing
 - ✓ ניהול מערכות (מיזוג, אבטחה, מים, וכו') — existing
@@ -26,16 +27,44 @@
 - ✓ יצירה אוטומטית של משימות חוזרות — existing
 - ✓ תצוגת "משימות היום" למנהל — existing
 
+**v1.0 (shipped 2026-01-25):**
+- ✓ WebSocket connection בין שרת ללקוח — v1.0
+- ✓ עדכון מיידי במסך המנהל כשעובד מסמן משימה כהושלמה — v1.0
+- ✓ עדכון מיידי במסך המנהל כשעובד מעלה תמונה — v1.0
+- ✓ עדכון מיידי במסך המנהל כשעובד מוסיף הערה — v1.0
+- ✓ עובד יכול להעלות תמונה מהדף האינטראקטיבי (mobile/desktop) — v1.0
+- ✓ עובד יכול להוסיף הערת טקסט חופשית למשימה — v1.0
+- ✓ תמונות נשמרות כקבצים בשרת (תחת `/uploads`) — v1.0
+- ✓ מנהל רואה תמונות והערות שצורפו למשימה בממשק הניהול — v1.0
+- ✓ תמונות מוצגות כתצוגה מקדימה עם אפשרות הגדלה — v1.0
+- ✓ כל משימה כוללת הערכת זמן ביצוע (estimated_duration_minutes) — v1.0
+- ✓ חישוב זמן סיום מוערך (scheduled_time + estimated_duration) — v1.0
+- ✓ סטטוסים מפורשים: pending/sent/in_progress/completed + timing_status — v1.0
+- ✓ משימה מסומנת אוטומטית כ-late כשעבר הזמן המוערך לסיום — v1.0
+- ✓ משימות מאוחרות מוצגות בצבע אדום בממשק המנהל — v1.0
+- ✓ שמירת timestamp מדויק של מתי משימה הושלמה בפועל (completed_at) — v1.0
+- ✓ חישוב פער הזמן בין הזמן המוערך לזמן ההשלמה בפועל — v1.0
+- ✓ תצוגה ויזואלית של זמן שנותר/חריגה (עם אמוג'י ופורמט עברי) — v1.0
+- ✓ משימות שהושלמו נשמרות במסד הנתונים למשך 2 שנים — v1.0
+- ✓ עמוד היסטוריה מציג משימות שהושלמו בעבר — v1.0
+- ✓ סינון היסטוריה לפי תאריך (טווח תאריכים) — v1.0
+- ✓ סינון היסטוריה לפי עובד — v1.0
+- ✓ סינון היסטוריה לפי מערכת — v1.0
+- ✓ סינון היסטוריה לפי מיקום — v1.0
+- ✓ סטטיסטיקות בסיסיות: כמה משימות הושלמו, כמה מאוחרות, אחוז הצלחה — v1.0
+- ✓ ניקוי אוטומטי של משימות ישנות מ-2 שנים (cron job) — v1.0
+- ✓ הוספת שדה language לטבלת employees (עברית/אנגלית/רוסית/ערבית) — v1.0
+- ✓ מנהל יכול לבחור שפת עובד בממשק ניהול העובדים — v1.0
+- ✓ הודעות WhatsApp נשלחות בשפת העובד (תרגום דינמי) — v1.0
+- ✓ דפי אישור אינטראקטיביים מוצגים בשפת העובד — v1.0
+- ✓ כפתורים, תוויות, והודעות בדף האינטראקטיבי מתורגמים אוטומטית — v1.0
+- ✓ הערות שעובד כותב בשפתו מתורגמות לעברית למנהל — v1.0
+- ✓ ממשק המנהל תמיד בעברית עם תרגום אוטומטי להערות מעובדים — v1.0
+- ✓ תמיכה ב-RTL (Right-to-Left) לעברית וערבית, LTR לאנגלית ורוסית — v1.0
+
 ### Active
 
-הפיצ'רים הבאים צריכים להתווסף למערכת:
-
-- [ ] עדכונים בזמן אמת (WebSocket) - המנהל רואה מיד כשעובד מסיים משימה
-- [ ] העלאת תמונות בדף האינטראקטיבי - עובד יכול לצרף תמונה כהוכחה שהמשימה הושלמה
-- [ ] הוספת הערות למשימות - עובד יכול להוסיף הערה או לדווח על בעיה
-- [ ] סימון אוטומטי של משימות מאוחרות - משימות שעבר הזמן שלהן מסומנות באדום
-- [ ] ארכיון משימות (שמירה ל-2 שנים אחורה) - ניתן לצפות בהיסטוריה של משימות ישנות
-- [ ] מעקב אחר מצב משימות (pending/sent/in_progress/completed/late) - סטטוסים ברורים יותר
+הפיצ'רים הבאים צריכים להתווסף במיילסטון הבא:
 
 ### Out of Scope
 
@@ -45,26 +74,35 @@
 - דיווחים וסטטיסטיקות מתקדמות - לא בשלב הראשון, רק תצוגה בסיסית
 - תזכורות אוטומטיות לעובדים - לא צריך בשלב זה
 
-## Context
+## Current State
 
-**מצב נוכחי:**
-- הקוד הקיים במאגר הוא ההתחלה של המערכת
-- יש ממשק React מלא עם ניהול משימות, עובדים, מערכות, ספקים, מיקומים
-- יש שרת Node.js/Express עם SQLite
-- שילוב WhatsApp דרך whatsapp-web.js עובד
-- דפי אישור אינטראקטיביים מתארחים ב-Vercel (static HTML)
+**Shipped:** v1.0 MVP (2026-01-25)
 
-**סביבת פיתוח:**
-- Frontend: React 19 + Vite + Tailwind CSS (http://localhost:5174)
-- Backend: Node.js + Express + SQLite (better-sqlite3) (http://localhost:3002)
+**Codebase:**
+- 9,232 lines of JavaScript/JSX (client + server)
+- Frontend: React 19 + Vite + Tailwind CSS (http://localhost:5179)
+- Backend: Node.js + Express + SQLite with better-sqlite3 (http://localhost:3002)
+- WebSocket: Socket.IO 4.8.2 integrated with Express server
 - WhatsApp: whatsapp-web.js (unofficial API)
-- Deployment: Vercel לדפים סטטיים, Git-based workflow
+- Deployment: Vercel for static interactive HTML pages
+- Database: SQLite with WAL mode, 2-year data retention
+- Internationalization: i18next with 4 languages (he/en/ru/ar)
+- Translation: Hybrid Gemini API → Google Translate → original text
 
-**בעיות ידועות בקוד הקיים (לא נתקן עכשיו):**
-- אין WebSocket - זה מה שצריך להוסיף
-- Git operations חוסמים את השרת - זה עדיין נשאר כך
-- אין אימות משתמשים - המערכת פתוחה בכוונה
-- הרבה console.log - זה בסדר לעכשיו
+**Architecture:**
+- Real-time updates via WebSocket broadcast on task changes
+- Image uploads with Multer (5MB limit, JPEG/PNG only)
+- Server-side translation on write (translate once, not on every read)
+- Automatic late task detection with visual indicators
+- History with composite indexes for fast filtering
+- Cron job for automatic data cleanup (2 AM Israel time)
+
+**Known Limitations (by design):**
+- No authentication - system intentionally open
+- No auto-refresh UI for countdown updates (manual refresh required)
+- History page UI Hebrew-only (data is multilingual)
+- WebSocket disconnect doesn't show user notification
+- One image per task (multiple images deferred to v2)
 
 ## Constraints
 
@@ -76,13 +114,28 @@
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| WebSocket במקום polling | המנהל צריך לראות עדכונים מיידיים, polling גורם לעיכובים ולעומס | — Pending |
-| תמונות נשמרות בשרת | לא משתמשים בשירות חיצוני (S3/Cloudflare) כדי לשמור על פשטות | — Pending |
-| הערות כטקסט חופשי | עובדים כותבים הערות חופשיות, לא טפסים מובנים | — Pending |
-| ארכיון 2 שנים | שמירה ארוכת טווח לצורך מעקב היסטורי ותחזוקה | — Pending |
-| סטטוס "late" אוטומטי | המערכת מסמנת משימות מאוחרות אוטומטית בהתבסס על השעה שהוגדרה | — Pending |
+| Decision | Rationale | Outcome | Version |
+|----------|-----------|---------|---------|
+| Socket.IO integrated with Express | Real-time updates needed, using http.Server wrapper | ✅ Working | v1.0 |
+| CORS allow all origins | Development flexibility, no auth by design | ✅ Working | v1.0 |
+| Images stored on server filesystem | Avoid external S3/Cloudflare for simplicity | ✅ Working | v1.0 |
+| 5MB file size limit | Balance quality with server storage | ✅ Working | v1.0 |
+| Default 30 min task duration | Based on typical maintenance tasks | ✅ Working | v1.0 |
+| Composite index for history | Status → completed_at → employee_id → system_id | ✅ Working | v1.0 |
+| WAL mode for SQLite | Better concurrency for WebSocket writes | ✅ Working | v1.0 |
+| Default 7-day history view | Most relevant timeframe for managers | ✅ Working | v1.0 |
+| Hybrid translation | Gemini FREE → Google Translate PAID → original | ✅ Working | v1.0 |
+| Track translation_provider | Monitor costs, verify free tier usage | ✅ Working | v1.0 |
+| Server-side translation on write | Translate once, not on every read | ✅ Working | v1.0 |
+| ISO 639-1 language codes | International compatibility (he/en/ru/ar) | ✅ Working | v1.0 |
+| Database CHECK constraints | Validate language values at DB layer | ✅ Working | v1.0 |
+| Preload all 4 languages at startup | Synchronous availability in routes | ✅ Working | v1.0 |
+| Flag emojis for language ID | Visual indicators (🇮🇱 🇬🇧 🇷🇺 🇸🇦) | ✅ Working | v1.0 |
+| Preserve task data in Hebrew | Only translate UI text for employees | ✅ Working | v1.0 |
+| RTL for Hebrew/Arabic | dir="rtl" for he/ar, dir="ltr" for en/ru | ✅ Working | v1.0 |
+| Gemini 2.0 Flash Lite | 1.5 models retired, using 2.0 | ✅ Working | v1.0 |
+| Dependency injection for Socket.IO | Fix circular dependency in tasks.js | ✅ Working | v1.0 |
+| Daily recurring tasks start tomorrow | Avoid same-day execution confusion | ✅ Working | v1.0 |
 
 ---
-*Last updated: 2026-01-19 after initialization*
+*Last updated: 2026-01-25 after v1.0 milestone completion*
