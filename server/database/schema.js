@@ -100,6 +100,17 @@ function initializeDatabase() {
     // Column already exists, ignore error
   }
 
+  // Add language column to employees table (migration for Phase 5)
+  try {
+    db.exec(`ALTER TABLE employees ADD COLUMN language TEXT DEFAULT 'he' CHECK(language IN ('he', 'en', 'ru', 'ar'))`);
+    console.log('Added language column to employees table');
+  } catch (e) {
+    // Column already exists, ignore error
+    if (!e.message.includes('duplicate column name')) {
+      console.error('Error adding language column:', e.message);
+    }
+  }
+
   // Migration: Update status CHECK constraint to include 'received' and 'pending_approval'
   // SQLite doesn't support ALTER COLUMN for CHECK constraints
   // So we need to check if the constraint needs updating and recreate table if needed
