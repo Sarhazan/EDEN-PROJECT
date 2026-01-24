@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../database/schema');
 const { getCurrentTimestampIsrael } = require('../utils/dateUtils');
+const translation = require('../services/translation');
 
 // Store io instance reference
 let io;
@@ -176,11 +177,34 @@ router.post('/:token/complete', upload.single('image'), async (req, res) => {
       `).run(taskId, imagePath);
     }
 
-    // Save note if provided
+    // Save note if provided, translate to Hebrew if needed
     if (note && note.trim()) {
+      // Get employee language to determine if translation needed
+      const task = db.prepare('SELECT employee_id FROM tasks WHERE id = ?').get(taskId);
+      const employee = db.prepare('SELECT language FROM employees WHERE id = ?').get(task.employee_id);
+      const employeeLanguage = employee?.language || 'he';
+
+      let translatedNote = note.trim();
+      let originalLanguage = null;
+      let translationProvider = null;
+
+      if (employeeLanguage !== 'he') {
+        // Employee's language is not Hebrew, translate note
+        console.log(`Translating note from ${employeeLanguage} to Hebrew...`);
+        const result = await translation.translateToHebrew(note.trim(), employeeLanguage);
+        translatedNote = result.translation;
+        translationProvider = result.provider;
+        originalLanguage = employeeLanguage;
+
+        console.log(`Translation completed: ${translationProvider} (${employeeLanguage}→he)`);
+      }
+
+      // Save translated note, original language, and translation provider
       db.prepare(`
-        UPDATE tasks SET completion_note = ? WHERE id = ?
-      `).run(note.trim(), taskId);
+        UPDATE tasks SET completion_note = ?, original_language = ?, translation_provider = ? WHERE id = ?
+      `).run(translatedNote, originalLanguage, translationProvider, taskId);
+
+      console.log(`Note saved (language: ${originalLanguage || 'he'}, provider: ${translationProvider || 'none'})`);
     }
 
     // Capture completion timestamp
