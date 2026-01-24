@@ -77,6 +77,9 @@ Phase 5: Multi-Language Support [░░░░░░░░░░] 0/8 ⏳ PLANNED
 | 2026-01-24 | URL-based filter state for history | Shareable/bookmarkable filtered views - copy URL to share exact filter with colleague |
 | 2026-01-24 | react-tailwindcss-datepicker for date range | Hebrew localization support, responsive design, built-in shortcuts |
 | 2026-01-24 | Component composition for history page | HistoryStats → HistoryFilters → HistoryTable pattern for separation of concerns |
+| 2026-01-24 | Hybrid translation: Gemini → Google Translate | Start with FREE Gemini API (15 req/min, 1500/day), fallback to PAID Google Translate only when quota exceeded - cost optimization |
+| 2026-01-24 | Track translation_provider in database | Monitor which API used (gemini/google-translate/none) for cost analysis and quota management |
+| 2026-01-24 | Server-side translation on write | Translate once when employee submits note, not on every manager read - minimize API costs |
 
 ### Roadmap Evolution
 
@@ -106,9 +109,7 @@ Phase 5: Multi-Language Support [░░░░░░░░░░] 0/8 ⏳ PLANNED
 
 ### Pending Todos
 
-2 todos captured for future work (see `.planning/todos/pending/`):
-- Add optional location linking to tasks with pin icon (ui)
-- [1 other todo]
+No pending todos.
 
 ### Known Blockers
 
