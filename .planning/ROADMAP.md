@@ -14,6 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Stars System** - Task prioritization with starring and filtering
 - [x] **Phase 2: Resizable Columns** - Customizable column layouts with persistence
+- [ ] **Phase 2.1: WhatsApp Gateway Integration** (INSERTED) - Simple WhatsApp Web connection via local gateway
 - [ ] **Phase 3: Mobile Responsive Experience** - Full mobile optimization with hamburger menu and touch UI
 - [ ] **Phase 4: WhatsApp Connection Monitoring** - Comprehensive connection visibility and auto-recovery
 - [ ] **Phase 5: WhatsApp Web Integration** - Single-number WhatsApp Web connection for system notifications
@@ -51,6 +52,21 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Install re-resizable, implement resizable columns with localStorage persistence, add reset button
+
+### Phase 2.1: WhatsApp Gateway Integration (INSERTED)
+**Goal**: WhatsApp messages are reliably sent from single number via local gateway
+**Depends on**: Phase 2 (no UI dependencies)
+**Requirements**: TBD (to be defined during planning phase)
+**Success Criteria** (what must be TRUE):
+  1. Manager can start local WhatsApp gateway with simple npm command
+  2. Manager scans QR code once and WhatsApp session persists
+  3. All task notifications are sent successfully from connected WhatsApp number
+  4. Messages appear in recipient's WhatsApp with proper formatting
+  5. System shows clear error message when gateway is not running
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (to be determined during planning)
 
 ### Phase 3: Mobile Responsive Experience
 **Goal**: Managers can effectively use Eden on smartphones with touch-optimized interface and RTL support
@@ -102,12 +118,13 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stars System | 3/3 | Complete | 2026-01-25 |
 | 2. Resizable Columns | 1/1 | Complete | 2026-01-25 |
+| 2.1. WhatsApp Gateway (INSERTED) | 0/? | Not started | - |
 | 3. Mobile Responsive | 0/3 | Not started | - |
 | 4. WhatsApp Monitoring | 0/? | Not started | - |
 | 5. WhatsApp Web Integration | 0/? | Not started | - |
