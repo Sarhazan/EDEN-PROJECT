@@ -6,10 +6,9 @@ client/node_modules/
 client/dist/
 dist/
 
-# Environment files
+# Environment files (keep .env.production for deployment config)
 .env
 .env.local
-.env.production
 
 # Database (ignore locally, but Railway will persist it)
 # For local development, we ignore DB files

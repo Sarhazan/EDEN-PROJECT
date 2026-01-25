@@ -1,8 +1,148 @@
-# מדריך פריסה ל-Railway
+# Deployment Guide - Eden Maintenance System
 
-## שלב 1: הכנה ראשונית
+## Quick Deploy to Render.com
 
-1. צור חשבון ב-Railway:
+### Prerequisites
+- GitHub account with this repository pushed
+- Render.com account (free tier available)
+- API keys for Gemini and Google Translate (optional)
+
+### Step-by-Step Deployment
+
+#### 1. Push to GitHub
+```bash
+git push origin master
+git push --tags
+```
+
+#### 2. Deploy on Render.com
+
+1. **Sign up/Login** to [Render.com](https://render.com)
+
+2. **Create New Web Service**
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository: `Sarhazan/EDEN-PROJECT`
+   - Click "Connect"
+
+3. **Configure Service**
+   - **Name**: `eden-maintenance` (or your preferred name)
+   - **Region**: Frankfurt (or closest to you)
+   - **Branch**: `master`
+   - **Runtime**: `Node`
+   - **Build Command**:
+     ```
+     npm install && npm run install:all && npm run build
+     ```
+   - **Start Command**:
+     ```
+     NODE_ENV=production npm start
+     ```
+   - **Plan**: Free
+
+4. **Add Environment Variables** (optional - for translation features)
+   - Click "Environment" tab
+   - Add `GEMINI_API_KEY` (get from [Google AI Studio](https://aistudio.google.com/apikey))
+   - Add `GOOGLE_TRANSLATE_API_KEY` (get from Google Cloud Console)
+
+5. **Deploy**
+   - Click "Create Web Service"
+   - Wait 5-10 minutes for deployment
+   - You'll get a public URL like: `https://eden-maintenance.onrender.com`
+
+#### 3. Access Your App
+
+Your app will be available at: `https://your-service-name.onrender.com`
+
+**Important Notes:**
+- Free tier apps go to sleep after 15 minutes of inactivity
+- First request after sleep will take 30-60 seconds to wake up
+- Database and WhatsApp session are stored in ephemeral storage (reset on redeploy)
+
+### Alternative: Deploy to Railway.app
+
+1. Visit [Railway.app](https://railway.app)
+2. Click "Start a New Project" → "Deploy from GitHub repo"
+3. Select your repository
+4. Railway will auto-detect Node.js and deploy
+5. Add environment variables in Railway dashboard
+6. Get your public URL from Railway
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NODE_ENV` | Yes | Set to `production` |
+| `PORT` | Auto-set | Railway/Render sets automatically |
+| `GEMINI_API_KEY` | Optional | For translation (free tier: 1500 req/day) |
+| `GOOGLE_TRANSLATE_API_KEY` | Optional | Fallback translation (paid) |
+
+## Post-Deployment
+
+### 1. WhatsApp Connection
+- Open your deployed URL
+- Navigate to WhatsApp settings
+- Scan QR code with your WhatsApp
+- Connection will persist until server restart
+
+### 2. Database Setup
+- Database is created automatically on first run
+- Add employees, systems, locations, and suppliers via the UI
+
+### 3. Testing
+- Create a test task
+- Assign to an employee
+- Send via WhatsApp
+- Verify real-time updates work
+
+## Troubleshooting
+
+### App Not Loading
+- Check Render logs for errors
+- Verify build completed successfully
+- Check that PORT is bound to `0.0.0.0`
+
+### WhatsApp Not Connecting
+- Ensure WhatsApp Web is not open on your phone
+- Try reconnecting via the UI
+- Check server logs for connection errors
+
+### Real-time Updates Not Working
+- Verify WebSocket connection in browser console
+- Check that Socket.IO is properly initialized
+- Ensure client connects to correct URL (same origin in production)
+
+## Production Checklist
+
+- [ ] Code pushed to GitHub with latest changes
+- [ ] Render service created and deployed
+- [ ] Environment variables configured (if using translation)
+- [ ] App accessible via public URL
+- [ ] WhatsApp connected successfully
+- [ ] Test task created and sent
+- [ ] Real-time updates verified
+- [ ] Multi-language support tested (if applicable)
+
+## Cost Estimate
+
+**Free Tier (Render.com):**
+- Web service: $0/month (with 15-min sleep)
+- No credit card required
+- Perfect for testing and small teams
+
+**Paid Tier (if needed):**
+- Render: $7/month (no sleep, always on)
+- Railway: $5/month + usage
+
+**Translation API:**
+- Gemini: FREE (1500 requests/day)
+- Google Translate: ~$20/million characters (fallback only)
+
+## Support
+
+For issues or questions, check:
+- Server logs in Render dashboard
+- Browser console for client errors
+- GitHub Issues for known problems
    - גש ל-https://railway.app
    - הירשם עם GitHub (מומלץ)
 

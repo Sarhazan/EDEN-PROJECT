@@ -19,7 +19,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
@@ -72,8 +72,16 @@ app.use('/api/history', historyRouter);
 tasksRouter.setIo(io);
 taskConfirmationRouter.setIo(io);
 
-// Note: Client is deployed separately on Vercel
-// Static file serving is not needed in this Railway deployment
+// Serve React app in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from the React app build directory
+  app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
+
+  // Handle React routing - return index.html for all non-API routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
