@@ -246,13 +246,35 @@ router.post('/send-bulk', async (req, res) => {
         let message = t('greeting', { name }) + '\n\n';
         message += t('taskListHeader', { date, count: tasks.length }) + '\n\n';
 
-        sortedTasks.forEach((task, index) => {
-          message += `${index + 1}. ${task.start_time} - ${task.title}\n`;
-          if (task.description) {
-            message += `   ${task.description}\n`;
+        // Translate task titles and descriptions to employee's language
+        const translation = require('../services/translation');
+        const translationService = new translation();
+
+        for (const [index, task] of sortedTasks.entries()) {
+          // Translate title and description if employee language is not Hebrew
+          let translatedTitle = task.title;
+          let translatedDescription = task.description;
+
+          if (language && language !== 'he') {
+            try {
+              const titleResult = await translationService.translateFromHebrew(task.title, language);
+              translatedTitle = titleResult.translation;
+
+              if (task.description) {
+                const descResult = await translationService.translateFromHebrew(task.description, language);
+                translatedDescription = descResult.translation;
+              }
+            } catch (error) {
+              console.warn(`Translation failed for task ${task.id}, using original text:`, error.message);
+            }
+          }
+
+          message += `${index + 1}. ${task.start_time} - ${translatedTitle}\n`;
+          if (translatedDescription) {
+            message += `   ${translatedDescription}\n`;
           }
           message += '\n';
-        });
+        }
 
         message += '\n📱 ' + t('clickToView');
 
