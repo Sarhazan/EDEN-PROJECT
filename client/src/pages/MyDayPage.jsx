@@ -8,6 +8,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../components/forms/datepicker-custom.css';
 import axios from 'axios';
+import { Resizable } from 're-resizable';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -27,6 +28,20 @@ export default function MyDayPage() {
     return localStorage.getItem('starFilter') === 'true';
   });
 
+  // Column widths state with localStorage initialization
+  const [columnWidths, setColumnWidths] = useState(() => {
+    const stored = localStorage.getItem('myDayColumnWidths');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        console.error('Failed to parse column widths:', e);
+      }
+    }
+    // Default: 66.67% / 33.33% (matches col-span-8 / col-span-4)
+    return { left: '66.67%', right: '33.33%' };
+  });
+
   // Listen to localStorage changes for star filter (cross-tab sync)
   useEffect(() => {
     const handleStorageChange = (e) => {
@@ -37,6 +52,15 @@ export default function MyDayPage() {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  // Debounced localStorage save for column widths
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem('myDayColumnWidths', JSON.stringify(columnWidths));
+    }, 100); // 100ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [columnWidths]);
 
   // Update current time every minute to refresh countdown displays
   useEffect(() => {
@@ -842,9 +866,208 @@ export default function MyDayPage() {
         </div>
       ) : (
         /* Split layout when not filtering by employee */
-        <div className="grid grid-cols-12 gap-6">
-          {/* Recurring Tasks (All Systems) - RIGHT SIDE */}
-          <div className="col-span-8">
+        <>
+          {/* Desktop: Resizable columns (>= 1024px) */}
+          <div className="hidden lg:flex gap-6">
+            {/* Recurring Tasks (All Systems) - RIGHT SIDE - Resizable */}
+            <Resizable
+              size={{ width: columnWidths.left, height: 'auto' }}
+              onResizeStop={(e, direction, ref, d) => {
+                const container = ref.parentElement;
+                const containerWidth = container.offsetWidth;
+                const newLeftWidth = ref.offsetWidth;
+                const newRightWidth = containerWidth - newLeftWidth - 24; // 24px = gap-6
+
+                // Enforce min-width: 250px for both columns
+                if (newLeftWidth < 250 || newRightWidth < 250) return;
+
+                // Enforce max-width: 70% for both columns
+                const leftPercent = (newLeftWidth / containerWidth) * 100;
+                const rightPercent = (newRightWidth / containerWidth) * 100;
+                if (leftPercent > 70 || rightPercent > 70) return;
+
+                setColumnWidths({
+                  left: `${newLeftWidth}px`,
+                  right: `${newRightWidth}px`
+                });
+              }}
+              enable={{
+                top: false,
+                right: true, // Only allow horizontal resize on right edge
+                bottom: false,
+                left: false,
+                topRight: false,
+                bottomRight: false,
+                bottomLeft: false,
+                topLeft: false
+              }}
+              minWidth={250}
+              maxWidth="70%"
+              className="relative"
+              handleStyles={{
+                right: {
+                  width: '8px',
+                  right: '-4px',
+                  cursor: 'col-resize',
+                  backgroundColor: 'transparent',
+                  zIndex: 10
+                }
+              }}
+              handleClasses={{
+                right: 'hover:bg-indigo-200 transition-colors'
+              }}
+            >
+              <div className="bg-white rounded-lg shadow-md p-4 h-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">
+                    משימות קבועות ({recurringTasks.length})
+                  </h2>
+                  <button
+                    onClick={handleSendAllTasks}
+                    disabled={isSendingBulk}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FaPaperPlane />
+                    <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+                  </button>
+                </div>
+
+                {/* Filters */}
+                <div className="mb-4 flex gap-3">
+                  {/* Primary filter - Category selection */}
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2"
+                  >
+                    <option value="">כל המשימות</option>
+                    <option value="priority">סנן לפי עדיפות</option>
+                    <option value="system">סנן לפי מערכת</option>
+                    <option value="status">סנן לפי סטטוס</option>
+                    <option value="employee">סנן לפי עובד</option>
+                    <option value="location">סנן לפי מיקום</option>
+                  </select>
+
+                  {/* Secondary filter - Value selection based on category */}
+                  {filterCategory && (
+                    <select
+                      value={filterValue}
+                      onChange={(e) => setFilterValue(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-2"
+                    >
+                      <option value="">בחר...</option>
+
+                      {filterCategory === 'priority' && (
+                        <>
+                          <option value="urgent">דחוף</option>
+                          <option value="normal">רגיל</option>
+                          <option value="optional">עדיפות נמוכה</option>
+                        </>
+                      )}
+
+                      {filterCategory === 'system' &&
+                        systems.map((system) => (
+                          <option key={system.id} value={system.id}>
+                            {system.name}
+                          </option>
+                        ))
+                      }
+
+                      {filterCategory === 'status' && (
+                        <>
+                          <option value="draft">חדש</option>
+                          <option value="sent">נשלח</option>
+                          <option value="in_progress">בביצוע</option>
+                        </>
+                      )}
+
+                      {filterCategory === 'employee' && (
+                        <>
+                          <option value="general">כללי (ללא עובד)</option>
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.id}>
+                              {emp.name}
+                            </option>
+                          ))}
+                        </>
+                      )}
+
+                      {filterCategory === 'location' && (
+                        <>
+                          <option value="none">ללא מיקום</option>
+                          {locations && locations.map((loc) => (
+                            <option key={loc.id} value={loc.id}>
+                              {loc.name}
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                  )}
+
+                  {/* Clear filters button */}
+                  {filterCategory && (
+                    <button
+                      onClick={() => {
+                        setFilterCategory('');
+                        setFilterValue('');
+                      }}
+                      className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
+                    >
+                      נקה סינון
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {recurringTasks.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
+                  ) : (
+                    recurringTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                    ))
+                  )}
+                </div>
+              </div>
+            </Resizable>
+
+            {/* One-Time and Late Tasks - LEFT SIDE - Controlled width */}
+            <div style={{ width: columnWidths.right }} className="relative">
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
+
+                <div className="space-y-3">
+                  {oneTimeTasks.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
+                  ) : (
+                    oneTimeTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                    ))
+                  )}
+                </div>
+
+                {lateTasks.length > 0 && (
+                  <>
+                    <div className="my-4 border-t border-gray-300" />
+                    <h3 className="text-lg font-semibold text-red-600 mb-3">
+                      משימות באיחור
+                    </h3>
+                    <div className="space-y-3">
+                      {lateTasks.map((task) => (
+                        <div key={task.id} className="border-2 border-red-300 rounded-lg">
+                          <TaskCard task={task} onEdit={handleEdit} />
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile: Stack vertically (< 1024px) */}
+          <div className="lg:hidden grid grid-cols-1 gap-6">
+            {/* Recurring Tasks */}
             <div className="bg-white rounded-lg shadow-md p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">
@@ -957,10 +1180,8 @@ export default function MyDayPage() {
                 )}
               </div>
             </div>
-          </div>
 
-          {/* One-Time and Late Tasks - LEFT SIDE */}
-          <div className="col-span-4">
+            {/* One-Time and Late Tasks */}
             <div className="bg-white rounded-lg shadow-md p-4">
               <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
 
@@ -991,7 +1212,7 @@ export default function MyDayPage() {
               )}
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
