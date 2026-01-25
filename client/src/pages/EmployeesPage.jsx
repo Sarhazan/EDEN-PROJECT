@@ -103,7 +103,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* Employees Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {employees.length === 0 ? (
           <div className="col-span-full bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
             אין עובדים. לחץ על "הוסף עובד" כדי להתחיל
