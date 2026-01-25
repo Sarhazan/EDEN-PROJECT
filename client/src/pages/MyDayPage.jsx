@@ -480,7 +480,7 @@ export default function MyDayPage() {
       </div>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-6 md:grid-cols-4">
         {/* 1. Total tasks for today */}
         <div className="bg-blue-50 border-r-4 border-blue-500 rounded-lg p-4">
           <div className="flex items-center gap-3">
@@ -677,15 +677,16 @@ export default function MyDayPage() {
       {/* Timeline Chart - Next 7 Days */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
         <h3 className="text-lg font-semibold mb-4">משימות לשבוע הקרוב</h3>
-        <div className="flex items-end justify-between gap-2 h-40 pt-4">
-          {timelineData.timeline.map((day, index) => {
-            const barHeight = (day.count / timelineData.maxCount) * 100;
-            return (
-              <div
-                key={index}
-                onClick={() => setSelectedDate(day.date)}
-                className="flex-1 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-              >
+        <div className="overflow-x-auto -mx-4 px-4">
+          <div className="flex items-end justify-between gap-2 h-40 pt-4">
+            {timelineData.timeline.map((day, index) => {
+              const barHeight = (day.count / timelineData.maxCount) * 100;
+              return (
+                <div
+                  key={index}
+                  onClick={() => setSelectedDate(day.date)}
+                  className="flex-1 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[60px]"
+                >
                 {/* Bar */}
                 <div className="w-full flex flex-col justify-end h-28">
                   <div
@@ -725,8 +726,9 @@ export default function MyDayPage() {
                   </div>
                 </div>
               </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
