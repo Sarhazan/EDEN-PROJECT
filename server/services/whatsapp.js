@@ -97,22 +97,9 @@ class WhatsAppService {
         this.qrCode = null;
       });
 
-      // Authenticated event - also set ready here as fallback
-      // (NoAuth strategy may not fire 'ready' event reliably - known library issue)
+      // Authenticated event - session loaded successfully
       this.client.on('authenticated', () => {
-        console.log('✓ WhatsApp client authenticated');
-
-        // Wait a bit to ensure client is fully initialized before marking ready
-        // This is a workaround for NoAuth ready event not firing (library bug)
-        setTimeout(() => {
-          if (!this.isReady) { // Only set if ready event hasn't fired yet
-            console.log('  Setting isReady=true (fallback - ready event did not fire)');
-            this.isReady = true;
-            this.qrCode = null;
-          } else {
-            console.log('  ready event already fired, skipping fallback');
-          }
-        }, 5000); // Wait 5 seconds for ready event, then fallback
+        console.log('✓ WhatsApp client authenticated - session loaded from MongoDB');
       });
 
       // Authentication failure event
@@ -129,41 +116,9 @@ class WhatsAppService {
         this.client = null;
       });
 
-      // Loading screen event - use this to detect when authentication completes
-      this.client.on('loading_screen', (percent, message) => {
-        console.log(`Loading: ${percent}% - ${message}`);
-
-        // RemoteAuth may not fire 'ready' event reliably - use loading_screen as fallback
-        if (percent >= 99 && !this.isReady) {
-          console.log('⚠ Loading reached 99% but ready event has not fired yet');
-          console.log('  Will wait 8 seconds then check if we should mark as ready...');
-
-          setTimeout(() => {
-            // Only mark ready if:
-            // 1. Still not ready (ready event didn't fire)
-            // 2. Client still exists
-            // 3. Loading reached high percentage
-            if (!this.isReady && this.client) {
-              console.log('✓ Setting isReady=true after loading_screen 99% (fallback mechanism)');
-              this.isReady = true;
-              this.qrCode = null;
-            } else if (this.isReady) {
-              console.log('  ready event fired in the meantime - no action needed');
-            }
-          }, 8000); // Wait 8 seconds for ready event
-        }
-      });
-
-      // RemoteAuth events - track session storage
+      // Session saved event
       this.client.on('remote_session_saved', () => {
-        console.log('✓ WhatsApp session saved to MongoDB successfully');
-      });
-
-      // Force immediate backup after authentication
-      this.client.on('authenticated', async () => {
-        console.log('⚡ Authentication complete - forcing immediate session backup...');
-        // The authStrategy will automatically save the session
-        // No need to manually trigger - RemoteAuth handles it
+        console.log('✓ WhatsApp session saved to MongoDB');
       });
 
       // Initialize the client
