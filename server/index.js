@@ -103,7 +103,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`Local: http://localhost:${PORT}`);
   console.log(`Network: http://192.168.1.35:${PORT}`);
-  console.log(`WhatsApp: Ready with NoAuth + fallback trigger`);
+  console.log(`WhatsApp: Ready with LocalAuth (session persistent)`);
 });
 
 // Export io instance for use in routes

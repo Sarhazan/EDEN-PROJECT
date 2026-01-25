@@ -1,4 +1,4 @@
-const { Client, NoAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const chromium = require('@sparticuz/chromium');
 
@@ -13,9 +13,15 @@ class WhatsAppService {
   async initialize() {
     console.log('=== WhatsAppService.initialize() called ===');
 
-    // Always destroy existing client to force new QR code
-    if (this.client) {
-      console.log('Destroying existing client to get fresh QR code...');
+    // Check if client already exists and is ready
+    if (this.client && this.isReady) {
+      console.log('Client already initialized and ready - reusing existing session');
+      return;
+    }
+
+    // If client exists but not ready, destroy it
+    if (this.client && !this.isReady) {
+      console.log('Client exists but not ready - destroying and recreating...');
       try {
         await this.client.destroy();
       } catch (error) {
@@ -26,10 +32,10 @@ class WhatsAppService {
       this.qrCode = null;
     }
 
-    console.log('Creating new WhatsApp client (no session storage)...');
+    console.log('Creating new WhatsApp client with LocalAuth...');
 
     try {
-      // Create WhatsApp client without authentication storage
+      // Create WhatsApp client with authentication storage
       const puppeteerConfig = {
         headless: chromium.headless,
         args: chromium.args,
@@ -39,7 +45,7 @@ class WhatsAppService {
       console.log('Using Chromium from @sparticuz/chromium package');
 
       this.client = new Client({
-        authStrategy: new NoAuth(),
+        authStrategy: new LocalAuth(),
         puppeteer: puppeteerConfig
       });
       console.log('Client object created successfully');
