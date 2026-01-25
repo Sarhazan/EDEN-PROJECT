@@ -7,6 +7,8 @@ services:
     plan: free
     buildCommand: npm install && npm run install:all && npm run build
     startCommand: NODE_ENV=production npm start
+    buildPacks:
+      - name: puppeteer
     envVars:
       - key: NODE_ENV
         value: production
