@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FaEdit, FaTrash, FaPaperPlane, FaRedo, FaCheck, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPaperPlane, FaRedo, FaCheck, FaMapMarkerAlt, FaStar, FaRegStar } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 import { format } from 'date-fns';
 import axios from 'axios';
@@ -47,7 +47,7 @@ const frequencyLabels = {
 };
 
 export default function TaskCard({ task, onEdit }) {
-  const { updateTaskStatus, deleteTask, updateTask, employees, locations } = useApp();
+  const { updateTaskStatus, toggleTaskStar, deleteTask, updateTask, employees, locations } = useApp();
   const [isChangingEmployee, setIsChangingEmployee] = useState(false);
   const [isChangingLocation, setIsChangingLocation] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -73,6 +73,15 @@ export default function TaskCard({ task, onEdit }) {
     const newStatus = task.status === 'completed' ? 'draft' : 'completed';
     try {
       await updateTaskStatus(task.id, newStatus);
+    } catch (error) {
+      alert('שגיאה: ' + error.message);
+    }
+  };
+
+  const handleStarClick = async (e) => {
+    e.stopPropagation();
+    try {
+      await toggleTaskStar(task.id);
     } catch (error) {
       alert('שגיאה: ' + error.message);
     }
@@ -196,6 +205,17 @@ export default function TaskCard({ task, onEdit }) {
             </h3>
 
             <div className="flex gap-2 items-start flex-shrink-0">
+              <button
+                onClick={handleStarClick}
+                className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 ${
+                  task.is_starred === 1
+                    ? 'text-yellow-500 hover:text-yellow-600'
+                    : 'text-gray-400 hover:text-gray-500'
+                }`}
+                title={task.is_starred === 1 ? 'בטל כוכב' : 'סמן בכוכב'}
+              >
+                {task.is_starred === 1 ? <FaStar className="text-xl" /> : <FaRegStar className="text-xl" />}
+              </button>
               {(task.status === 'sent' || task.status === 'received') && task.sent_at && (
                 <div className="flex flex-col gap-1">
                   {/* נשלח - תמיד מוצג כשיש sent_at */}
