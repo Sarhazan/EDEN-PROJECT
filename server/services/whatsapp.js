@@ -67,9 +67,22 @@ class WhatsAppService {
         this.qrCode = null;
       });
 
-      // Authenticated event
+      // Authenticated event - also set ready here as fallback
+      // (NoAuth strategy may not fire 'ready' event reliably - known library issue)
       this.client.on('authenticated', () => {
         console.log('✓ WhatsApp client authenticated');
+
+        // Wait a bit to ensure client is fully initialized before marking ready
+        // This is a workaround for NoAuth ready event not firing (library bug)
+        setTimeout(() => {
+          if (!this.isReady) { // Only set if ready event hasn't fired yet
+            console.log('  Setting isReady=true (fallback - ready event did not fire)');
+            this.isReady = true;
+            this.qrCode = null;
+          } else {
+            console.log('  ready event already fired, skipping fallback');
+          }
+        }, 5000); // Wait 5 seconds for ready event, then fallback
       });
 
       // Authentication failure event

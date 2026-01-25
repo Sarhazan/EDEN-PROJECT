@@ -48,8 +48,11 @@ export default function MyDayPage() {
     const now = new Date();
     const currentTime = format(now, 'HH:mm');
 
+    // Combine both recurring and one-time tasks for sending
+    const allTasksToConsider = [...recurringTasks, ...oneTimeTasks];
+
     // Filter tasks to send (not sent yet, and time hasn't passed)
-    let tasksToSend = recurringTasks.filter(task => {
+    let tasksToSend = allTasksToConsider.filter(task => {
       // Only draft tasks (not sent yet)
       if (task.status !== 'draft') return false;
 
@@ -65,14 +68,8 @@ export default function MyDayPage() {
       return true;
     });
 
-    // Apply employee filter if active
-    if (filterCategory === 'employee' && filterValue) {
-      if (filterValue === 'general') {
-        tasksToSend = tasksToSend.filter(t => !t.employee_id);
-      } else {
-        tasksToSend = tasksToSend.filter(t => t.employee_id === parseInt(filterValue));
-      }
-    }
+    // Note: Employee filter is already applied to recurringTasks and oneTimeTasks
+    // so no need to apply it again here
 
     if (tasksToSend.length === 0) {
       alert('אין משימות לשליחה (כל המשימות כבר נשלחו או שהזמן עבר)');
@@ -282,20 +279,30 @@ export default function MyDayPage() {
 
   // Filter one-time tasks (selected date, not completed) and sort by time
   const oneTimeTasks = useMemo(() => {
-    return tasks
+    let filtered = tasks
       .filter(
         (t) =>
           shouldTaskAppearOnDate(t, selectedDate) &&
           t.status !== 'completed' &&
           t.is_recurring === 0 // One-time tasks only
-      )
-      .sort((a, b) => {
-        // Sort by start_time chronologically
-        const timeA = a.start_time || '00:00';
-        const timeB = b.start_time || '00:00';
-        return timeA.localeCompare(timeB);
-      });
-  }, [tasks, selectedDate]);
+      );
+
+    // Apply employee filter (same logic as recurring tasks)
+    if (filterCategory === 'employee' && filterValue) {
+      if (filterValue === 'general') {
+        filtered = filtered.filter((t) => !t.employee_id);
+      } else {
+        filtered = filtered.filter((t) => t.employee_id === parseInt(filterValue));
+      }
+    }
+
+    return filtered.sort((a, b) => {
+      // Sort by start_time chronologically
+      const timeA = a.start_time || '00:00';
+      const timeB = b.start_time || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+  }, [tasks, selectedDate, filterCategory, filterValue]);
 
   // Filter late tasks (is_late = true, not completed) and sort by date and time
   const lateTasks = useMemo(() => {
@@ -683,157 +690,281 @@ export default function MyDayPage() {
         </p>
       </div>
 
-      {/* Main Content - Split Layout */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Recurring Tasks (All Systems) - RIGHT SIDE */}
-        <div className="col-span-8">
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">
-                משימות קבועות ({recurringTasks.length})
-              </h2>
-              <button
-                onClick={handleSendAllTasks}
-                disabled={isSendingBulk}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FaPaperPlane />
-                <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
-              </button>
-            </div>
+      {/* Main Content - Dynamic Layout */}
+      {filterCategory === 'employee' && filterValue ? (
+        /* Unified view when filtering by employee */
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">
+              כל המשימות ({recurringTasks.length + oneTimeTasks.length})
+            </h2>
+            <button
+              onClick={handleSendAllTasks}
+              disabled={isSendingBulk}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaPaperPlane />
+              <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+            </button>
+          </div>
 
-            {/* Filters */}
-            <div className="mb-4 flex gap-3">
-              {/* Primary filter - Category selection */}
+          {/* Filters */}
+          <div className="mb-4 flex gap-3">
+            {/* Primary filter - Category selection */}
+            <select
+              value={filterCategory}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2"
+            >
+              <option value="">כל המשימות</option>
+              <option value="priority">סנן לפי עדיפות</option>
+              <option value="system">סנן לפי מערכת</option>
+              <option value="status">סנן לפי סטטוס</option>
+              <option value="employee">סנן לפי עובד</option>
+              <option value="location">סנן לפי מיקום</option>
+            </select>
+
+            {/* Secondary filter - Value selection based on category */}
+            {filterCategory && (
               <select
-                value={filterCategory}
-                onChange={(e) => handleCategoryChange(e.target.value)}
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2"
               >
-                <option value="">כל המשימות</option>
-                <option value="priority">סנן לפי עדיפות</option>
-                <option value="system">סנן לפי מערכת</option>
-                <option value="status">סנן לפי סטטוס</option>
-                <option value="employee">סנן לפי עובד</option>
-                <option value="location">סנן לפי מיקום</option>
-              </select>
+                <option value="">בחר...</option>
 
-              {/* Secondary filter - Value selection based on category */}
-              {filterCategory && (
-                <select
-                  value={filterValue}
-                  onChange={(e) => setFilterValue(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2"
-                >
-                  <option value="">בחר...</option>
+                {filterCategory === 'priority' && (
+                  <>
+                    <option value="urgent">דחוף</option>
+                    <option value="normal">רגיל</option>
+                    <option value="optional">עדיפות נמוכה</option>
+                  </>
+                )}
 
-                  {filterCategory === 'priority' && (
-                    <>
-                      <option value="urgent">דחוף</option>
-                      <option value="normal">רגיל</option>
-                      <option value="optional">עדיפות נמוכה</option>
-                    </>
-                  )}
+                {filterCategory === 'system' &&
+                  systems.map((system) => (
+                    <option key={system.id} value={system.id}>
+                      {system.name}
+                    </option>
+                  ))
+                }
 
-                  {filterCategory === 'system' &&
-                    systems.map((system) => (
-                      <option key={system.id} value={system.id}>
-                        {system.name}
+                {filterCategory === 'status' && (
+                  <>
+                    <option value="draft">חדש</option>
+                    <option value="sent">נשלח</option>
+                    <option value="in_progress">בביצוע</option>
+                  </>
+                )}
+
+                {filterCategory === 'employee' && (
+                  <>
+                    <option value="general">כללי (ללא עובד)</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name}
                       </option>
-                    ))
-                  }
+                    ))}
+                  </>
+                )}
 
-                  {filterCategory === 'status' && (
-                    <>
-                      <option value="draft">חדש</option>
-                      <option value="sent">נשלח</option>
-                      <option value="in_progress">בביצוע</option>
-                    </>
-                  )}
+                {filterCategory === 'location' && (
+                  <>
+                    <option value="none">ללא מיקום</option>
+                    {locations && locations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+            )}
 
-                  {filterCategory === 'employee' && (
-                    <>
-                      <option value="general">כללי (ללא עובד)</option>
-                      {employees.map((emp) => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.name}
-                        </option>
-                      ))}
-                    </>
-                  )}
-
-                  {filterCategory === 'location' && (
-                    <>
-                      <option value="none">ללא מיקום</option>
-                      {locations && locations.map((loc) => (
-                        <option key={loc.id} value={loc.id}>
-                          {loc.name}
-                        </option>
-                      ))}
-                    </>
-                  )}
-                </select>
-              )}
-
-              {/* Clear filters button */}
-              {filterCategory && (
-                <button
-                  onClick={() => {
-                    setFilterCategory('');
-                    setFilterValue('');
-                  }}
-                  className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
-                >
-                  נקה סינון
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              {recurringTasks.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
-              ) : (
-                recurringTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} onEdit={handleEdit} />
-                ))
-              )}
-            </div>
+            {/* Clear filters button */}
+            {filterCategory && (
+              <button
+                onClick={() => {
+                  setFilterCategory('');
+                  setFilterValue('');
+                }}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
+              >
+                נקה סינון
+              </button>
+            )}
           </div>
-        </div>
 
-        {/* One-Time and Late Tasks - LEFT SIDE */}
-        <div className="col-span-4">
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
-
-            <div className="space-y-3">
-              {oneTimeTasks.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
-              ) : (
-                oneTimeTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} onEdit={handleEdit} />
-                ))
-              )}
-            </div>
-
-            {lateTasks.length > 0 && (
-              <>
-                <div className="my-4 border-t border-gray-300" />
-                <h3 className="text-lg font-semibold text-red-600 mb-3">
-                  משימות באיחור
-                </h3>
-                <div className="space-y-3">
-                  {lateTasks.map((task) => (
-                    <div key={task.id} className="border-2 border-red-300 rounded-lg">
-                      <TaskCard task={task} onEdit={handleEdit} />
-                    </div>
-                  ))}
-                </div>
-              </>
+          {/* Unified task list - all tasks sorted by time */}
+          <div className="space-y-3">
+            {[...recurringTasks, ...oneTimeTasks]
+              .sort((a, b) => {
+                const timeA = a.start_time || '00:00';
+                const timeB = b.start_time || '00:00';
+                return timeA.localeCompare(timeB);
+              })
+              .map((task) => (
+                <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+              ))
+            }
+            {recurringTasks.length === 0 && oneTimeTasks.length === 0 && (
+              <p className="text-gray-500 text-center py-8">אין משימות להצגה</p>
             )}
           </div>
         </div>
-      </div>
+      ) : (
+        /* Split layout when not filtering by employee */
+        <div className="grid grid-cols-12 gap-6">
+          {/* Recurring Tasks (All Systems) - RIGHT SIDE */}
+          <div className="col-span-8">
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">
+                  משימות קבועות ({recurringTasks.length})
+                </h2>
+                <button
+                  onClick={handleSendAllTasks}
+                  disabled={isSendingBulk}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FaPaperPlane />
+                  <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+                </button>
+              </div>
+
+              {/* Filters */}
+              <div className="mb-4 flex gap-3">
+                {/* Primary filter - Category selection */}
+                <select
+                  value={filterCategory}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  <option value="">כל המשימות</option>
+                  <option value="priority">סנן לפי עדיפות</option>
+                  <option value="system">סנן לפי מערכת</option>
+                  <option value="status">סנן לפי סטטוס</option>
+                  <option value="employee">סנן לפי עובד</option>
+                  <option value="location">סנן לפי מיקום</option>
+                </select>
+
+                {/* Secondary filter - Value selection based on category */}
+                {filterCategory && (
+                  <select
+                    value={filterValue}
+                    onChange={(e) => setFilterValue(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2"
+                  >
+                    <option value="">בחר...</option>
+
+                    {filterCategory === 'priority' && (
+                      <>
+                        <option value="urgent">דחוף</option>
+                        <option value="normal">רגיל</option>
+                        <option value="optional">עדיפות נמוכה</option>
+                      </>
+                    )}
+
+                    {filterCategory === 'system' &&
+                      systems.map((system) => (
+                        <option key={system.id} value={system.id}>
+                          {system.name}
+                        </option>
+                      ))
+                    }
+
+                    {filterCategory === 'status' && (
+                      <>
+                        <option value="draft">חדש</option>
+                        <option value="sent">נשלח</option>
+                        <option value="in_progress">בביצוע</option>
+                      </>
+                    )}
+
+                    {filterCategory === 'employee' && (
+                      <>
+                        <option value="general">כללי (ללא עובד)</option>
+                        {employees.map((emp) => (
+                          <option key={emp.id} value={emp.id}>
+                            {emp.name}
+                          </option>
+                        ))}
+                      </>
+                    )}
+
+                    {filterCategory === 'location' && (
+                      <>
+                        <option value="none">ללא מיקום</option>
+                        {locations && locations.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                )}
+
+                {/* Clear filters button */}
+                {filterCategory && (
+                  <button
+                    onClick={() => {
+                      setFilterCategory('');
+                      setFilterValue('');
+                    }}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
+                  >
+                    נקה סינון
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {recurringTasks.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
+                ) : (
+                  recurringTasks.map((task) => (
+                    <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* One-Time and Late Tasks - LEFT SIDE */}
+          <div className="col-span-4">
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
+
+              <div className="space-y-3">
+                {oneTimeTasks.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
+                ) : (
+                  oneTimeTasks.map((task) => (
+                    <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                  ))
+                )}
+              </div>
+
+              {lateTasks.length > 0 && (
+                <>
+                  <div className="my-4 border-t border-gray-300" />
+                  <h3 className="text-lg font-semibold text-red-600 mb-3">
+                    משימות באיחור
+                  </h3>
+                  <div className="space-y-3">
+                    {lateTasks.map((task) => (
+                      <div key={task.id} className="border-2 border-red-300 rounded-lg">
+                        <TaskCard task={task} onEdit={handleEdit} />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

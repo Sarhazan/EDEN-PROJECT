@@ -50,7 +50,7 @@ function CircularProgress({ percentage = 0, size = 120 }) {
         <span className="text-3xl font-bold" style={{ color }}>
           {Math.round(percentage)}%
         </span>
-        <span className="text-xs text-gray-500 mt-1">הושלמו</span>
+        <span className="text-xs text-gray-500 mt-1">בזמן</span>
       </div>
     </div>
   );
@@ -161,29 +161,29 @@ export default function EmployeesPage() {
                 {/* Circular Progress */}
                 <div className="flex justify-center mb-4">
                   <CircularProgress
-                    percentage={employee.stats?.completion_percentage || 0}
+                    percentage={employee.stats?.on_time_percentage || 0}
                   />
                 </div>
 
                 {/* Task Statistics */}
                 <div className="grid grid-cols-2 gap-2 text-center text-sm">
                   <div className="bg-gray-50 rounded-lg p-2">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {employee.stats?.completed_tasks || 0}
+                    <div className="text-2xl font-bold text-green-600">
+                      {employee.stats?.completed_on_time || 0}
                     </div>
-                    <div className="text-xs text-gray-600">הושלמו</div>
+                    <div className="text-xs text-gray-600">בזמן</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {employee.active_tasks_count || 0}
+                    <div className="text-2xl font-bold text-red-600">
+                      {employee.stats?.completed_late || 0}
                     </div>
-                    <div className="text-xs text-gray-600">פעילות</div>
+                    <div className="text-xs text-gray-600">באיחור</div>
                   </div>
                 </div>
 
                 {/* Total Tasks */}
                 <div className="mt-2 text-center text-xs text-gray-500">
-                  סה"כ {employee.stats?.total_tasks || 0} משימות
+                  סה"כ {employee.stats?.completed_tasks || 0} משימות הושלמו
                 </div>
               </div>
             </div>

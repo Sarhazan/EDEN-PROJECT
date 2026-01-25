@@ -18,7 +18,32 @@ router.get('/', (req, res) => {
         SELECT
           COUNT(*) as total_tasks,
           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
-          ROUND(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as completion_percentage
+          SUM(CASE
+            WHEN status = 'completed' AND completed_at IS NOT NULL THEN
+              CASE
+                WHEN datetime(completed_at) <= datetime(start_date || ' ' || start_time, '+' || COALESCE(estimated_duration_minutes, 30) || ' minutes')
+                THEN 1 ELSE 0
+              END
+            ELSE 0
+          END) as completed_on_time,
+          SUM(CASE
+            WHEN status = 'completed' AND completed_at IS NOT NULL THEN
+              CASE
+                WHEN datetime(completed_at) > datetime(start_date || ' ' || start_time, '+' || COALESCE(estimated_duration_minutes, 30) || ' minutes')
+                THEN 1 ELSE 0
+              END
+            ELSE 0
+          END) as completed_late,
+          ROUND(
+            SUM(CASE
+              WHEN status = 'completed' AND completed_at IS NOT NULL THEN
+                CASE
+                  WHEN datetime(completed_at) <= datetime(start_date || ' ' || start_time, '+' || COALESCE(estimated_duration_minutes, 30) || ' minutes')
+                  THEN 1 ELSE 0
+                END
+              ELSE 0
+            END) * 100.0 / NULLIF(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0), 1
+          ) as on_time_percentage
         FROM tasks
         WHERE employee_id = ?
       `).get(employee.id);
@@ -28,7 +53,9 @@ router.get('/', (req, res) => {
         stats: {
           total_tasks: stats.total_tasks || 0,
           completed_tasks: stats.completed_tasks || 0,
-          completion_percentage: stats.completion_percentage || 0
+          completed_on_time: stats.completed_on_time || 0,
+          completed_late: stats.completed_late || 0,
+          on_time_percentage: stats.on_time_percentage || 0
         }
       };
     });
