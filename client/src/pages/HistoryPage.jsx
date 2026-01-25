@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useHistoryFilters } from '../hooks/useHistoryFilters';
 import HistoryFilters from '../components/history/HistoryFilters';
 import HistoryStats from '../components/history/HistoryStats';
@@ -14,6 +14,22 @@ export default function HistoryPage() {
   const [systems, setSystems] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Star filter state from localStorage
+  const [starFilter, setStarFilter] = useState(() => {
+    return localStorage.getItem('starFilter') === 'true';
+  });
+
+  // Listen to localStorage changes for star filter (cross-tab sync)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'starFilter') {
+        setStarFilter(e.newValue === 'true');
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Fetch filter options on mount
   useEffect(() => {
@@ -62,6 +78,15 @@ export default function HistoryPage() {
     fetchHistory();
   }, [filters]);
 
+  // Apply star filter to tasks (after other filters from backend)
+  const filteredTasks = useMemo(() => {
+    if (starFilter) {
+      // Show only starred tasks, exclude completed (though history is all completed)
+      return tasks.filter((t) => t.is_starred === 1 && t.status !== 'completed');
+    }
+    return tasks;
+  }, [tasks, starFilter]);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">היסטוריית משימות</h1>
@@ -78,7 +103,7 @@ export default function HistoryPage() {
         onClear={clearFilters}
       />
 
-      <HistoryTable tasks={tasks} loading={loading} />
+      <HistoryTable tasks={filteredTasks} loading={loading} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import TaskCard from '../components/shared/TaskCard';
 
@@ -9,6 +9,22 @@ export default function AllTasksPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterFrequency, setFilterFrequency] = useState(''); // '' | 'one-time' | 'recurring'
 
+  // Star filter state from localStorage
+  const [starFilter, setStarFilter] = useState(() => {
+    return localStorage.getItem('starFilter') === 'true';
+  });
+
+  // Listen to localStorage changes for star filter (cross-tab sync)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'starFilter') {
+        setStarFilter(e.newValue === 'true');
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const handleEdit = (task) => {
     setEditingTask(task);
     setIsTaskModalOpen(true);
@@ -17,6 +33,11 @@ export default function AllTasksPage() {
   // Filter tasks based on filters
   const filteredTasks = useMemo(() => {
     let filtered = tasks;
+
+    // Star filter - show only starred, exclude completed
+    if (starFilter) {
+      filtered = filtered.filter((t) => t.is_starred === 1 && t.status !== 'completed');
+    }
 
     // Search filter
     if (searchQuery) {
@@ -45,7 +66,7 @@ export default function AllTasksPage() {
     }
 
     return filtered;
-  }, [tasks, searchQuery, filterSystem, filterStatus, filterFrequency]);
+  }, [tasks, searchQuery, filterSystem, filterStatus, filterFrequency, starFilter]);
 
   return (
     <div className="p-6">
