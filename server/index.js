@@ -75,11 +75,18 @@ taskConfirmationRouter.setIo(io);
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from the React app build directory
-  app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
+  const clientPath = path.join(__dirname, '..', 'client', 'dist');
+  app.use(express.static(clientPath));
 
   // Handle React routing - return index.html for all non-API routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
+  // This must come after all API routes
+  app.use((req, res, next) => {
+    // Only handle GET requests for HTML (not API calls, static assets, etc.)
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      res.sendFile(path.join(clientPath, 'index.html'));
+    } else {
+      next();
+    }
   });
 }
 
