@@ -18,7 +18,10 @@ class WhatsAppService {
    */
   async getStatus() {
     try {
-      const response = await axios.get(`${this.gatewayUrl}/status`, { timeout: 5000 });
+      const response = await axios.get(`${this.gatewayUrl}/status`, {
+        timeout: 5000,
+        headers: { 'bypass-tunnel-reminder': 'true' }
+      });
       return {
         isReady: response.data.isReady,
         needsAuth: response.data.hasQR,
@@ -40,7 +43,10 @@ class WhatsAppService {
    */
   async getQRCode() {
     try {
-      const response = await axios.get(`${this.gatewayUrl}/qr`, { timeout: 10000 });
+      const response = await axios.get(`${this.gatewayUrl}/qr`, {
+        timeout: 10000,
+        headers: { 'bypass-tunnel-reminder': 'true' }
+      });
 
       if (response.data.qrCode) {
         return response.data.qrCode;
@@ -68,7 +74,10 @@ class WhatsAppService {
       const response = await axios.post(
         `${this.gatewayUrl}/send`,
         { phoneNumber, message },
-        { timeout: 30000 }
+        {
+          timeout: 30000,
+          headers: { 'bypass-tunnel-reminder': 'true' }
+        }
       );
 
       if (response.data.success) {
@@ -100,7 +109,10 @@ class WhatsAppService {
       const response = await axios.post(
         `${this.gatewayUrl}/send-bulk`,
         { messages },
-        { timeout: 120000 } // 2 minutes for bulk
+        {
+          timeout: 120000, // 2 minutes for bulk
+          headers: { 'bypass-tunnel-reminder': 'true' }
+        }
       );
 
       if (response.data.success) {
@@ -120,7 +132,9 @@ class WhatsAppService {
    */
   async disconnect() {
     try {
-      await axios.post(`${this.gatewayUrl}/disconnect`);
+      await axios.post(`${this.gatewayUrl}/disconnect`, {}, {
+        headers: { 'bypass-tunnel-reminder': 'true' }
+      });
       console.log('Gateway disconnected');
     } catch (error) {
       console.error('Error disconnecting gateway:', error.message);
