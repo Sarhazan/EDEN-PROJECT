@@ -128,9 +128,29 @@ class WhatsAppService {
         this.client = null;
       });
 
-      // Loading screen event
+      // Loading screen event - use this to detect when authentication completes
       this.client.on('loading_screen', (percent, message) => {
         console.log(`Loading: ${percent}% - ${message}`);
+
+        // RemoteAuth may not fire 'ready' event reliably - use loading_screen as fallback
+        if (percent >= 99 && !this.isReady) {
+          console.log('⚠ Loading reached 99% but ready event has not fired yet');
+          console.log('  Will wait 8 seconds then check if we should mark as ready...');
+
+          setTimeout(() => {
+            // Only mark ready if:
+            // 1. Still not ready (ready event didn't fire)
+            // 2. Client still exists
+            // 3. Loading reached high percentage
+            if (!this.isReady && this.client) {
+              console.log('✓ Setting isReady=true after loading_screen 99% (fallback mechanism)');
+              this.isReady = true;
+              this.qrCode = null;
+            } else if (this.isReady) {
+              console.log('  ready event fired in the meantime - no action needed');
+            }
+          }, 8000); // Wait 8 seconds for ready event
+        }
       });
 
       // Initialize the client
