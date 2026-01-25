@@ -226,20 +226,22 @@ router.post('/send-bulk', async (req, res) => {
         });
         console.log(`HTML generated successfully: ${htmlUrl}`);
 
-        // Give file system a moment to flush the file
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Only verify URL accessibility if using external hosting (Vercel)
+        // For local serving (/docs), skip verification - file is immediately available
+        if (process.env.VERCEL_PROJECT_URL) {
+          console.log('⏳ Verifying Vercel deployment...');
+          const isAvailable = await waitForUrlAvailable(htmlUrl, 5, 2000);
 
-        // Verify URL is accessible (only try a few times - file should be immediately available)
-        console.log('⏳ Verifying HTML page is accessible...');
-        const isAvailable = await waitForUrlAvailable(htmlUrl, 5, 2000); // 5 attempts, 2s intervals = 10s max
+          if (!isAvailable) {
+            console.error(`Failed to verify Vercel deployment for employee ${name}`);
+            console.error(`URL: ${htmlUrl}`);
+            throw new Error('לא הצלחנו לאמת שדף האישור זמין ב-Vercel. ייתכן שה-deployment נכשל.');
+          }
 
-        if (!isAvailable) {
-          console.error(`Failed to verify HTML page accessibility for employee ${name}`);
-          console.error(`URL: ${htmlUrl}`);
-          throw new Error('לא הצלחנו לאמת שדף האישור זמין. ייתכן שיש בעיית רשת או קובץ לא נוצר.');
+          console.log('✓ Vercel deployment verified, proceeding with WhatsApp send');
+        } else {
+          console.log('✓ HTML file generated locally, skipping URL verification');
         }
-
-        console.log('✓ HTML page verified accessible, proceeding with WhatsApp send');
 
         // Shorten the URL for cleaner WhatsApp messages
         console.log('Shortening URL for WhatsApp...');
