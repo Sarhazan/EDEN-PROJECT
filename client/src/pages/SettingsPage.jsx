@@ -22,7 +22,7 @@ export default function SettingsPage() {
 
   const loadWhatsAppStatus = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/whatsapp/status`);
+      const response = await axios.get(`${API_URL}/whatsapp/status`);
       setWhatsappStatus(response.data);
     } catch (error) {
       console.error('Error loading WhatsApp status:', error);
@@ -36,7 +36,7 @@ export default function SettingsPage() {
     setQrCode(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/whatsapp/connect`);
+      const response = await axios.post(`${API_URL}/whatsapp/connect`, {}, { timeout: 60000 });
 
       if (response.data.isReady) {
         setSuccessMessage('כבר מחובר לוואטסאפ');
@@ -56,7 +56,7 @@ export default function SettingsPage() {
   const startPolling = () => {
     const pollInterval = setInterval(async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/whatsapp/status`);
+        const response = await axios.get(`${API_URL}/whatsapp/status`);
 
         if (response.data.isReady) {
           setWhatsappStatus(response.data);
@@ -84,7 +84,7 @@ export default function SettingsPage() {
     setSuccessMessage(null);
 
     try {
-      await axios.post(`${API_URL}/api/whatsapp/disconnect`);
+      await axios.post(`${API_URL}/whatsapp/disconnect`);
       setWhatsappStatus({ isReady: false, needsAuth: false, isInitialized: false });
       setSuccessMessage('התנתקת מוואטסאפ בהצלחה');
     } catch (error) {
