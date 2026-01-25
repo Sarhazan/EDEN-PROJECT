@@ -46,10 +46,10 @@ Plans:
   3. Adjusted widths persist across browser sessions via localStorage
   4. Reset button restores default 50-50 split
   5. Resizable slider only appears on desktop screens (>= 1024px)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] TBD (to be determined during planning)
+- [ ] 02-01-PLAN.md — Install re-resizable, implement resizable columns with localStorage persistence, add reset button
 
 ### Phase 3: Mobile Responsive Experience
 **Goal**: Managers can effectively use Eden on smartphones with touch-optimized interface and RTL support
@@ -89,6 +89,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stars System | 3/3 | Complete | 2026-01-25 |
-| 2. Resizable Columns | 0/? | Not started | - |
+| 2. Resizable Columns | 0/1 | Ready | - |
 | 3. Mobile Responsive | 0/? | Not started | - |
 | 4. WhatsApp Monitoring | 0/? | Not started | - |
