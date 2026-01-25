@@ -172,9 +172,9 @@ export default function SettingsPage() {
         <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
           <p className="font-semibold mb-2">ℹ️ חשוב לדעת:</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>יש לסרוק QR code כדי להתחבר לוואטסאפ</li>
-            <li>החיבור נשאר פעיל כל עוד הדפדפן פתוח</li>
-            <li>אם סוגרים את הדפדפן או עושים עדכון - צריך לסרוק QR מחדש</li>
+            <li>סריקת QR code נדרשת פעם אחת</li>
+            <li>הסשן נשמר בשרת עד לעדכון הבא</li>
+            <li>לאחר עדכון מערכת - צריך לסרוק QR מחדש</li>
             <li>ההודעות נשלחות מחשבון הוואטסאפ האישי שלך</li>
             <li>עליך לוודא שלעובדים יש מספרי טלפון תקינים במערכת</li>
           </ul>

@@ -1,6 +1,7 @@
-const { Client, NoAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const chromium = require('@sparticuz/chromium');
+const path = require('path');
 
 class WhatsAppService {
   constructor() {
@@ -26,20 +27,36 @@ class WhatsAppService {
       this.qrCode = null;
     }
 
-    console.log('Creating new WhatsApp client with NoAuth (no session storage)...');
+    console.log('Creating new WhatsApp client with LocalAuth...');
 
     try {
-      // Create WhatsApp client without session persistence
+      // Create WhatsApp client with local session persistence
       const puppeteerConfig = {
         headless: chromium.headless,
-        args: chromium.args,
+        args: [
+          ...chromium.args,
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu'
+        ],
         executablePath: await chromium.executablePath()
       };
 
       console.log('Using Chromium from @sparticuz/chromium package');
 
+      // Use /tmp for session storage on Render (persists across requests but not deployments)
+      const sessionPath = path.join('/tmp', '.wwebjs_auth');
+      console.log('Session path:', sessionPath);
+
       this.client = new Client({
-        authStrategy: new NoAuth(),
+        authStrategy: new LocalAuth({
+          clientId: 'eden-whatsapp',
+          dataPath: sessionPath
+        }),
         puppeteer: puppeteerConfig
       });
       console.log('Client object created successfully');

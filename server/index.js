@@ -53,7 +53,7 @@ io.on('connection', (socket) => {
 });
 
 // WhatsApp will be initialized when user clicks "connect" in Settings
-// Using NoAuth - QR scan required each time (simple and reliable)
+// Using LocalAuth - session saved in /tmp (persists until deployment)
 
 // API Routes
 const tasksRouter = require('./routes/tasks');
@@ -104,7 +104,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`Local: http://localhost:${PORT}`);
   console.log(`Network: http://192.168.1.35:${PORT}`);
-  console.log(`WhatsApp: Ready with NoAuth (QR scan each time)`);
+  console.log(`WhatsApp: Ready with LocalAuth (/tmp session storage)`);
 });
 
 // Export io instance for use in routes
