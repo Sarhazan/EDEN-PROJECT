@@ -1,9 +1,24 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
 export default function Sidebar() {
   const { connectionStatus, logout } = useApp();
+  const [starFilter, setStarFilter] = useState(false);
+
+  // Initialize from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('starFilter');
+    if (saved !== null) setStarFilter(saved === 'true');
+  }, []);
+
+  // Handle star filter toggle
+  const handleStarFilterToggle = () => {
+    const newValue = !starFilter;
+    setStarFilter(newValue);
+    localStorage.setItem('starFilter', newValue.toString());
+  };
 
   const navItems = [
     { path: '/', icon: FaHome, label: 'היום שלי' },
@@ -60,6 +75,20 @@ export default function Sidebar() {
             <span className="text-base font-medium">{item.label}</span>
           </NavLink>
         ))}
+
+        {/* Star Filter Button */}
+        <button
+          onClick={handleStarFilterToggle}
+          className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
+            starFilter
+              ? 'bg-indigo-100 text-yellow-500 hover:bg-indigo-50'
+              : 'text-gray-400 hover:bg-indigo-50'
+          }`}
+          title="סינון משימות מסומנות בכוכב"
+        >
+          {starFilter ? <FaStar className="text-xl" /> : <FaRegStar className="text-xl" />}
+          <span className="text-base font-medium">משימות מסומנות</span>
+        </button>
       </nav>
 
       {/* Connection Status Indicator */}
