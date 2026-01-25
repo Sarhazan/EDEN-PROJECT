@@ -226,7 +226,7 @@ export default function TaskForm({ task, onClose }) {
           name="title"
           value={formData.title}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
           required
         />
       </div>
@@ -238,7 +238,7 @@ export default function TaskForm({ task, onClose }) {
           value={formData.description}
           onChange={handleChange}
           rows="3"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[88px]"
         />
       </div>
 
@@ -249,7 +249,7 @@ export default function TaskForm({ task, onClose }) {
             name="system_id"
             value={formData.system_id}
             onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
           >
             <option value="">משימה כללית</option>
             {systems.map((system) => (
@@ -266,7 +266,7 @@ export default function TaskForm({ task, onClose }) {
             name="employee_id"
             value={formData.employee_id}
             onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
           >
             <option value="">עובד כללי</option>
             {employees.map((employee) => (
@@ -283,7 +283,7 @@ export default function TaskForm({ task, onClose }) {
             name="location_id"
             value={formData.location_id}
             onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
           >
             <option value="">ללא מיקום</option>
             {locations && locations.map((location) => (
@@ -301,7 +301,7 @@ export default function TaskForm({ task, onClose }) {
           name="frequency"
           value={formData.frequency}
           onChange={handleFrequencyChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         >
           {frequencyOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -356,7 +356,7 @@ export default function TaskForm({ task, onClose }) {
             value={formData.start_time}
             onChange={handleChange}
             placeholder="HH:MM (לדוגמא: 14:30)"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
             required
           />
         </div>
@@ -371,7 +371,7 @@ export default function TaskForm({ task, onClose }) {
               onChange={handleDateChange}
               dateFormat="dd/MM/yyyy"
               placeholderText="בחר תאריך"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
               minDate={new Date()}
               required
             />
@@ -400,7 +400,7 @@ export default function TaskForm({ task, onClose }) {
           name="priority"
           value={formData.priority}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         >
           {priorityOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -421,7 +421,7 @@ export default function TaskForm({ task, onClose }) {
           onChange={handleChange}
           min="5"
           step="5"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
           required
         />
         <p className="text-xs text-gray-500 mt-1">
@@ -433,13 +433,13 @@ export default function TaskForm({ task, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+          className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95"
         >
           ביטול
         </button>
         <button
           type="submit"
-          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95"
         >
           {isEditing ? 'עדכן משימה' : 'צור משימה'}
         </button>

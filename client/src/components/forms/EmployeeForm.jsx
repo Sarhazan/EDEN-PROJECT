@@ -59,7 +59,7 @@ export default function EmployeeForm({ employee, onClose }) {
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
           required
         />
       </div>
@@ -71,7 +71,7 @@ export default function EmployeeForm({ employee, onClose }) {
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
@@ -82,7 +82,7 @@ export default function EmployeeForm({ employee, onClose }) {
           name="position"
           value={formData.position}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
@@ -92,7 +92,7 @@ export default function EmployeeForm({ employee, onClose }) {
           name="language"
           value={formData.language}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="he">עברית (Hebrew)</option>
           <option value="en">English</option>
@@ -108,13 +108,13 @@ export default function EmployeeForm({ employee, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+          className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95"
         >
           ביטול
         </button>
         <button
           type="submit"
-          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95"
         >
           {isEditing ? 'עדכן עובד' : 'צור עובד'}
         </button>

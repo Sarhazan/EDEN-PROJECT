@@ -101,7 +101,7 @@ export default function LocationForm({ location, onClose }) {
           type="text"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full border rounded-lg px-4 py-2"
+          className="w-full border rounded-lg px-4 py-2 min-h-[44px]"
           required
         />
       </div>
@@ -135,7 +135,7 @@ export default function LocationForm({ location, onClose }) {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, image: '' })}
-                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2"
+                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-90 transition-all duration-150"
               >
                 <FaTrash />
               </button>
@@ -147,7 +147,7 @@ export default function LocationForm({ location, onClose }) {
                 <p className="text-gray-700 font-medium">גרור ושחרר תמונה כאן</p>
                 <p className="text-sm text-gray-500 mt-1">או</p>
               </div>
-              <label className="cursor-pointer bg-primary hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors">
+              <label className="cursor-pointer bg-primary hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors min-h-[44px] flex items-center active:scale-95">
                 בחר קובץ
                 <input
                   type="file"
@@ -172,7 +172,7 @@ export default function LocationForm({ location, onClose }) {
             step="any"
             value={formData.latitude}
             onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-            className="w-full border rounded-lg px-4 py-2"
+            className="w-full border rounded-lg px-4 py-2 min-h-[44px]"
             placeholder="31.7683"
           />
         </div>
@@ -184,7 +184,7 @@ export default function LocationForm({ location, onClose }) {
             step="any"
             value={formData.longitude}
             onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-            className="w-full border rounded-lg px-4 py-2"
+            className="w-full border rounded-lg px-4 py-2 min-h-[44px]"
             placeholder="35.2137"
           />
         </div>
@@ -202,14 +202,14 @@ export default function LocationForm({ location, onClose }) {
       <div className="flex gap-3">
         <button
           type="submit"
-          className="flex-1 bg-primary hover:bg-orange-600 text-white py-2 rounded-lg"
+          className="flex-1 bg-primary hover:bg-orange-600 text-white py-2 rounded-lg min-h-[44px] transition-all duration-150 active:scale-95"
         >
           {location ? 'עדכן' : 'צור'}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded-lg"
+          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded-lg min-h-[44px] transition-all duration-150 active:scale-95"
         >
           ביטול
         </button>

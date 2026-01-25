@@ -453,7 +453,7 @@ export default function MyDayPage() {
         <div className="flex gap-3">
           <button
             onClick={() => setSelectedDate(new Date())}
-            className="bg-white border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50"
+            className="bg-white border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95"
           >
             היום
           </button>
@@ -779,7 +779,7 @@ export default function MyDayPage() {
             <button
               onClick={handleSendAllTasks}
               disabled={isSendingBulk}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaPaperPlane />
               <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
@@ -792,7 +792,7 @@ export default function MyDayPage() {
             <select
               value={filterCategory}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2"
+              className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
             >
               <option value="">כל המשימות</option>
               <option value="priority">סנן לפי עדיפות</option>
@@ -807,7 +807,7 @@ export default function MyDayPage() {
               <select
                 value={filterValue}
                 onChange={(e) => setFilterValue(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2"
+                className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
               >
                 <option value="">בחר...</option>
 
@@ -964,7 +964,7 @@ export default function MyDayPage() {
                   <select
                     value={filterCategory}
                     onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2"
+                    className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                   >
                     <option value="">כל המשימות</option>
                     <option value="priority">סנן לפי עדיפות</option>
@@ -979,7 +979,7 @@ export default function MyDayPage() {
                     <select
                       value={filterValue}
                       onChange={(e) => setFilterValue(e.target.value)}
-                      className="border border-gray-300 rounded-lg px-3 py-2"
+                      className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     >
                       <option value="">בחר...</option>
 
@@ -1115,7 +1115,7 @@ export default function MyDayPage() {
                 <select
                   value={filterCategory}
                   onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                 >
                   <option value="">כל המשימות</option>
                   <option value="priority">סנן לפי עדיפות</option>
@@ -1130,7 +1130,7 @@ export default function MyDayPage() {
                   <select
                     value={filterValue}
                     onChange={(e) => setFilterValue(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2"
+                    className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                   >
                     <option value="">בחר...</option>
 

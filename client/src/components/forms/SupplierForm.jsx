@@ -107,7 +107,7 @@ export default function SupplierForm({ supplier, onClose }) {
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
           required
         />
       </div>
@@ -119,7 +119,7 @@ export default function SupplierForm({ supplier, onClose }) {
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
@@ -130,7 +130,7 @@ export default function SupplierForm({ supplier, onClose }) {
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
@@ -140,7 +140,7 @@ export default function SupplierForm({ supplier, onClose }) {
           name="payment_frequency"
           value={formData.payment_frequency}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         >
           {frequencyOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -158,7 +158,7 @@ export default function SupplierForm({ supplier, onClose }) {
           value={formData.next_payment_date}
           onChange={handleChange}
           placeholder="DD/MM/YYYY"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
@@ -171,7 +171,7 @@ export default function SupplierForm({ supplier, onClose }) {
           onChange={handleChange}
           step="0.01"
           min="0"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
@@ -179,13 +179,13 @@ export default function SupplierForm({ supplier, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+          className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95"
         >
           ביטול
         </button>
         <button
           type="submit"
-          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95"
         >
           {isEditing ? 'עדכן ספק' : 'צור ספק'}
         </button>

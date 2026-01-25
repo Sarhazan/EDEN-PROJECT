@@ -61,7 +61,7 @@ export default function SystemForm({ system, onClose }) {
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
           required
         />
       </div>
@@ -73,7 +73,7 @@ export default function SystemForm({ system, onClose }) {
           value={formData.description}
           onChange={handleChange}
           rows="3"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[88px]"
         />
       </div>
 
@@ -84,7 +84,7 @@ export default function SystemForm({ system, onClose }) {
           name="contact_person"
           value={formData.contact_person}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
@@ -95,7 +95,7 @@ export default function SystemForm({ system, onClose }) {
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
@@ -106,7 +106,7 @@ export default function SystemForm({ system, onClose }) {
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
@@ -114,13 +114,13 @@ export default function SystemForm({ system, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+          className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95"
         >
           ביטול
         </button>
         <button
           type="submit"
-          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95"
         >
           {isEditing ? 'עדכן מערכת' : 'צור מערכת'}
         </button>
