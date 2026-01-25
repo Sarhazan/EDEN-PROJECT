@@ -26,17 +26,40 @@ export default function SettingsPage() {
       const response = await axios.post(`${API_URL}/whatsapp/connect`, {}, { timeout: 60000 });
 
       if (response.data.isReady) {
-        setSuccessMessage('כבר מחובר לוואטסאפ');
+        setSuccessMessage('מחובר לוואטסאפ בהצלחה!');
         setWhatsappStatus({ isReady: true, needsAuth: false, isInitialized: true });
       } else if (response.data.qrCode) {
         setQrCode(response.data.qrCode);
-        setSuccessMessage('סרוק את הקוד עם הטלפון שלך. אחרי הסריקה, תוכל לשלוח הודעות');
+        setSuccessMessage('סרוק את הקוד עם הטלפון שלך');
+        // Start polling to check when scan completes
+        startPolling();
       }
     } catch (error) {
       setError(error.response?.data?.error || 'שגיאה בהתחברות לוואטסאפ');
     } finally {
       setLoading(false);
     }
+  };
+
+  const startPolling = () => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await axios.get(`${API_URL}/whatsapp/status`);
+
+        if (response.data.isReady) {
+          // Scan successful!
+          clearInterval(pollInterval);
+          setQrCode(null);
+          setWhatsappStatus({ isReady: true, needsAuth: false, isInitialized: true });
+          setSuccessMessage('מחובר לוואטסאפ בהצלחה! תוכל עכשיו לשלוח הודעות');
+        }
+      } catch (error) {
+        console.error('Error polling status:', error);
+      }
+    }, 2000); // Check every 2 seconds
+
+    // Stop polling after 2 minutes
+    setTimeout(() => clearInterval(pollInterval), 120000);
   };
 
 
@@ -95,6 +118,14 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {/* Connection Status Badge */}
+        {whatsappStatus.isReady && (
+          <div className="mb-4 p-4 bg-green-100 border-2 border-green-500 rounded-lg flex items-center justify-center gap-2">
+            <FaCheck className="text-green-600 text-xl" />
+            <span className="text-green-800 font-semibold">מחובר לוואטסאפ</span>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex gap-3">
           <button
@@ -103,7 +134,7 @@ export default function SettingsPage() {
             className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <FaWhatsapp />
-            {loading ? 'מתחבר...' : qrCode ? 'QR חדש' : 'התחבר לוואטסאפ'}
+            {loading ? 'מתחבר...' : whatsappStatus.isReady ? 'QR חדש (לחיבור מחדש)' : qrCode ? 'QR חדש' : 'התחבר לוואטסאפ'}
           </button>
         </div>
 
