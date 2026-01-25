@@ -56,17 +56,18 @@ Plans:
 ### Phase 2.1: WhatsApp Gateway Integration (INSERTED)
 **Goal**: WhatsApp messages are reliably sent from single number via local gateway
 **Depends on**: Phase 2 (no UI dependencies)
-**Requirements**: TBD (to be defined during planning phase)
+**Requirements**: None (existing implementation validation and UX improvements)
 **Success Criteria** (what must be TRUE):
   1. Manager can start local WhatsApp gateway with simple npm command
   2. Manager scans QR code once and WhatsApp session persists
   3. All task notifications are sent successfully from connected WhatsApp number
   4. Messages appear in recipient's WhatsApp with proper formatting
   5. System shows clear error message when gateway is not running
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD (to be determined during planning)
+- [ ] 02.1-01-PLAN.md — Enhanced error handling with Hebrew messages and UI status indicator
+- [ ] 02.1-02-PLAN.md — End-to-end validation, convenience scripts, and manager documentation
 
 ### Phase 3: Mobile Responsive Experience
 **Goal**: Managers can effectively use Eden on smartphones with touch-optimized interface and RTL support
@@ -124,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Stars System | 3/3 | Complete | 2026-01-25 |
 | 2. Resizable Columns | 1/1 | Complete | 2026-01-25 |
-| 2.1. WhatsApp Gateway (INSERTED) | 0/? | Not started | - |
+| 2.1. WhatsApp Gateway (INSERTED) | 0/2 | In progress | - |
 | 3. Mobile Responsive | 0/3 | Not started | - |
 | 4. WhatsApp Monitoring | 0/? | Not started | - |
 | 5. WhatsApp Web Integration | 0/? | Not started | - |
