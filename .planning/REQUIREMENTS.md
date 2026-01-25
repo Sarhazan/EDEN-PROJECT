@@ -195,17 +195,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MOB-TOUCH-05 | Phase 3 | Pending |
 | MOB-TOUCH-06 | Phase 3 | Pending |
 | MOB-TOUCH-07 | Phase 3 | Pending |
-| RESIZE-01 | Phase 2 | Pending |
-| RESIZE-02 | Phase 2 | Pending |
-| RESIZE-03 | Phase 2 | Pending |
-| RESIZE-04 | Phase 2 | Pending |
-| RESIZE-05 | Phase 2 | Pending |
-| RESIZE-06 | Phase 2 | Pending |
-| RESIZE-07 | Phase 2 | Pending |
-| RESIZE-08 | Phase 2 | Pending |
-| RESIZE-09 | Phase 2 | Pending |
-| RESIZE-10 | Phase 2 | Pending |
-| RESIZE-11 | Phase 2 | Pending |
+| RESIZE-01 | Phase 2 | Complete |
+| RESIZE-02 | Phase 2 | Complete |
+| RESIZE-03 | Phase 2 | Complete |
+| RESIZE-04 | Phase 2 | Complete |
+| RESIZE-05 | Phase 2 | Complete |
+| RESIZE-06 | Phase 2 | Complete |
+| RESIZE-07 | Phase 2 | Complete |
+| RESIZE-08 | Phase 2 | Complete |
+| RESIZE-09 | Phase 2 | Complete |
+| RESIZE-10 | Phase 2 | Complete |
+| RESIZE-11 | Phase 2 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 57 total

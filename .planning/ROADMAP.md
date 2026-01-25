@@ -13,7 +13,7 @@ Eden v2.0 transforms the production maintenance management app into a mobile-fir
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Stars System** - Task prioritization with starring and filtering
-- [ ] **Phase 2: Resizable Columns** - Customizable column layouts with persistence
+- [x] **Phase 2: Resizable Columns** - Customizable column layouts with persistence
 - [ ] **Phase 3: Mobile Responsive Experience** - Full mobile optimization with hamburger menu and touch UI
 - [ ] **Phase 4: WhatsApp Connection Monitoring** - Comprehensive connection visibility and auto-recovery
 
@@ -49,7 +49,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 02-01-PLAN.md — Install re-resizable, implement resizable columns with localStorage persistence, add reset button
+- [x] 02-01-PLAN.md — Install re-resizable, implement resizable columns with localStorage persistence, add reset button
 
 ### Phase 3: Mobile Responsive Experience
 **Goal**: Managers can effectively use Eden on smartphones with touch-optimized interface and RTL support
@@ -89,6 +89,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stars System | 3/3 | Complete | 2026-01-25 |
-| 2. Resizable Columns | 0/1 | Ready | - |
+| 2. Resizable Columns | 1/1 | Complete | 2026-01-25 |
 | 3. Mobile Responsive | 0/? | Not started | - |
 | 4. WhatsApp Monitoring | 0/? | Not started | - |
