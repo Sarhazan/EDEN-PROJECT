@@ -29,10 +29,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Star status persists across browser refresh and is visible in history
   4. Manager can click star filter button to view only starred tasks
   5. Starred filter excludes completed tasks automatically
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (to be determined during planning)
+- [ ] 01-01-PLAN.md — Database + backend API for star toggle
+- [ ] 01-02-PLAN.md — Star icon UI with real-time updates
+- [ ] 01-03-PLAN.md — Global star filter with localStorage
 
 ### Phase 2: Resizable Columns
 **Goal**: Managers can customize column widths in "My Day" view to match their workflow preferences
@@ -86,7 +88,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stars System | 0/? | Not started | - |
+| 1. Stars System | 0/3 | Ready to execute | - |
 | 2. Resizable Columns | 0/? | Not started | - |
 | 3. Mobile Responsive | 0/? | Not started | - |
 | 4. WhatsApp Monitoring | 0/? | Not started | - |
