@@ -139,13 +139,79 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TBD | TBD | Pending |
+| WA-LOAD-01 | Phase 4 | Pending |
+| WA-LOAD-02 | Phase 4 | Pending |
+| WA-LOAD-03 | Phase 4 | Pending |
+| WA-LOAD-04 | Phase 4 | Pending |
+| WA-LOAD-05 | Phase 4 | Pending |
+| WA-LOAD-06 | Phase 4 | Pending |
+| WA-STAT-01 | Phase 4 | Pending |
+| WA-STAT-02 | Phase 4 | Pending |
+| WA-STAT-03 | Phase 4 | Pending |
+| WA-STAT-04 | Phase 4 | Pending |
+| WA-STAT-05 | Phase 4 | Pending |
+| WA-RECON-01 | Phase 4 | Pending |
+| WA-RECON-02 | Phase 4 | Pending |
+| WA-RECON-03 | Phase 4 | Pending |
+| WA-RECON-04 | Phase 4 | Pending |
+| WA-RECON-05 | Phase 4 | Pending |
+| WA-ALERT-01 | Phase 4 | Pending |
+| WA-ALERT-02 | Phase 4 | Pending |
+| WA-ALERT-03 | Phase 4 | Pending |
+| WA-ALERT-04 | Phase 4 | Pending |
+| WA-ALERT-05 | Phase 4 | Pending |
+| STAR-FUNC-01 | Phase 1 | Pending |
+| STAR-FUNC-02 | Phase 1 | Pending |
+| STAR-FUNC-03 | Phase 1 | Pending |
+| STAR-FUNC-04 | Phase 1 | Pending |
+| STAR-FUNC-05 | Phase 1 | Pending |
+| STAR-FUNC-06 | Phase 1 | Pending |
+| STAR-FUNC-07 | Phase 1 | Pending |
+| STAR-FILT-01 | Phase 1 | Pending |
+| STAR-FILT-02 | Phase 1 | Pending |
+| STAR-FILT-03 | Phase 1 | Pending |
+| STAR-FILT-04 | Phase 1 | Pending |
+| STAR-FILT-05 | Phase 1 | Pending |
+| STAR-FILT-06 | Phase 1 | Pending |
+| STAR-FILT-07 | Phase 1 | Pending |
+| MOB-NAV-01 | Phase 3 | Pending |
+| MOB-NAV-02 | Phase 3 | Pending |
+| MOB-NAV-03 | Phase 3 | Pending |
+| MOB-NAV-04 | Phase 3 | Pending |
+| MOB-NAV-05 | Phase 3 | Pending |
+| MOB-NAV-06 | Phase 3 | Pending |
+| MOB-NAV-07 | Phase 3 | Pending |
+| MOB-GRID-01 | Phase 3 | Pending |
+| MOB-GRID-02 | Phase 3 | Pending |
+| MOB-GRID-03 | Phase 3 | Pending |
+| MOB-GRID-04 | Phase 3 | Pending |
+| MOB-GRID-05 | Phase 3 | Pending |
+| MOB-GRID-06 | Phase 3 | Pending |
+| MOB-GRID-07 | Phase 3 | Pending |
+| MOB-TOUCH-01 | Phase 3 | Pending |
+| MOB-TOUCH-02 | Phase 3 | Pending |
+| MOB-TOUCH-03 | Phase 3 | Pending |
+| MOB-TOUCH-04 | Phase 3 | Pending |
+| MOB-TOUCH-05 | Phase 3 | Pending |
+| MOB-TOUCH-06 | Phase 3 | Pending |
+| MOB-TOUCH-07 | Phase 3 | Pending |
+| RESIZE-01 | Phase 2 | Pending |
+| RESIZE-02 | Phase 2 | Pending |
+| RESIZE-03 | Phase 2 | Pending |
+| RESIZE-04 | Phase 2 | Pending |
+| RESIZE-05 | Phase 2 | Pending |
+| RESIZE-06 | Phase 2 | Pending |
+| RESIZE-07 | Phase 2 | Pending |
+| RESIZE-08 | Phase 2 | Pending |
+| RESIZE-09 | Phase 2 | Pending |
+| RESIZE-10 | Phase 2 | Pending |
+| RESIZE-11 | Phase 2 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 57 total
-- Mapped to phases: 0
-- Unmapped: 57 ⚠️
+- Mapped to phases: 57
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-01-25*
-*Last updated: 2026-01-25 after initial definition*
+*Last updated: 2026-01-25 after roadmap creation*
