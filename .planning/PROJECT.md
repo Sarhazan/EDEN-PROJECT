@@ -64,7 +64,26 @@
 
 ### Active
 
-הפיצ'רים הבאים צריכים להתווסף במיילסטון הבא:
+## Current Milestone: v2.0 - Enhanced UX & Mobile Experience
+
+**Goal:** שיפור חוויית המשתמש של חיבור WhatsApp, הוספת מערכת כוכבים למשימות חשובות, והתאמה מלאה למובייל
+
+**Target features:**
+
+**WhatsApp Connection UX (4 features):**
+- אינדיקטור חיבור עם אנימציה וטיימר (30 שניות ליצירת QR + 15-30 שניות לאחר סריקה)
+- סטטוס חיבור WhatsApp בסיידבר (נפרד מסטטוס WebSocket)
+- Auto-reconnect אוטומטי כשיש ניתוק WhatsApp
+- התרעה ברורה למשתמש כשחיבור WhatsApp מתנתק
+
+**Task Management (1 feature):**
+- מערכת כוכבים - סימון משימות חשובות ב"היום שלי" + פילטר כוכב (כוכב נשאר גם אחרי השלמה, אבל משימות שהושלמו לא מופיעות בסינון כוכב)
+
+**Mobile Responsiveness (1 feature):**
+- התאמה מלאה לסמארטפון - hamburger menu עם drawer, responsive grids (stack vertically), touch-friendly UI
+
+**UI Improvements (1 feature):**
+- Resizable columns ב"היום שלי" - מחוון (slider) לשינוי גודל העמודות של משימות קבועות וחד-פעמיות (שמור ב-localStorage)
 
 ### Out of Scope
 
@@ -138,4 +157,4 @@
 | Daily recurring tasks start tomorrow | Avoid same-day execution confusion | ✅ Working | v1.0 |
 
 ---
-*Last updated: 2026-01-25 after v1.0 milestone completion*
+*Last updated: 2026-01-25 after v2.0 milestone initialization*
