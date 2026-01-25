@@ -113,7 +113,7 @@ export default function MyDayPage() {
     setIsSendingBulk(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/whatsapp/send-bulk`, {
+      const response = await axios.post(`${API_URL}/whatsapp/send-bulk`, {
         tasksByEmployee
       });
 

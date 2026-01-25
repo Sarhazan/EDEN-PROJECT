@@ -100,7 +100,7 @@ export default function TaskCard({ task, onEdit }) {
       const message = `${task.start_time}\n${task.title}\n${task.description || ''}`;
 
       // Send WhatsApp message
-      await axios.post(`${API_URL}/api/whatsapp/send`, {
+      await axios.post(`${API_URL}/whatsapp/send`, {
         phoneNumber: employee.phone,
         message: message
       });
@@ -148,7 +148,7 @@ export default function TaskCard({ task, onEdit }) {
 
   const handleApproveTask = async () => {
     try {
-      await axios.post(`${API_URL}/api/tasks/${task.id}/approve`);
+      await axios.post(`${API_URL}/tasks/${task.id}/approve`);
       // Task will be updated via WebSocket event
     } catch (error) {
       alert('שגיאה באישור המשימה: ' + (error.response?.data?.error || error.message));

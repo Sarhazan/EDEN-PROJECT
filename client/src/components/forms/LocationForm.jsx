@@ -37,7 +37,7 @@ export default function LocationForm({ location, onClose }) {
       const formDataUpload = new FormData();
       formDataUpload.append('image', file);
 
-      const response = await axios.post(`${API_URL}/api/locations/upload`, formDataUpload, {
+      const response = await axios.post(`${API_URL}/locations/upload`, formDataUpload, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

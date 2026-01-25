@@ -73,7 +73,7 @@ export default function LocationsPage() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axios.post(`${API_URL}/api/locations/upload`, formData, {
+      const response = await axios.post(`${API_URL}/locations/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

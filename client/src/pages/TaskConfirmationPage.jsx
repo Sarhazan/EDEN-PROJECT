@@ -24,7 +24,7 @@ export default function TaskConfirmationPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_URL}/api/confirm/${token}`);
+      const response = await axios.get(`${API_URL}/confirm/${token}`);
 
       if (response.data.success) {
         setEmployee(response.data.employee);
@@ -50,7 +50,7 @@ export default function TaskConfirmationPage() {
     try {
       setUpdatingTask(taskId);
       const response = await axios.put(
-        `${API_URL}/api/confirm/${token}/task/${taskId}`,
+        `${API_URL}/confirm/${token}/task/${taskId}`,
         { status: newStatus }
       );
 
@@ -71,7 +71,7 @@ export default function TaskConfirmationPage() {
   const handleAcknowledge = async () => {
     try {
       setAcknowledging(true);
-      const response = await axios.post(`${API_URL}/api/confirm/${token}/acknowledge`);
+      const response = await axios.post(`${API_URL}/confirm/${token}/acknowledge`);
 
       if (response.data.success) {
         setIsAcknowledged(true);

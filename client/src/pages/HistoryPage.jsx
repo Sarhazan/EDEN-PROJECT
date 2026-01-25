@@ -17,17 +17,17 @@ export default function HistoryPage() {
 
   // Fetch filter options on mount
   useEffect(() => {
-    fetch(`${API_URL}/api/employees`)
+    fetch(`${API_URL}/employees`)
       .then(r => r.json())
       .then(setEmployees)
       .catch(err => console.error('Failed to fetch employees:', err));
 
-    fetch(`${API_URL}/api/systems`)
+    fetch(`${API_URL}/systems`)
       .then(r => r.json())
       .then(setSystems)
       .catch(err => console.error('Failed to fetch systems:', err));
 
-    fetch(`${API_URL}/api/locations`)
+    fetch(`${API_URL}/locations`)
       .then(r => r.json())
       .then(setLocations)
       .catch(err => console.error('Failed to fetch locations:', err));
@@ -47,7 +47,7 @@ export default function HistoryPage() {
         if (filters.systemId) queryParams.set('systemId', filters.systemId);
         if (filters.locationId) queryParams.set('locationId', filters.locationId);
 
-        const response = await fetch(`${API_URL}/api/history?${queryParams.toString()}`);
+        const response = await fetch(`${API_URL}/history?${queryParams.toString()}`);
         const data = await response.json();
 
         setTasks(data.tasks);
