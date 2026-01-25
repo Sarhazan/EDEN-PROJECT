@@ -76,6 +76,13 @@ export default function MyDayPage() {
     setIsTaskModalOpen(true);
   };
 
+  // Reset column widths to default
+  const handleResetColumnWidths = () => {
+    const defaultWidths = { left: '66.67%', right: '33.33%' };
+    setColumnWidths(defaultWidths);
+    localStorage.setItem('myDayColumnWidths', JSON.stringify(defaultWidths));
+  };
+
   // Handle filter category change (reset value when category changes)
   const handleCategoryChange = (category) => {
     setFilterCategory(category);
@@ -741,6 +748,18 @@ export default function MyDayPage() {
           {stats.completionRate}%
         </p>
       </div>
+
+      {/* Column width reset button - Desktop only */}
+      {!(filterCategory === 'employee' && filterValue) && (
+        <div className="hidden lg:flex justify-start mb-3">
+          <button
+            onClick={handleResetColumnWidths}
+            className="text-sm text-gray-600 hover:text-indigo-600 underline"
+          >
+            איפוס גודל עמודות
+          </button>
+        </div>
+      )}
 
       {/* Main Content - Dynamic Layout */}
       {filterCategory === 'employee' && filterValue ? (
