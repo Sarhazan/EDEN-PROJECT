@@ -291,6 +291,17 @@ function initializeDatabase() {
     }
   }
 
+  // Add is_starred column for task prioritization (migration for Phase 1)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN is_starred BOOLEAN DEFAULT 0`);
+    console.log('Added is_starred column to tasks table');
+  } catch (e) {
+    // Column already exists, ignore error
+    if (!e.message.includes('duplicate column name')) {
+      console.error('Error adding is_starred column:', e.message);
+    }
+  }
+
   // Create composite indexes for history query performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_tasks_history
