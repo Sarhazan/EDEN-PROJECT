@@ -16,28 +16,38 @@ export default function SettingsPage() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
-  // Check WhatsApp status on component mount
+  // Check WhatsApp status on component mount and poll every 10 seconds
   useEffect(() => {
     const checkStatus = async () => {
       try {
         const response = await axios.get(`${API_URL}/whatsapp/status`);
-        setWhatsappStatus({
+        const statusData = {
           isReady: response.data.isReady,
           needsAuth: response.data.needsAuth,
-          isInitialized: response.data.isInitialized
-        });
+          isInitialized: response.data.isInitialized,
+          error: response.data.error || null
+        };
+        setWhatsappStatus(statusData);
 
         if (response.data.isReady) {
           setSuccessMessage('מחובר לוואטסאפ בהצלחה!');
         }
       } catch (error) {
         console.error('Error checking WhatsApp status:', error);
+        setWhatsappStatus({
+          isReady: false,
+          needsAuth: false,
+          isInitialized: false,
+          error: 'לא ניתן להתחבר לשרת'
+        });
       } finally {
         setIsCheckingStatus(false);
       }
     };
 
     checkStatus();
+    const interval = setInterval(checkStatus, 10000); // Poll every 10 seconds
+    return () => clearInterval(interval);
   }, []); // Run once on mount
 
   const handleConnect = async () => {
@@ -108,6 +118,33 @@ export default function SettingsPage() {
         <p className="text-gray-600 mb-4">
           חבר את חשבון הוואטסאפ שלך כדי לשלוח משימות לעובדים ישירות דרך המערכת
         </p>
+
+        {/* WhatsApp Status Indicator */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+          <div className="flex items-center gap-3">
+            {whatsappStatus.isReady ? (
+              <>
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="font-semibold text-green-800">WhatsApp מחובר ומוכן</span>
+              </>
+            ) : whatsappStatus.needsAuth ? (
+              <>
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <span className="font-semibold text-yellow-800">WhatsApp ממתין לאימות - סרוק QR</span>
+              </>
+            ) : whatsappStatus.error ? (
+              <>
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="font-semibold text-red-800">{whatsappStatus.error}</span>
+              </>
+            ) : (
+              <>
+                <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                <span className="font-semibold text-gray-600">סטטוס לא ידוע</span>
+              </>
+            )}
+          </div>
+        </div>
 
         {/* Success Message */}
         {successMessage && (
