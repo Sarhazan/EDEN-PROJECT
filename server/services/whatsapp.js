@@ -89,10 +89,23 @@ class WhatsAppService {
     } catch (error) {
       console.error('Error sending message via gateway:', error.message);
 
-      if (error.response) {
-        throw new Error(error.response.data.error || 'שגיאה בשליחת הודעה');
-      } else if (error.code === 'ECONNREFUSED') {
+      // Categorize errors for specific Hebrew messages
+      if (error.code === 'ECONNREFUSED') {
         throw new Error('שרת WhatsApp המקומי אינו זמין - וודא שהשרת רץ על המחשב שלך');
+      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+        throw new Error('שרת WhatsApp לא מגיב - בדוק שהשרת רץ ותנסה שוב');
+      } else if (error.response) {
+        const status = error.response.status;
+        const errorData = error.response.data;
+
+        if (status === 400) {
+          throw new Error('וואטסאפ אינו מחובר. אנא התחבר תחילה דרך ההגדרות');
+        } else if (status === 503) {
+          // Pass through 503 errors (frame detachment) with original message
+          throw new Error(errorData.error || 'שגיאה בחיבור WhatsApp');
+        } else {
+          throw new Error('שגיאה בשליחת הודעה: ' + (errorData.error || error.message));
+        }
       } else {
         throw new Error('שגיאה בחיבור לשרת WhatsApp');
       }
@@ -123,7 +136,30 @@ class WhatsAppService {
       }
     } catch (error) {
       console.error('Error in bulk send via gateway:', error.message);
-      throw error;
+
+      // Categorize errors for bulk send
+      if (error.code === 'ECONNREFUSED') {
+        throw new Error('שרת WhatsApp המקומי אינו זמין - וודא שהשרת רץ על המחשב שלך');
+      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+        throw new Error('שרת WhatsApp לא מגיב - בדוק שהשרת רץ ותנסה שוב');
+      } else if (error.response) {
+        const status = error.response.status;
+        const errorData = error.response.data;
+
+        if (status === 400) {
+          throw new Error('וואטסאפ אינו מחובר. אנא התחבר תחילה דרך ההגדרות');
+        } else if (status === 503) {
+          // Frame detachment during bulk send - pass through with partial results
+          const partialResults = errorData.partialResults || [];
+          const err = new Error(errorData.error || 'שגיאה בחיבור WhatsApp');
+          err.partialResults = partialResults;
+          throw err;
+        } else {
+          throw new Error('שגיאה בשליחה המרובה: ' + (errorData.error || error.message));
+        }
+      } else {
+        throw new Error('שגיאה בחיבור לשרת WhatsApp');
+      }
     }
   }
 
