@@ -176,6 +176,14 @@ export function AppProvider({ children }) {
     await fetchEmployees(); // Refresh employee stats when task status changes
   };
 
+  const toggleTaskStar = async (id) => {
+    const response = await fetch(`${API_URL}/tasks/${id}/star`, {
+      method: 'PUT'
+    });
+    if (!response.ok) throw new Error('שגיאה בעדכון כוכב');
+    await fetchTasks();
+  };
+
   const deleteTask = async (id) => {
     const response = await fetch(`${API_URL}/tasks/${id}`, {
       method: 'DELETE'
@@ -396,6 +404,7 @@ export function AppProvider({ children }) {
     addTask,
     updateTask,
     updateTaskStatus,
+    toggleTaskStar,
     deleteTask,
     // System methods
     addSystem,
