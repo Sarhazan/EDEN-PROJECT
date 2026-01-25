@@ -115,7 +115,7 @@ export default function MyDayPage() {
     try {
       const response = await axios.post(`${API_URL}/whatsapp/send-bulk`, {
         tasksByEmployee
-      });
+      }, { timeout: 120000 }); // 2 minute timeout for bulk operations
 
       // Update all tasks status to 'sent'
       const taskIds = tasksToSend.map(t => t.id);

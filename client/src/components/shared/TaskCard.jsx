@@ -103,7 +103,7 @@ export default function TaskCard({ task, onEdit }) {
       await axios.post(`${API_URL}/whatsapp/send`, {
         phoneNumber: employee.phone,
         message: message
-      });
+      }, { timeout: 30000 }); // 30 second timeout
 
       // Update task status to 'sent'
       await updateTaskStatus(task.id, 'sent');
