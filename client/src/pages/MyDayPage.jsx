@@ -365,22 +365,27 @@ export default function MyDayPage() {
 
   // Filter late tasks (is_late = true, not completed) and sort by date and time
   const lateTasks = useMemo(() => {
-    return tasks
-      .filter(
-        (t) =>
-          t.is_late === true &&
-          t.status !== 'completed'
-      )
-      .sort((a, b) => {
-        // Sort by date first, then by time
-        const dateCompare = new Date(a.start_date) - new Date(b.start_date);
-        if (dateCompare !== 0) return dateCompare;
+    let filtered = tasks.filter(
+      (t) =>
+        t.is_late === true &&
+        t.status !== 'completed'
+    );
 
-        const timeA = a.start_time || '00:00';
-        const timeB = b.start_time || '00:00';
-        return timeA.localeCompare(timeB);
-      });
-  }, [tasks]);
+    // Apply star filter
+    if (starFilter) {
+      filtered = filtered.filter((t) => t.is_starred === 1);
+    }
+
+    return filtered.sort((a, b) => {
+      // Sort by date first, then by time
+      const dateCompare = new Date(a.start_date) - new Date(b.start_date);
+      if (dateCompare !== 0) return dateCompare;
+
+      const timeA = a.start_time || '00:00';
+      const timeB = b.start_time || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+  }, [tasks, starFilter]);
 
   // Calculate tomorrow's tasks count (for any selected date)
   const tomorrowTasksCount = useMemo(() => {
