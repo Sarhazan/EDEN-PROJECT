@@ -66,12 +66,15 @@ export default function SettingsPage() {
   };
 
   const startPolling = () => {
+    console.log('🔄 Starting WhatsApp status polling...');
     const pollInterval = setInterval(async () => {
       try {
         const response = await axios.get(`${API_URL}/whatsapp/status`);
+        console.log('📊 WhatsApp status:', response.data);
 
         if (response.data.isReady) {
           // Scan successful!
+          console.log('✅ WhatsApp connected! Stopping polling.');
           clearInterval(pollInterval);
           setQrCode(null);
           setWhatsappStatus({ isReady: true, needsAuth: false, isInitialized: true });
@@ -83,7 +86,10 @@ export default function SettingsPage() {
     }, 2000); // Check every 2 seconds
 
     // Stop polling after 2 minutes
-    setTimeout(() => clearInterval(pollInterval), 120000);
+    setTimeout(() => {
+      console.log('⏱️ Polling timeout - stopping after 2 minutes');
+      clearInterval(pollInterval);
+    }, 120000);
   };
 
 
@@ -166,9 +172,9 @@ export default function SettingsPage() {
         <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
           <p className="font-semibold mb-2">ℹ️ חשוב לדעת:</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>סריקת QR code נדרשת רק פעם אחת - החיבור נשמר לצמיתות</li>
-            <li>הסשן נשמר במאגר נתונים מאובטח (MongoDB)</li>
-            <li>גם אחרי עדכוני מערכת, החיבור נשאר פעיל</li>
+            <li>יש לסרוק QR code כדי להתחבר לוואטסאפ</li>
+            <li>החיבור נשאר פעיל כל עוד הדפדפן פתוח</li>
+            <li>אם סוגרים את הדפדפן או עושים עדכון - צריך לסרוק QR מחדש</li>
             <li>ההודעות נשלחות מחשבון הוואטסאפ האישי שלך</li>
             <li>עליך לוודא שלעובדים יש מספרי טלפון תקינים במערכת</li>
           </ul>
