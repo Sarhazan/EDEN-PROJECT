@@ -174,7 +174,7 @@ function MainContent() {
       {!isPublicRoute && buttonConfig.show && (
         <button
           onClick={buttonConfig.onClick}
-          className="fixed top-1/2 -translate-y-1/2 right-6 bg-primary hover:bg-indigo-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center gap-2 group z-50"
+          className="fixed top-1/2 -translate-y-1/2 right-6 bg-primary hover:bg-indigo-700 text-white rounded-full min-h-[56px] min-w-[56px] shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-90 flex items-center justify-center gap-2 group z-50"
           title={buttonConfig.label}
         >
           <FaPlus className="text-2xl" />

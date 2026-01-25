@@ -58,7 +58,7 @@ export default function MobileDrawer({ isOpen, onClose, navItems }) {
           </h1>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-white hover:bg-gray-700 active:scale-95 transition-all duration-150"
+            className="p-2 rounded-lg text-white hover:bg-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition-all duration-150"
             aria-label="סגור תפריט"
           >
             <FaTimes className="text-xl" />
@@ -74,7 +74,7 @@ export default function MobileDrawer({ isOpen, onClose, navItems }) {
               end={item.path === '/'}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
+                `flex items-center gap-4 px-4 py-3 rounded-xl min-h-[44px] transition-all duration-200 ${
                   isActive
                     ? 'bg-primary text-white shadow-lg'
                     : 'text-gray-300 hover:bg-gray-800 active:scale-95'
