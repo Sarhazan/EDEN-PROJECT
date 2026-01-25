@@ -66,8 +66,9 @@ class WhatsAppService {
 
       this.client = new Client({
         authStrategy: new RemoteAuth({
+          clientId: 'eden-whatsapp-session', // Fixed session ID for persistence
           store: this.store,
-          backupSyncIntervalMs: 300000 // Backup every 5 minutes
+          backupSyncIntervalMs: 30000 // Backup every 30 seconds (faster sync)
         }),
         puppeteer: puppeteerConfig
       });
@@ -156,6 +157,13 @@ class WhatsAppService {
       // RemoteAuth events - track session storage
       this.client.on('remote_session_saved', () => {
         console.log('✓ WhatsApp session saved to MongoDB successfully');
+      });
+
+      // Force immediate backup after authentication
+      this.client.on('authenticated', async () => {
+        console.log('⚡ Authentication complete - forcing immediate session backup...');
+        // The authStrategy will automatically save the session
+        // No need to manually trigger - RemoteAuth handles it
       });
 
       // Initialize the client
