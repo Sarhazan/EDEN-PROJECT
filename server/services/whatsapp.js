@@ -1,8 +1,6 @@
-const { Client, RemoteAuth } = require('whatsapp-web.js');
+const { Client, NoAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const chromium = require('@sparticuz/chromium');
-const { MongoStore } = require('wwebjs-mongo');
-const mongoose = require('mongoose');
 
 class WhatsAppService {
   constructor() {
@@ -10,21 +8,14 @@ class WhatsAppService {
     this.isReady = false;
     this.qrCode = null;
     this.qrCodeCallbacks = [];
-    this.store = null;
   }
 
   async initialize() {
     console.log('=== WhatsAppService.initialize() called ===');
 
-    // Check if client already exists and is ready
-    if (this.client && this.isReady) {
-      console.log('Client already initialized and ready - reusing existing session');
-      return;
-    }
-
-    // If client exists but not ready, destroy it
-    if (this.client && !this.isReady) {
-      console.log('Client exists but not ready - destroying and recreating...');
+    // If client exists, destroy it first
+    if (this.client) {
+      console.log('Destroying existing client...');
       try {
         await this.client.destroy();
       } catch (error) {
@@ -35,27 +26,10 @@ class WhatsAppService {
       this.qrCode = null;
     }
 
-    console.log('Creating new WhatsApp client with RemoteAuth (MongoDB)...');
+    console.log('Creating new WhatsApp client with NoAuth (no session storage)...');
 
     try {
-      // Initialize MongoDB store for session persistence
-      const mongoUrl = process.env.MONGODB_URI;
-
-      if (!mongoUrl) {
-        throw new Error('MONGODB_URI environment variable is not set');
-      }
-
-      console.log('Connecting to MongoDB for session storage...');
-
-      // Connect to MongoDB
-      await mongoose.connect(mongoUrl);
-
-      // Create MongoDB store for WhatsApp sessions
-      this.store = new MongoStore({ mongoose: mongoose });
-
-      console.log('✓ MongoDB connected successfully');
-
-      // Create WhatsApp client with authentication storage
+      // Create WhatsApp client without session persistence
       const puppeteerConfig = {
         headless: chromium.headless,
         args: chromium.args,
@@ -65,16 +39,12 @@ class WhatsAppService {
       console.log('Using Chromium from @sparticuz/chromium package');
 
       this.client = new Client({
-        authStrategy: new RemoteAuth({
-          clientId: 'eden-whatsapp-session', // Fixed session ID for persistence
-          store: this.store,
-          backupSyncIntervalMs: 60000 // Backup every 1 minute (minimum allowed)
-        }),
+        authStrategy: new NoAuth(),
         puppeteer: puppeteerConfig
       });
       console.log('Client object created successfully');
 
-      // QR Code event - for initial authentication
+      // QR Code event
       this.client.on('qr', (qr) => {
         console.log('✓ QR Code event fired - QR received!');
         this.qrCode = qr;
@@ -90,35 +60,18 @@ class WhatsAppService {
         this.qrCodeCallbacks = [];
       });
 
-      // Ready event - client is authenticated and ready
+      // Ready event
       this.client.on('ready', () => {
         console.log('✓ WhatsApp client is ready');
         this.isReady = true;
         this.qrCode = null;
       });
 
-      // Authenticated event - session loaded successfully
-      this.client.on('authenticated', () => {
-        console.log('✓ WhatsApp client authenticated - session loaded from MongoDB');
-      });
-
-      // Authentication failure event
-      this.client.on('auth_failure', (msg) => {
-        console.error('✗ WhatsApp authentication failed:', msg);
-        this.isReady = false;
-      });
-
       // Disconnected event
       this.client.on('disconnected', (reason) => {
         console.log('✗ WhatsApp client disconnected:', reason);
         this.isReady = false;
-        this.client.destroy();
         this.client = null;
-      });
-
-      // Session saved event
-      this.client.on('remote_session_saved', () => {
-        console.log('✓ WhatsApp session saved to MongoDB');
       });
 
       // Initialize the client
