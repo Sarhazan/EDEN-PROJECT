@@ -9,29 +9,30 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 1 of 4 (Stars System)
-Plan: 3 of 3 (01-03 Star Filter in Sidebar)
+Phase: 2 of 4 (Resizable Columns)
+Plan: 1 of 1 (02-01 Resizable Columns)
 Status: Phase complete
-Last activity: 2026-01-25 — Completed 01-03-PLAN.md
+Last activity: 2026-01-25 — Completed 02-01-PLAN.md
 
-Progress: [██░░░░░░░░] 25%
+Progress: [████░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 2.7 min
-- Total execution time: 0.13 hours
+- Total plans completed: 4
+- Average duration: 2.8 min
+- Total execution time: 0.18 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-stars-system | 3 | 8min | 2.7min |
+| 02-resizable-columns | 1 | 3min | 3.0min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2min), 01-02 (1min), 01-03 (3min)
-- Trend: Consistent execution velocity
+- Last 5 plans: 01-01 (2min), 01-02 (1min), 01-03 (3min), 02-01 (3min)
+- Trend: Consistent execution velocity (2-3 min per plan)
 
 *Updated after each plan completion*
 
@@ -55,6 +56,11 @@ Recent decisions affecting current work:
 - (01-03) Apply star filter before other filters in AllTasksPage
 - (01-03) Exclude completed tasks from starred filter automatically
 - (01-03) Use storage event for cross-tab synchronization
+- (02-01) Use re-resizable library (6.9.17) with --legacy-peer-deps for React 19
+- (02-01) Default 66.67%/33.33% split maintains original col-span-8/4 ratio
+- (02-01) Desktop-only feature (>= 1024px) using Tailwind lg breakpoint
+- (02-01) Debounced localStorage writes (100ms) for resize performance
+- (02-01) Width constraints: 250px min, 70% max per column
 
 ### Pending Todos
 
@@ -66,6 +72,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T13:42:05Z
-Stopped at: Completed 01-03-PLAN.md (Star Filter in Sidebar) - Phase 01 complete
+Last session: 2026-01-25T19:25:16Z
+Stopped at: Completed 02-01-PLAN.md (Resizable Columns) - Phase 02 complete
 Resume file: None
