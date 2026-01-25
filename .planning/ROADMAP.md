@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Resizable Columns** - Customizable column layouts with persistence
 - [ ] **Phase 3: Mobile Responsive Experience** - Full mobile optimization with hamburger menu and touch UI
 - [ ] **Phase 4: WhatsApp Connection Monitoring** - Comprehensive connection visibility and auto-recovery
+- [ ] **Phase 5: WhatsApp Web Integration** - Single-number WhatsApp Web connection for system notifications
 
 ## Phase Details
 
@@ -81,10 +82,25 @@ Plans:
 Plans:
 - [ ] TBD (to be determined during planning)
 
+### Phase 5: WhatsApp Web Integration
+**Goal**: System reliably sends WhatsApp notifications from single number via WhatsApp Web connection
+**Depends on**: Phase 4 (connection monitoring must be in place first)
+**Requirements**: TBD (to be defined during planning phase)
+**Success Criteria** (what must be TRUE):
+  1. Manager can connect system to WhatsApp Web using QR code from single phone number
+  2. All task notifications are sent from the connected WhatsApp number
+  3. WhatsApp connection persists across server restarts and deployments
+  4. Manager receives confirmation when WhatsApp messages are successfully delivered
+  5. System gracefully handles WhatsApp disconnections and reconnects automatically
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (to be determined during planning)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -92,3 +108,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Resizable Columns | 1/1 | Complete | 2026-01-25 |
 | 3. Mobile Responsive | 0/? | Not started | - |
 | 4. WhatsApp Monitoring | 0/? | Not started | - |
+| 5. WhatsApp Web Integration | 0/? | Not started | - |
