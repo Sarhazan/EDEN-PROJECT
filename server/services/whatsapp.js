@@ -153,6 +153,11 @@ class WhatsAppService {
         }
       });
 
+      // RemoteAuth events - track session storage
+      this.client.on('remote_session_saved', () => {
+        console.log('✓ WhatsApp session saved to MongoDB successfully');
+      });
+
       // Initialize the client
       console.log('Calling client.initialize()...');
       this.client.initialize();

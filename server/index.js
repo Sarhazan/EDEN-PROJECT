@@ -52,7 +52,14 @@ io.on('connection', (socket) => {
   });
 });
 
-// Don't initialize WhatsApp automatically - it will be initialized when user clicks "connect" in the UI
+// Initialize WhatsApp with existing session from MongoDB (if exists)
+// This ensures sessions persist across deployments/restarts
+const whatsappService = require('./services/whatsapp');
+console.log('Attempting to restore WhatsApp session from MongoDB...');
+whatsappService.initialize().catch(err => {
+  console.error('Failed to initialize WhatsApp on startup:', err.message);
+  console.log('WhatsApp will need to be manually connected via Settings page');
+});
 
 // API Routes
 const tasksRouter = require('./routes/tasks');
