@@ -167,8 +167,10 @@ export default function TaskCard({ task, onEdit }) {
   return (
     <div className={`
       bg-white rounded-xl shadow-md p-5
+      min-h-[64px]
       transition-all duration-200
       hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01]
+      active:scale-[0.98] active:shadow-md
       ${task.status === 'completed' ? 'opacity-70' : ''}
       ${task.status === 'pending_approval' ? 'task-pending-approval' : ''}
       ${task.is_late ? 'border-l-4 border-red-500 bg-red-50' : ''}
@@ -176,7 +178,7 @@ export default function TaskCard({ task, onEdit }) {
       ${task.priority === 'urgent' && !task.is_late && task.timing_status !== 'near-deadline' ? 'border-r-4 border-rose-500' : ''}
     `}>
       <div className="flex items-start gap-4">
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center">
           <input
             type="checkbox"
             checked={task.status === 'completed'}
@@ -207,7 +209,7 @@ export default function TaskCard({ task, onEdit }) {
             <div className="flex gap-2 items-start flex-shrink-0">
               <button
                 onClick={handleStarClick}
-                className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 ${
+                className={`p-2 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-90 ${
                   task.is_starred === 1
                     ? 'text-yellow-500 hover:text-yellow-600'
                     : 'text-gray-400 hover:text-gray-500'
@@ -248,7 +250,7 @@ export default function TaskCard({ task, onEdit }) {
               {task.status === 'pending_approval' && (
                 <button
                   onClick={handleApproveTask}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-150 flex items-center gap-2"
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold min-h-[44px] transition-all duration-150 active:scale-95 flex items-center gap-2"
                   title="אשר משימה"
                 >
                   <FaCheck />
@@ -259,7 +261,7 @@ export default function TaskCard({ task, onEdit }) {
                 <button
                   onClick={handleSendTask}
                   disabled={isSending}
-                  className="text-primary hover:text-indigo-700 p-2 rounded-lg hover:bg-indigo-50 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-primary hover:text-indigo-700 p-2 rounded-lg hover:bg-indigo-50 min-h-[44px] min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="שלח משימה בוואטסאפ"
                 >
                   {isSending ? '...' : <FaPaperPlane />}
@@ -267,14 +269,14 @@ export default function TaskCard({ task, onEdit }) {
               )}
               <button
                 onClick={() => onEdit(task)}
-                className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-all duration-150"
+                className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 min-h-[44px] min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90"
                 title="ערוך"
               >
                 <FaEdit />
               </button>
               <button
                 onClick={handleDelete}
-                className="text-rose-600 hover:text-rose-700 p-2 rounded-lg hover:bg-rose-50 transition-all duration-150"
+                className="text-rose-600 hover:text-rose-700 p-2 rounded-lg hover:bg-rose-50 min-h-[44px] min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90"
                 title="מחק"
               >
                 <FaTrash />
