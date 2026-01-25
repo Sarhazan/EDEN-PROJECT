@@ -1,7 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import Sidebar from './components/layout/Sidebar';
+import MobileDrawer from './components/layout/MobileDrawer';
+import HamburgerButton from './components/layout/HamburgerButton';
 import DataControls from './components/layout/DataControls';
 import Modal from './components/shared/Modal';
 import TaskForm from './components/forms/TaskForm';
@@ -19,7 +21,8 @@ import EmployeesPage from './pages/EmployeesPage';
 import LocationsPage from './pages/LocationsPage';
 import SettingsPage from './pages/SettingsPage';
 import TaskConfirmationPage from './pages/TaskConfirmationPage';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaWrench } from 'react-icons/fa';
+import { useMediaQuery } from './hooks/useMediaQuery';
 
 function MainContent() {
   const { isTaskModalOpen, setIsTaskModalOpen, editingTask, setEditingTask, isAuthenticated, login } = useApp();
@@ -30,6 +33,28 @@ function MainContent() {
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+
+  // Mobile drawer state and breakpoint detection
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 1023px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+
+  // Navigation items for mobile drawer
+  const navItems = [
+    { path: '/', icon: FaHome, label: 'היום שלי' },
+    { path: '/tasks', icon: FaTasks, label: 'משימות' },
+    { path: '/history', icon: FaHistory, label: 'היסטוריה' },
+    { path: '/systems', icon: FaCog, label: 'מערכות' },
+    { path: '/suppliers', icon: FaTruck, label: 'ספקים' },
+    { path: '/employees', icon: FaUsers, label: 'עובדים' },
+    { path: '/locations', icon: FaMapMarkerAlt, label: 'מיקומים' },
+    { path: '/settings', icon: FaWrench, label: 'הגדרות' }
+  ];
+
+  // Auto-close drawer on route change
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
 
   const handleCloseTaskModal = () => {
     setIsTaskModalOpen(false);
@@ -111,10 +136,27 @@ function MainContent() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      {!isPublicRoute && <Sidebar />}
+      {!isPublicRoute && isDesktop && <Sidebar className="hidden lg:block" />}
       {!isPublicRoute && <DataControls />}
 
-      <main className={isPublicRoute ? 'flex-1' : 'mr-72 flex-1'}>
+      {/* Mobile Hamburger Button */}
+      {!isPublicRoute && isMobile && (
+        <HamburgerButton
+          onClick={() => setDrawerOpen(true)}
+          className="fixed top-4 right-4 z-30 lg:hidden"
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      {!isPublicRoute && (
+        <MobileDrawer
+          isOpen={drawerOpen && isMobile}
+          onClose={() => setDrawerOpen(false)}
+          navItems={navItems}
+        />
+      )}
+
+      <main className={isPublicRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1')}>
         <Routes>
           <Route path="/" element={<MyDayPage />} />
           <Route path="/tasks" element={<AllTasksPage />} />
