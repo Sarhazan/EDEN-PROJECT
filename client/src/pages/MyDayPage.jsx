@@ -22,6 +22,22 @@ export default function MyDayPage() {
   const [filterCategory, setFilterCategory] = useState(''); // '' | 'priority' | 'system' | 'status' | 'employee'
   const [filterValue, setFilterValue] = useState(''); // The specific value within the selected category
 
+  // Star filter state from localStorage
+  const [starFilter, setStarFilter] = useState(() => {
+    return localStorage.getItem('starFilter') === 'true';
+  });
+
+  // Listen to localStorage changes for star filter (cross-tab sync)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'starFilter') {
+        setStarFilter(e.newValue === 'true');
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Update current time every minute to refresh countdown displays
   useEffect(() => {
     const interval = setInterval(() => {
@@ -240,6 +256,12 @@ export default function MyDayPage() {
         t.is_recurring === 1 // Recurring tasks only
     );
 
+    // Apply star filter
+    if (starFilter) {
+      // Show only starred tasks, exclude completed
+      filtered = filtered.filter((t) => t.is_starred === 1 && t.status !== 'completed');
+    }
+
     // Apply filters based on selected category and value
     if (filterCategory && filterValue) {
       switch (filterCategory) {
@@ -275,7 +297,7 @@ export default function MyDayPage() {
       const timeB = b.start_time || '00:00';
       return timeA.localeCompare(timeB);
     });
-  }, [tasks, selectedDate, filterCategory, filterValue]);
+  }, [tasks, selectedDate, filterCategory, filterValue, starFilter]);
 
   // Filter one-time tasks (selected date, not completed) and sort by time
   const oneTimeTasks = useMemo(() => {
@@ -286,6 +308,12 @@ export default function MyDayPage() {
           t.status !== 'completed' &&
           t.is_recurring === 0 // One-time tasks only
       );
+
+    // Apply star filter
+    if (starFilter) {
+      // Show only starred tasks, exclude completed
+      filtered = filtered.filter((t) => t.is_starred === 1 && t.status !== 'completed');
+    }
 
     // Apply employee filter (same logic as recurring tasks)
     if (filterCategory === 'employee' && filterValue) {
@@ -302,7 +330,7 @@ export default function MyDayPage() {
       const timeB = b.start_time || '00:00';
       return timeA.localeCompare(timeB);
     });
-  }, [tasks, selectedDate, filterCategory, filterValue]);
+  }, [tasks, selectedDate, filterCategory, filterValue, starFilter]);
 
   // Filter late tasks (is_late = true, not completed) and sort by date and time
   const lateTasks = useMemo(() => {
