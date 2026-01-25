@@ -56,7 +56,7 @@ router.post('/connect', async (req, res) => {
     // Initialize if not already initialized
     if (!statusBefore.isInitialized) {
       console.log('Client not initialized, calling initialize()...');
-      whatsappService.initialize();
+      await whatsappService.initialize();
       console.log('Initialize() called successfully');
     } else {
       console.log('Client already initialized, skipping initialization');

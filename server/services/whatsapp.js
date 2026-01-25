@@ -1,6 +1,7 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const path = require('path');
+const chromium = require('@sparticuz/chromium');
 
 class WhatsAppService {
   constructor() {
@@ -10,7 +11,7 @@ class WhatsAppService {
     this.qrCodeCallbacks = [];
   }
 
-  initialize() {
+  async initialize() {
     console.log('=== WhatsAppService.initialize() called ===');
 
     if (this.client) {
@@ -24,14 +25,19 @@ class WhatsAppService {
 
     try {
       // Create WhatsApp client with local authentication
+      const puppeteerConfig = {
+        headless: chromium.headless,
+        args: chromium.args,
+        executablePath: await chromium.executablePath()
+      };
+
+      console.log('Using Chromium from @sparticuz/chromium package');
+
       this.client = new Client({
         authStrategy: new LocalAuth({
           dataPath: authPath
         }),
-        puppeteer: {
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox']
-        }
+        puppeteer: puppeteerConfig
       });
       console.log('Client object created successfully');
 
