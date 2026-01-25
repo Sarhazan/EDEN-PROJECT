@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FaWhatsapp, FaCheck, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
 
@@ -15,19 +15,6 @@ export default function SettingsPage() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  // Load WhatsApp status on mount
-  useEffect(() => {
-    loadWhatsAppStatus();
-  }, []);
-
-  const loadWhatsAppStatus = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/whatsapp/status`);
-      setWhatsappStatus(response.data);
-    } catch (error) {
-      console.error('Error loading WhatsApp status:', error);
-    }
-  };
 
   const handleConnect = async () => {
     setLoading(true);
@@ -43,8 +30,7 @@ export default function SettingsPage() {
         setWhatsappStatus({ isReady: true, needsAuth: false, isInitialized: true });
       } else if (response.data.qrCode) {
         setQrCode(response.data.qrCode);
-        // Poll for connection status
-        startPolling();
+        setSuccessMessage('סרוק את הקוד עם הטלפון שלך. אחרי הסריקה, תוכל לשלוח הודעות');
       }
     } catch (error) {
       setError(error.response?.data?.error || 'שגיאה בהתחברות לוואטסאפ');
@@ -53,46 +39,7 @@ export default function SettingsPage() {
     }
   };
 
-  const startPolling = () => {
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await axios.get(`${API_URL}/whatsapp/status`);
 
-        if (response.data.isReady) {
-          setWhatsappStatus(response.data);
-          setQrCode(null);
-          setSuccessMessage('התחברת בהצלחה לוואטסאפ!');
-          clearInterval(pollInterval);
-        }
-      } catch (error) {
-        console.error('Error polling status:', error);
-        clearInterval(pollInterval);
-      }
-    }, 2000);
-
-    // Stop polling after 2 minutes
-    setTimeout(() => clearInterval(pollInterval), 120000);
-  };
-
-  const handleDisconnect = async () => {
-    if (!confirm('האם אתה בטוח שברצונך להתנתק מוואטסאפ?')) {
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      await axios.post(`${API_URL}/whatsapp/disconnect`);
-      setWhatsappStatus({ isReady: false, needsAuth: false, isInitialized: false });
-      setSuccessMessage('התנתקת מוואטסאפ בהצלחה');
-    } catch (error) {
-      setError(error.response?.data?.error || 'שגיאה בהתנתקות מוואטסאפ');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -125,25 +72,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Connection Status */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold">סטטוס חיבור:</span>
-            <div className="flex items-center gap-2">
-              {whatsappStatus.isReady ? (
-                <>
-                  <span className="text-green-600 font-semibold">מחובר</span>
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                </>
-              ) : (
-                <>
-                  <span className="text-red-600 font-semibold">לא מחובר</span>
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* QR Code Display */}
         {qrCode && (
