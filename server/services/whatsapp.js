@@ -1,6 +1,5 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, NoAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const path = require('path');
 const chromium = require('@sparticuz/chromium');
 
 class WhatsAppService {
@@ -14,17 +13,23 @@ class WhatsAppService {
   async initialize() {
     console.log('=== WhatsAppService.initialize() called ===');
 
+    // Always destroy existing client to force new QR code
     if (this.client) {
-      console.log('WhatsApp client already initialized');
-      return;
+      console.log('Destroying existing client to get fresh QR code...');
+      try {
+        await this.client.destroy();
+      } catch (error) {
+        console.error('Error destroying old client:', error);
+      }
+      this.client = null;
+      this.isReady = false;
+      this.qrCode = null;
     }
 
-    console.log('Creating new WhatsApp client...');
-    const authPath = path.join(__dirname, '..', '.wwebjs_auth');
-    console.log('Auth data path:', authPath);
+    console.log('Creating new WhatsApp client (no session storage)...');
 
     try {
-      // Create WhatsApp client with local authentication
+      // Create WhatsApp client without authentication storage
       const puppeteerConfig = {
         headless: chromium.headless,
         args: chromium.args,
@@ -34,9 +39,7 @@ class WhatsAppService {
       console.log('Using Chromium from @sparticuz/chromium package');
 
       this.client = new Client({
-        authStrategy: new LocalAuth({
-          dataPath: authPath
-        }),
+        authStrategy: new NoAuth(),
         puppeteer: puppeteerConfig
       });
       console.log('Client object created successfully');
@@ -242,14 +245,19 @@ class WhatsAppService {
     }
   }
 
-  // Disconnect and logout
+  // Disconnect (destroy session)
   async disconnect() {
     if (this.client) {
-      await this.client.logout();
-      await this.client.destroy();
+      console.log('Disconnecting WhatsApp client...');
+      try {
+        await this.client.destroy();
+      } catch (error) {
+        console.error('Error destroying client:', error);
+      }
       this.client = null;
       this.isReady = false;
       this.qrCode = null;
+      console.log('WhatsApp client disconnected');
     }
   }
 }

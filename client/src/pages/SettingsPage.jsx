@@ -169,32 +169,22 @@ export default function SettingsPage() {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          {!whatsappStatus.isReady ? (
-            <button
-              onClick={handleConnect}
-              disabled={loading}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <FaWhatsapp />
-              {loading ? 'מתחבר...' : 'התחבר לוואטסאפ'}
-            </button>
-          ) : (
-            <button
-              onClick={handleDisconnect}
-              disabled={loading}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {loading ? 'מתנתק...' : 'התנתק מוואטסאפ'}
-            </button>
-          )}
+          <button
+            onClick={handleConnect}
+            disabled={loading}
+            className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <FaWhatsapp />
+            {loading ? 'מתחבר...' : qrCode ? 'QR חדש' : 'התחבר לוואטסאפ'}
+          </button>
         </div>
 
         {/* Info Box */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
           <p className="font-semibold mb-2">ℹ️ חשוב לדעת:</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>החיבור לוואטסאפ נשמר באופן מקומי במערכת</li>
-            <li>ניתן להתנתק בכל עת ולהתחבר מחדש</li>
+            <li>בכל פעם שתרצה לשלוח הודעות, תצטרך לסרוק QR code חדש</li>
+            <li>החיבור לא נשמר - זה יותר פשוט ובטוח</li>
             <li>ההודעות נשלחות מחשבון הוואטסאפ האישי שלך</li>
             <li>עליך לוודא שלעובדים יש מספרי טלפון תקינים במערכת</li>
           </ul>
