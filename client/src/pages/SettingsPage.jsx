@@ -142,8 +142,9 @@ export default function SettingsPage() {
         <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
           <p className="font-semibold mb-2">ℹ️ חשוב לדעת:</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>סריקת QR code נדרשת רק לאחר עדכון מערכת חדש (deployment)</li>
-            <li>החיבור נשמר ויעבוד כל עוד השרת פועל</li>
+            <li>סריקת QR code נדרשת רק פעם אחת - החיבור נשמר לצמיתות</li>
+            <li>הסשן נשמר במאגר נתונים מאובטח (MongoDB)</li>
+            <li>גם אחרי עדכוני מערכת, החיבור נשאר פעיל</li>
             <li>ההודעות נשלחות מחשבון הוואטסאפ האישי שלך</li>
             <li>עליך לוודא שלעובדים יש מספרי טלפון תקינים במערכת</li>
           </ul>

@@ -16,3 +16,5 @@ services:
         sync: false
       - key: GOOGLE_TRANSLATE_API_KEY
         sync: false
+      - key: MONGODB_URI
+        sync: false

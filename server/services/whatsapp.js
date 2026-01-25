@@ -1,6 +1,8 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, RemoteAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const chromium = require('@sparticuz/chromium');
+const { MongoStore } = require('wwebjs-mongo');
+const mongoose = require('mongoose');
 
 class WhatsAppService {
   constructor() {
@@ -8,6 +10,7 @@ class WhatsAppService {
     this.isReady = false;
     this.qrCode = null;
     this.qrCodeCallbacks = [];
+    this.store = null;
   }
 
   async initialize() {
@@ -32,9 +35,26 @@ class WhatsAppService {
       this.qrCode = null;
     }
 
-    console.log('Creating new WhatsApp client with LocalAuth...');
+    console.log('Creating new WhatsApp client with RemoteAuth (MongoDB)...');
 
     try {
+      // Initialize MongoDB store for session persistence
+      const mongoUrl = process.env.MONGODB_URI;
+
+      if (!mongoUrl) {
+        throw new Error('MONGODB_URI environment variable is not set');
+      }
+
+      console.log('Connecting to MongoDB for session storage...');
+
+      // Connect to MongoDB
+      await mongoose.connect(mongoUrl);
+
+      // Create MongoDB store for WhatsApp sessions
+      this.store = new MongoStore({ mongoose: mongoose });
+
+      console.log('✓ MongoDB connected successfully');
+
       // Create WhatsApp client with authentication storage
       const puppeteerConfig = {
         headless: chromium.headless,
@@ -45,7 +65,10 @@ class WhatsAppService {
       console.log('Using Chromium from @sparticuz/chromium package');
 
       this.client = new Client({
-        authStrategy: new LocalAuth(),
+        authStrategy: new RemoteAuth({
+          store: this.store,
+          backupSyncIntervalMs: 300000 // Backup every 5 minutes
+        }),
         puppeteer: puppeteerConfig
       });
       console.log('Client object created successfully');
