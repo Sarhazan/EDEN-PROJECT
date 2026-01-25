@@ -68,7 +68,7 @@ class WhatsAppService {
         authStrategy: new RemoteAuth({
           clientId: 'eden-whatsapp-session', // Fixed session ID for persistence
           store: this.store,
-          backupSyncIntervalMs: 30000 // Backup every 30 seconds (faster sync)
+          backupSyncIntervalMs: 60000 // Backup every 1 minute (minimum allowed)
         }),
         puppeteer: puppeteerConfig
       });
