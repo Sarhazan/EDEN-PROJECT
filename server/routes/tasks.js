@@ -703,5 +703,45 @@ router.delete('/:id', (req, res) => {
   }
 });
 
+// Toggle task star status
+router.put('/:id/star', (req, res) => {
+  try {
+    const taskId = req.params.id;
+
+    // Toggle is_starred using SQL CASE statement (avoids race conditions)
+    const result = db.prepare(`
+      UPDATE tasks
+      SET is_starred = CASE WHEN is_starred = 1 THEN 0 ELSE 1 END,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(taskId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'משימה לא נמצאה' });
+    }
+
+    // Get updated task with JOINs
+    const updatedTask = db.prepare(`
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      FROM tasks t
+      LEFT JOIN systems s ON t.system_id = s.id
+      LEFT JOIN employees e ON t.employee_id = e.id
+      LEFT JOIN locations l ON t.location_id = l.id
+      WHERE t.id = ?
+    `).get(taskId);
+
+    const enrichedTask = enrichTaskWithTiming(updatedTask);
+
+    // Broadcast task update event
+    if (io) {
+      io.emit('task:updated', { task: enrichedTask });
+    }
+
+    res.json(enrichedTask);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
 module.exports.setIo = setIo;
