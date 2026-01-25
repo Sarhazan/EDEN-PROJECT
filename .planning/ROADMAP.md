@@ -62,10 +62,12 @@ Plans:
   3. All buttons and tap targets are minimum 44x44px on mobile
   4. Task cards stack vertically in single column on mobile screens
   5. Manager can swipe right-to-left to close drawer on mobile
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (to be determined during planning)
+- [ ] 03-01-PLAN.md — Hamburger navigation drawer with RTL slide-in and swipe-to-close
+- [ ] 03-02-PLAN.md — Grid layout transformations for mobile-first responsive design
+- [ ] 03-03-PLAN.md — Touch optimization with 44px targets and visual feedback
 
 ### Phase 4: WhatsApp Connection Monitoring
 **Goal**: Managers have complete visibility into WhatsApp connection status with automatic recovery
@@ -106,6 +108,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Stars System | 3/3 | Complete | 2026-01-25 |
 | 2. Resizable Columns | 1/1 | Complete | 2026-01-25 |
-| 3. Mobile Responsive | 0/? | Not started | - |
+| 3. Mobile Responsive | 0/3 | Not started | - |
 | 4. WhatsApp Monitoring | 0/? | Not started | - |
 | 5. WhatsApp Web Integration | 0/? | Not started | - |
