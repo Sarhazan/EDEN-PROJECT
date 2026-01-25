@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "claude-code": {
+      "command": "claude",
+      "args": ["mcp", "serve"]
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sqlite",
+        "C:\\dev\\projects\\claude projects\\eden claude\\maintenance.db"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\dev\\projects\\claude projects\\eden claude"
+      ]
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-git",
+        "--repository",
+        "C:\\dev\\projects\\claude projects\\eden claude"
+      ]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    }
+  }
+}

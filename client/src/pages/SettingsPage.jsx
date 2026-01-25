@@ -20,7 +20,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/whatsapp/status`);
+        const response = await axios.get(`${API_URL}/whatsapp/status`);
         setWhatsappStatus({
           isReady: response.data.isReady,
           needsAuth: response.data.needsAuth,
