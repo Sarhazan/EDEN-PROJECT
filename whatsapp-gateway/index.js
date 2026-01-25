@@ -115,6 +115,24 @@ app.post('/send', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('❌ Error sending message:', error);
+
+    // Detect frame detachment - this means the browser frame is broken
+    if (error.message && error.message.includes('detached Frame')) {
+      console.error('🔴 Frame detached - client is broken, resetting state');
+      isReady = false;
+
+      try {
+        await client.destroy();
+      } catch (destroyError) {
+        console.error('Error destroying client:', destroyError);
+      }
+
+      client = null;
+      return res.status(503).json({
+        error: 'חיבור WhatsApp התנתק. יש להתחבר מחדש דרך ההגדרות'
+      });
+    }
+
     res.status(500).json({ error: error.message });
   }
 });
@@ -150,6 +168,27 @@ app.post('/send-bulk', async (req, res) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         console.error(`❌ Failed to send to ${phoneNumber}:`, error.message);
+
+        // Detect frame detachment during bulk send
+        if (error.message && error.message.includes('detached Frame')) {
+          console.error('🔴 Frame detached during bulk send - client is broken, resetting state');
+          isReady = false;
+
+          try {
+            await client.destroy();
+          } catch (destroyError) {
+            console.error('Error destroying client:', destroyError);
+          }
+
+          client = null;
+
+          // Stop bulk send immediately and return error
+          return res.status(503).json({
+            error: 'חיבור WhatsApp התנתק. יש להתחבר מחדש דרך ההגדרות',
+            partialResults: results
+          });
+        }
+
         results.push({ phoneNumber, success: false, error: error.message });
       }
     }
