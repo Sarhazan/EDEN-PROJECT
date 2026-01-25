@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaWhatsapp, FaCheck, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
 
@@ -14,7 +14,31 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
+  // Check WhatsApp status on component mount
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/whatsapp/status`);
+        setWhatsappStatus({
+          isReady: response.data.isReady,
+          needsAuth: response.data.needsAuth,
+          isInitialized: response.data.isInitialized
+        });
+
+        if (response.data.isReady) {
+          setSuccessMessage('מחובר לוואטסאפ בהצלחה!');
+        }
+      } catch (error) {
+        console.error('Error checking WhatsApp status:', error);
+      } finally {
+        setIsCheckingStatus(false);
+      }
+    };
+
+    checkStatus();
+  }, []); // Run once on mount
 
   const handleConnect = async () => {
     setLoading(true);
@@ -130,11 +154,11 @@ export default function SettingsPage() {
         <div className="flex gap-3">
           <button
             onClick={handleConnect}
-            disabled={loading}
+            disabled={loading || isCheckingStatus}
             className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <FaWhatsapp />
-            {loading ? 'מתחבר...' : whatsappStatus.isReady ? 'QR חדש (לחיבור מחדש)' : qrCode ? 'QR חדש' : 'התחבר לוואטסאפ'}
+            {isCheckingStatus ? 'בודק סטטוס...' : loading ? 'מתחבר...' : whatsappStatus.isReady ? 'QR חדש (לחיבור מחדש)' : qrCode ? 'QR חדש' : 'התחבר לוואטסאפ'}
           </button>
         </div>
 
