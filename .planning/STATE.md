@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-25)
 
 **Core value:** מנהל המבנה רואה בזמן אמת מה קורה בשטח - איזה משימה הושלמה, מי עושה מה, ומה מתעכב
-**Current focus:** Phase 1 - Stars System
+**Current focus:** Phase 2 - Resizable Columns
 
 ## Current Position
 
@@ -14,7 +14,7 @@ Plan: 3 of 3 (01-03 Star Filter in Sidebar)
 Status: Phase complete
 Last activity: 2026-01-25 — Completed 01-03-PLAN.md
 
-Progress: [███░░░░░░░] 20%
+Progress: [██░░░░░░░░] 25%
 
 ## Performance Metrics
 
