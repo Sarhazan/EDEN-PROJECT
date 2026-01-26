@@ -162,6 +162,7 @@ export default function MyDayPage() {
         title: task.title,
         description: task.description,
         start_time: task.start_time,
+        priority: task.priority || 'normal',
         system_name: task.system_name,
         estimated_duration_minutes: task.estimated_duration_minutes,
         status: task.status
