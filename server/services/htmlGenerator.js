@@ -9,10 +9,10 @@ class HtmlGeneratorService {
   constructor() {
     this.templatePath = path.join(__dirname, '..', 'templates', 'task-confirmation.html');
     this.outputDir = path.join(__dirname, '..', '..', 'docs');
-    // For local testing, serve from local server
-    // For production, use Vercel or ngrok URL
+    // Use PUBLIC_API_URL for production (Render), fallback to local for development
     const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://localhost:3002';
-    this.baseUrl = process.env.VERCEL_PROJECT_URL || `${apiUrl}/docs`;
+    this.baseUrl = `${apiUrl}/docs`;
+    this.isProduction = !!process.env.PUBLIC_API_URL;
   }
 
   /**

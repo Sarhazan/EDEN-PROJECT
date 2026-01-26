@@ -198,19 +198,19 @@ router.post('/send-bulk', async (req, res) => {
         });
         console.log(`HTML generated successfully: ${htmlUrl}`);
 
-        // Only verify URL accessibility if using external hosting (Vercel)
-        // For local serving (/docs), skip verification - file is immediately available
-        if (process.env.VERCEL_PROJECT_URL) {
-          console.log('⏳ Verifying Vercel deployment...');
+        // Verify URL accessibility if using public hosting (Render production)
+        // For local development, skip verification - file is immediately available
+        if (process.env.PUBLIC_API_URL && !process.env.PUBLIC_API_URL.includes('localhost')) {
+          console.log('⏳ Verifying production URL accessibility...');
           const isAvailable = await waitForUrlAvailable(htmlUrl, 5, 2000);
 
           if (!isAvailable) {
-            console.error(`Failed to verify Vercel deployment for employee ${name}`);
+            console.error(`Failed to verify URL accessibility for employee ${name}`);
             console.error(`URL: ${htmlUrl}`);
-            throw new Error('לא הצלחנו לאמת שדף האישור זמין ב-Vercel. ייתכן שה-deployment נכשל.');
+            throw new Error('לא הצלחנו לאמת שדף האישור זמין. ייתכן שהשרת אינו מגיב.');
           }
 
-          console.log('✓ Vercel deployment verified, proceeding with WhatsApp send');
+          console.log('✓ Production URL verified, proceeding with WhatsApp send');
         } else {
           console.log('✓ HTML file generated locally, skipping URL verification');
         }
@@ -225,8 +225,7 @@ router.post('/send-bulk', async (req, res) => {
         message += t('taskListHeader', { date, count: tasks.length }) + '\n\n';
 
         // Translate task titles and descriptions to employee's language
-        const translation = require('../services/translation');
-        const translationService = new translation();
+        const translationService = require('../services/translation');
 
         for (const [index, task] of sortedTasks.entries()) {
           // Translate title and description if employee language is not Hebrew
