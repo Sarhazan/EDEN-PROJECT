@@ -79,6 +79,7 @@ const taskConfirmationRouter = require('./routes/taskConfirmation');
 app.use('/api/confirm', taskConfirmationRouter);
 const historyRouter = require('./routes/history');
 app.use('/api/history', historyRouter);
+app.use('/api/accounts', require('./routes/accounts'));
 
 // Set io instance in routes after all routes are loaded
 tasksRouter.setIo(io);

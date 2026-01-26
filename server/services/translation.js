@@ -29,16 +29,27 @@ class TranslationService {
     }
 
     // Initialize Google Cloud Translation API (PAID - fallback provider)
+    // Supports both API Key (simpler) and Service Account (GOOGLE_APPLICATION_CREDENTIALS)
     this.googleTranslate = null;
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    if (process.env.GOOGLE_TRANSLATE_API_KEY) {
       try {
+        // Use API Key authentication (simpler setup)
+        this.googleTranslate = new Translate({ key: process.env.GOOGLE_TRANSLATE_API_KEY });
+        console.log('✓ Google Cloud Translation API initialized with API Key (PAID fallback)');
+      } catch (error) {
+        console.error('✗ Failed to initialize Translation API with API Key:', error.message);
+      }
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      try {
+        // Use Service Account authentication (full GCP setup)
         this.googleTranslate = new Translate();
-        console.log('✓ Google Cloud Translation API initialized (PAID fallback)');
+        console.log('✓ Google Cloud Translation API initialized with Service Account (PAID fallback)');
       } catch (error) {
         console.error('✗ Failed to initialize Translation API:', error.message);
       }
     } else {
-      console.warn('⚠️ GOOGLE_APPLICATION_CREDENTIALS not set - skipping Google Translate fallback');
+      // Try to load from database (deferred - will be loaded on first use)
+      this._loadApiKeyFromDatabase();
     }
 
     // Provider usage statistics
@@ -182,6 +193,73 @@ class TranslationService {
       geminiAvailable: !!this.geminiModel,
       googleTranslateAvailable: !!this.googleTranslate
     };
+  }
+
+  /**
+   * Update Google Translate API Key at runtime
+   * @param {string} apiKey - New API key
+   * @returns {boolean} - Whether initialization succeeded
+   */
+  setGoogleTranslateApiKey(apiKey) {
+    if (!apiKey || !apiKey.trim()) {
+      this.googleTranslate = null;
+      console.log('✓ Google Translate API disabled');
+      return true;
+    }
+
+    try {
+      this.googleTranslate = new Translate({ key: apiKey.trim() });
+      console.log('✓ Google Translate API Key updated');
+      return true;
+    } catch (error) {
+      console.error('✗ Failed to set Google Translate API Key:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Test Google Translate API connection
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  async testGoogleTranslate() {
+    if (!this.googleTranslate) {
+      return { success: false, error: 'Google Translate not configured' };
+    }
+
+    try {
+      // Simple test translation
+      const [translation] = await this.googleTranslate.translate('Hello', { to: 'he' });
+      return { success: true, testResult: translation };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Load API key from database (for persistence across restarts)
+   * @private
+   */
+  _loadApiKeyFromDatabase() {
+    try {
+      // Defer database import to avoid circular dependency at startup
+      setTimeout(() => {
+        try {
+          const { db } = require('../database/schema');
+          const setting = db.prepare(`SELECT value FROM settings WHERE key = 'google_translate_api_key'`).get();
+          if (setting && setting.value) {
+            this.googleTranslate = new Translate({ key: setting.value });
+            console.log('✓ Google Translate API Key loaded from database');
+          } else {
+            console.warn('⚠️ No Google Translate API key configured - skipping Google Translate fallback');
+          }
+        } catch (dbError) {
+          // Database might not be initialized yet, or table doesn't exist
+          console.warn('⚠️ Could not load Google Translate API key from database:', dbError.message);
+        }
+      }, 1000); // Small delay to ensure database is ready
+    } catch (error) {
+      console.warn('⚠️ Error loading API key from database:', error.message);
+    }
   }
 }
 

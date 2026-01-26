@@ -18,6 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Mobile Responsive Experience** - Full mobile optimization with hamburger menu and touch UI
 - [ ] **Phase 4: WhatsApp Connection Monitoring** - Comprehensive connection visibility and auto-recovery
 - [ ] **Phase 5: WhatsApp Web Integration** - Single-number WhatsApp Web connection for system notifications
+- [ ] **Phase 6: External Accounts Integration** - Connect to external services (Google Translate, Gmail, Outlook)
 
 ## Phase Details
 
@@ -119,10 +120,27 @@ Plans:
 Plans:
 - [ ] TBD (to be determined during planning)
 
+### Phase 6: External Accounts Integration
+**Goal**: מנהל יכול להתחבר לשירותים חיצוניים מתפריט הצד - Google Translate (בתשלום), Gmail, ו-Outlook לתקשורת מתקדמת
+**Depends on**: Phase 3 (mobile responsive - must work on all screen sizes)
+**Requirements**: TBD (to be defined during planning phase)
+**Success Criteria** (what must be TRUE):
+  1. כפתור "חשבונות" מופיע בתפריט הצד עם אייקון מתאים
+  2. לחיצה על כפתור חשבונות פותחת דף עם רשימת השירותים החיצוניים
+  3. מנהל יכול להתחבר ל-Google Cloud (לתרגום בתשלום) עם מפתח API
+  4. מנהל יכול לחבר חשבון Gmail להתראות מייל אוטומטיות
+  5. מנהל יכול לחבר חשבון Outlook/Microsoft 365 להתראות מייל
+  6. סטטוס החיבור של כל שירות מוצג (מחובר/מנותק)
+  7. מנהל יכול לנתק שירות מחובר בכל עת
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (to be determined during planning)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -132,3 +150,4 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 | 3. Mobile Responsive | 3/3 | Complete | 2026-01-25 |
 | 4. WhatsApp Monitoring | 0/? | Not started | - |
 | 5. WhatsApp Web Integration | 0/? | Not started | - |
+| 6. External Accounts | 0/? | Not started | - |

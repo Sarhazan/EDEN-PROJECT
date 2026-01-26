@@ -302,6 +302,15 @@ function initializeDatabase() {
     }
   }
 
+  // Settings table for external service configurations (API keys, etc.)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Create composite indexes for history query performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_tasks_history
