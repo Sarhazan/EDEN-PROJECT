@@ -3,7 +3,6 @@ const router = express.Router();
 const whatsappService = require('../services/whatsapp');
 const htmlGenerator = require('../services/htmlGenerator');
 const urlShortener = require('../services/urlShortener');
-const axios = require('axios');
 const i18n = require('../services/i18n');
 const { db } = require('../database/schema');
 
@@ -12,6 +11,7 @@ async function waitForUrlAvailable(url, maxAttempts = 30, intervalMs = 4000) {
   console.log(`⏳ Waiting for URL to become available: ${url}`);
   console.log(`   Will try ${maxAttempts} times with ${intervalMs/1000}s intervals (max ${maxAttempts * intervalMs / 1000}s total)`);
 
+  const axios = require('axios');
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const response = await axios.head(url, { timeout: 8000 });
@@ -35,7 +35,7 @@ async function waitForUrlAvailable(url, maxAttempts = 30, intervalMs = 4000) {
 }
 
 // Get WhatsApp connection status
-router.get('/status', (req, res) => {
+router.get('/status', async (req, res) => {
   try {
     const status = whatsappService.getStatus();
     res.json(status);
@@ -47,50 +47,22 @@ router.get('/status', (req, res) => {
 // Initialize WhatsApp connection and get QR code
 router.post('/connect', async (req, res) => {
   try {
-    console.log('=== WHATSAPP CONNECT REQUEST ===');
+    const status = whatsappService.getStatus();
 
-    // Check current status
-    const statusBefore = whatsappService.getStatus();
-    console.log('Status before initialization:', JSON.stringify(statusBefore));
-
-    // Initialize if not already initialized
-    if (!statusBefore.isInitialized) {
-      console.log('Client not initialized, calling initialize()...');
-      await whatsappService.initialize();
-      console.log('Initialize() called successfully');
-    } else {
-      console.log('Client already initialized, skipping initialization');
+    if (status.isReady) {
+      return res.json({ success: true, message: 'Already connected', isReady: true });
     }
 
-    // Get QR code
-    console.log('Requesting QR code...');
-    const qrCode = await whatsappService.getQRCode();
-    console.log('QR code result:', qrCode ? 'QR code received' : 'No QR code (null)');
-
-    if (!qrCode) {
-      // Already authenticated or timeout
-      const status = whatsappService.getStatus();
-      console.log('No QR code - checking status:', JSON.stringify(status));
-
-      if (status.isReady) {
-        console.log('Already authenticated and ready');
-        return res.json({
-          success: true,
-          message: 'כבר מחובר לוואטסאפ',
-          isReady: true
-        });
-      } else {
-        console.log('Timeout or error - QR code not generated');
-        return res.status(408).json({
-          error: 'נסה שוב - לא הצלחנו ליצור קוד QR'
-        });
-      }
+    if (!status.isInitialized) {
+      // Start initialization - QR will come via Socket.IO
+      whatsappService.initialize().catch(err => {
+        console.error('WhatsApp initialization error:', err);
+      });
     }
 
-    console.log('Sending QR code to client');
-    res.json({ qrCode });
+    // Return immediately - frontend should listen for Socket.IO events
+    res.json({ success: true, message: 'Initializing - watch for QR via Socket.IO', initializing: true });
   } catch (error) {
-    console.error('Error in /connect endpoint:', error);
     res.status(500).json({ error: error.message });
   }
 });
