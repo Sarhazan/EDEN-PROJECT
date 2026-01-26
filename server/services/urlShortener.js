@@ -2,17 +2,17 @@ const axios = require('axios');
 
 /**
  * URL Shortening Service
- * Uses is.gd API - no authentication required, simple and reliable
+ * Uses TinyURL API - no authentication required, reliable on all devices
  * Fallback: returns original URL if shortening fails
  */
 class UrlShortenerService {
   constructor() {
-    this.apiUrl = 'https://is.gd/create.php';
+    this.apiUrl = 'https://tinyurl.com/api-create.php';
     this.enabled = process.env.URL_SHORTENER_ENABLED !== 'false'; // Enabled by default
   }
 
   /**
-   * Shorten a URL using is.gd service
+   * Shorten a URL using TinyURL service
    * @param {string} longUrl - The URL to shorten
    * @param {object} options - Optional parameters
    * @param {number} options.timeout - Request timeout in ms (default: 5000)
@@ -32,18 +32,17 @@ class UrlShortenerService {
 
       const response = await axios.get(this.apiUrl, {
         params: {
-          format: 'json',
           url: longUrl
         },
         timeout
       });
 
-      if (response.data && response.data.shorturl) {
-        const shortUrl = response.data.shorturl;
+      if (response.data && typeof response.data === 'string' && response.data.startsWith('http')) {
+        const shortUrl = response.data.trim();
         console.log(`✓ URL shortened successfully: ${shortUrl}`);
         return shortUrl;
       } else {
-        console.warn('Unexpected response from is.gd API, returning original URL');
+        console.warn('Unexpected response from TinyURL API, returning original URL');
         return longUrl;
       }
     } catch (error) {
