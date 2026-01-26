@@ -1,189 +1,244 @@
-const axios = require('axios');
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const QRCode = require('qrcode');
 
 /**
- * WhatsApp Service - Gateway Client
+ * WhatsApp Service - Singleton with Socket.IO Integration
  *
- * This service communicates with a local WhatsApp gateway running on your machine.
- * The gateway handles the actual WhatsApp connection using whatsapp-web.js.
+ * This service manages the WhatsApp Web client directly in the main server process.
+ * It emits real-time events via Socket.IO for QR codes and connection status.
  */
 class WhatsAppService {
   constructor() {
-    // Use environment variable or default to local network
-    this.gatewayUrl = process.env.WHATSAPP_GATEWAY_URL || 'http://192.168.1.35:3003';
-    console.log(`WhatsApp Gateway URL: ${this.gatewayUrl}`);
+    this.client = null;
+    this.isReady = false;
+    this.qrCode = null;
+    this.io = null;
   }
 
   /**
-   * Check if gateway is reachable and WhatsApp is ready
+   * Set Socket.IO instance for emitting events
    */
-  async getStatus() {
-    try {
-      const response = await axios.get(`${this.gatewayUrl}/status`, {
-        timeout: 5000,
-        headers: { 'bypass-tunnel-reminder': 'true' }
-      });
-      return {
-        isReady: response.data.isReady,
-        needsAuth: response.data.hasQR,
-        isInitialized: response.data.isInitialized
-      };
-    } catch (error) {
-      console.error('Gateway not reachable:', error.message);
-      return {
-        isReady: false,
-        needsAuth: false,
-        isInitialized: false,
-        error: 'Gateway not reachable - make sure WhatsApp gateway is running on your computer'
-      };
-    }
+  setIo(io) {
+    this.io = io;
+    console.log('WhatsApp service connected to Socket.IO');
   }
 
   /**
-   * Get QR code from gateway (for initial authentication)
+   * Initialize WhatsApp client with LocalAuth and event handlers
    */
-  async getQRCode() {
-    try {
-      const response = await axios.get(`${this.gatewayUrl}/qr`, {
-        timeout: 10000,
-        headers: { 'bypass-tunnel-reminder': 'true' }
-      });
+  async initialize() {
+    console.log('🚀 Initializing WhatsApp client...');
 
-      if (response.data.qrCode) {
-        return response.data.qrCode;
-      } else if (response.data.message) {
-        console.log(response.data.message);
-        return null;
+    this.client = new Client({
+      authStrategy: new LocalAuth({
+        clientId: 'eden-whatsapp',
+        dataPath: './.wwebjs_auth'
+      }),
+      puppeteer: {
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu'
+        ]
       }
-    } catch (error) {
-      if (error.response && error.response.status === 404) {
-        console.log('QR code not available yet - gateway is initializing');
-        return null;
+    });
+
+    // QR Code event - generate and emit to all connected browsers
+    this.client.on('qr', async (qr) => {
+      console.log('📱 QR CODE RECEIVED');
+      this.qrCode = qr;
+      this.isReady = false;
+
+      try {
+        // Generate QR as data URL for browser display
+        const qrDataUrl = await QRCode.toDataURL(qr, {
+          width: 300,
+          margin: 2
+        });
+
+        if (this.io) {
+          this.io.emit('whatsapp:qr', { qrDataUrl });
+          console.log('✓ QR code emitted to connected clients');
+        }
+      } catch (error) {
+        console.error('Error generating QR code:', error);
       }
-      console.error('Error getting QR code:', error.message);
-      throw new Error('לא ניתן להתחבר לשרת WhatsApp המקומי');
-    }
+    });
+
+    // Ready event
+    this.client.on('ready', () => {
+      console.log('✅ WhatsApp client is ready!');
+      this.isReady = true;
+      this.qrCode = null;
+
+      if (this.io) {
+        this.io.emit('whatsapp:ready');
+      }
+    });
+
+    // Authenticated event
+    this.client.on('authenticated', () => {
+      console.log('✅ WhatsApp authenticated successfully');
+    });
+
+    // Disconnected event
+    this.client.on('disconnected', (reason) => {
+      console.log('❌ WhatsApp disconnected:', reason);
+      this.isReady = false;
+      this.client = null;
+
+      if (this.io) {
+        this.io.emit('whatsapp:disconnected', { reason });
+      }
+    });
+
+    // Initialize client
+    await this.client.initialize();
   }
 
   /**
-   * Send WhatsApp message via gateway
+   * Get current WhatsApp status
+   */
+  getStatus() {
+    return {
+      isReady: this.isReady,
+      needsAuth: this.qrCode !== null,
+      isInitialized: this.client !== null
+    };
+  }
+
+  /**
+   * Send WhatsApp message
    */
   async sendMessage(phoneNumber, message) {
     try {
-      console.log(`Sending message to ${phoneNumber} via gateway...`);
-
-      const response = await axios.post(
-        `${this.gatewayUrl}/send`,
-        { phoneNumber, message },
-        {
-          timeout: 30000,
-          headers: { 'bypass-tunnel-reminder': 'true' }
-        }
-      );
-
-      if (response.data.success) {
-        console.log('✓ Message sent successfully via gateway');
-        return { success: true };
-      } else {
-        throw new Error('Gateway returned non-success response');
+      if (!this.isReady) {
+        throw new Error('WhatsApp is not ready. Please authenticate first.');
       }
+
+      // Format phone number for WhatsApp (Israel country code)
+      let formattedNumber = phoneNumber.replace(/\D/g, '');
+
+      // Add Israel country code if not present
+      if (!formattedNumber.startsWith('972')) {
+        formattedNumber = '972' + formattedNumber.replace(/^0+/, '');
+      }
+
+      const chatId = `${formattedNumber}@c.us`;
+
+      console.log(`📤 Sending message to ${chatId}...`);
+
+      // Send the message
+      await this.client.sendMessage(chatId, message);
+
+      console.log('✅ Message sent successfully');
+      return { success: true };
     } catch (error) {
-      console.error('Error sending message via gateway:', error.message);
+      console.error('❌ Error sending message:', error);
 
-      // Categorize errors for specific Hebrew messages
-      if (error.code === 'ECONNREFUSED') {
-        throw new Error('שרת WhatsApp המקומי אינו זמין - וודא שהשרת רץ על המחשב שלך');
-      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-        throw new Error('שרת WhatsApp לא מגיב - בדוק שהשרת רץ ותנסה שוב');
-      } else if (error.response) {
-        const status = error.response.status;
-        const errorData = error.response.data;
+      // Detect frame detachment - this means the browser frame is broken
+      if (error.message && error.message.includes('detached Frame')) {
+        console.error('🔴 Frame detached - client is broken, resetting state');
+        this.isReady = false;
 
-        if (status === 400) {
-          throw new Error('וואטסאפ אינו מחובר. אנא התחבר תחילה דרך ההגדרות');
-        } else if (status === 503) {
-          // Pass through 503 errors (frame detachment) with original message
-          throw new Error(errorData.error || 'שגיאה בחיבור WhatsApp');
-        } else {
-          throw new Error('שגיאה בשליחת הודעה: ' + (errorData.error || error.message));
+        try {
+          await this.client.destroy();
+        } catch (destroyError) {
+          console.error('Error destroying client:', destroyError);
         }
-      } else {
-        throw new Error('שגיאה בחיבור לשרת WhatsApp');
+
+        this.client = null;
+
+        if (this.io) {
+          this.io.emit('whatsapp:disconnected', { reason: 'frame_detached' });
+        }
+
+        throw new Error('חיבור WhatsApp התנתק. יש להתחבר מחדש דרך ההגדרות');
       }
+
+      throw error;
     }
   }
 
   /**
-   * Send bulk messages via gateway
+   * Send bulk messages
    */
   async sendBulkMessages(messages) {
-    try {
-      console.log(`Sending ${messages.length} messages via gateway...`);
+    if (!this.isReady) {
+      throw new Error('WhatsApp is not ready. Please authenticate first.');
+    }
 
-      const response = await axios.post(
-        `${this.gatewayUrl}/send-bulk`,
-        { messages },
-        {
-          timeout: 120000, // 2 minutes for bulk
-          headers: { 'bypass-tunnel-reminder': 'true' }
+    const results = [];
+
+    for (const { phoneNumber, message } of messages) {
+      try {
+        let formattedNumber = phoneNumber.replace(/\D/g, '');
+        if (!formattedNumber.startsWith('972')) {
+          formattedNumber = '972' + formattedNumber.replace(/^0+/, '');
         }
-      );
+        const chatId = `${formattedNumber}@c.us`;
 
-      if (response.data.success) {
-        console.log('✓ Bulk send completed');
-        return response.data.results;
-      } else {
-        throw new Error('Gateway returned non-success response');
-      }
-    } catch (error) {
-      console.error('Error in bulk send via gateway:', error.message);
+        await this.client.sendMessage(chatId, message);
+        results.push({ phoneNumber, success: true });
+        console.log(`✅ Sent to ${phoneNumber}`);
 
-      // Categorize errors for bulk send
-      if (error.code === 'ECONNREFUSED') {
-        throw new Error('שרת WhatsApp המקומי אינו זמין - וודא שהשרת רץ על המחשב שלך');
-      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-        throw new Error('שרת WhatsApp לא מגיב - בדוק שהשרת רץ ותנסה שוב');
-      } else if (error.response) {
-        const status = error.response.status;
-        const errorData = error.response.data;
+        // Small delay between messages
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.error(`❌ Failed to send to ${phoneNumber}:`, error.message);
 
-        if (status === 400) {
-          throw new Error('וואטסאפ אינו מחובר. אנא התחבר תחילה דרך ההגדרות');
-        } else if (status === 503) {
-          // Frame detachment during bulk send - pass through with partial results
-          const partialResults = errorData.partialResults || [];
-          const err = new Error(errorData.error || 'שגיאה בחיבור WhatsApp');
-          err.partialResults = partialResults;
+        // Detect frame detachment during bulk send
+        if (error.message && error.message.includes('detached Frame')) {
+          console.error('🔴 Frame detached during bulk send - client is broken, resetting state');
+          this.isReady = false;
+
+          try {
+            await this.client.destroy();
+          } catch (destroyError) {
+            console.error('Error destroying client:', destroyError);
+          }
+
+          this.client = null;
+
+          if (this.io) {
+            this.io.emit('whatsapp:disconnected', { reason: 'frame_detached' });
+          }
+
+          // Stop bulk send immediately and return error with partial results
+          const err = new Error('חיבור WhatsApp התנתק. יש להתחבר מחדש דרך ההגדרות');
+          err.partialResults = results;
           throw err;
-        } else {
-          throw new Error('שגיאה בשליחה המרובה: ' + (errorData.error || error.message));
         }
-      } else {
-        throw new Error('שגיאה בחיבור לשרת WhatsApp');
+
+        results.push({ phoneNumber, success: false, error: error.message });
       }
     }
+
+    return results;
   }
 
   /**
-   * Disconnect (not really needed with gateway, but kept for API compatibility)
+   * Disconnect WhatsApp client
    */
   async disconnect() {
     try {
-      await axios.post(`${this.gatewayUrl}/disconnect`, {}, {
-        headers: { 'bypass-tunnel-reminder': 'true' }
-      });
-      console.log('Gateway disconnected');
-    } catch (error) {
-      console.error('Error disconnecting gateway:', error.message);
-    }
-  }
+      if (this.client) {
+        await this.client.destroy();
+        this.client = null;
+        this.isReady = false;
+        this.qrCode = null;
+        console.log('🔌 WhatsApp disconnected');
 
-  /**
-   * Initialize - for gateway, this just checks status
-   */
-  async initialize() {
-    console.log('Checking WhatsApp gateway status...');
-    const status = await this.getStatus();
-    console.log('Gateway status:', status);
+        if (this.io) {
+          this.io.emit('whatsapp:disconnected', { reason: 'manual' });
+        }
+      }
+    } catch (error) {
+      console.error('Error during disconnect:', error);
+      throw error;
+    }
   }
 }
 
