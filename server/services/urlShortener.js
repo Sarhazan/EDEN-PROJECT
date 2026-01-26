@@ -2,17 +2,17 @@ const axios = require('axios');
 
 /**
  * URL Shortening Service
- * Uses TinyURL API - no authentication required, reliable on all devices
+ * Uses is.gd API - free, no authentication required, reliable
  * Fallback: returns original URL if shortening fails
  */
 class UrlShortenerService {
   constructor() {
-    this.apiUrl = 'https://tinyurl.com/api-create.php';
+    this.apiUrl = 'https://is.gd/create.php';
     this.enabled = process.env.URL_SHORTENER_ENABLED !== 'false'; // Enabled by default
   }
 
   /**
-   * Shorten a URL using TinyURL service
+   * Shorten a URL using is.gd service
    * @param {string} longUrl - The URL to shorten
    * @param {object} options - Optional parameters
    * @param {number} options.timeout - Request timeout in ms (default: 5000)
@@ -32,9 +32,13 @@ class UrlShortenerService {
 
       const response = await axios.get(this.apiUrl, {
         params: {
+          format: 'simple',
           url: longUrl
         },
-        timeout
+        timeout,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
       });
 
       if (response.data && typeof response.data === 'string' && response.data.startsWith('http')) {
@@ -42,7 +46,7 @@ class UrlShortenerService {
         console.log(`✓ URL shortened successfully: ${shortUrl}`);
         return shortUrl;
       } else {
-        console.warn('Unexpected response from TinyURL API, returning original URL');
+        console.warn('Unexpected response from is.gd API, returning original URL');
         return longUrl;
       }
     } catch (error) {
