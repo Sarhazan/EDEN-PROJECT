@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-25)
 
 **Core value:** מנהל המבנה רואה בזמן אמת מה קורה בשטח - איזה משימה הושלמה, מי עושה מה, ומה מתעכב
-**Current focus:** Phase 3 - Mobile Responsive Experience
+**Current focus:** Phase 02.1 - WhatsApp Gateway Integration
 
 ## Current Position
 
-Phase: 3 of 4 (Mobile Responsive Experience)
-Plan: 3 of 3 (03-03 Touch-Optimized Interaction)
+Phase: 02.1 of 5 (WhatsApp Gateway Integration - INSERTED)
+Plan: 3 of 3 (02.1-03 Render Deployment Configuration)
 Status: Phase complete
-Last activity: 2026-01-25 — Completed 03-03-PLAN.md
+Last activity: 2026-01-26 — Completed 02.1-03-PLAN.md
 
-Progress: [██████████] 100% (7/7 plans)
+Progress: [████████████░░] 80% (8/10 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 3.4 min
-- Total execution time: 0.40 hours
+- Total plans completed: 8
+- Average duration: 3.3 min
+- Total execution time: 0.41 hours
 
 **By Phase:**
 
@@ -29,11 +29,12 @@ Progress: [██████████] 100% (7/7 plans)
 |-------|-------|-------|----------|
 | 01-stars-system | 3 | 8min | 2.7min |
 | 02-resizable-columns | 1 | 3min | 3.0min |
+| 02.1-whatsapp-gateway | 3 | <3min | <1min |
 | 03-mobile-responsive | 3 | 15.4min | 5.1min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (3min), 03-01 (3.4min), 03-02 (5min), 03-03 (7min)
-- Trend: Phase 03 showing longer execution times (mobile complexity, more files)
+- Last 5 plans: 03-01 (3.4min), 03-02 (5min), 03-03 (7min), 02.1-03 (<1min)
+- Trend: Phase 02.1 very fast (simple infrastructure setup)
 
 *Updated after each plan completion*
 
@@ -77,6 +78,9 @@ Recent decisions affecting current work:
 - (03-03) scale-90 for icon buttons, scale-95 for text buttons (proportional to size)
 - (03-03) Native <select> elements for mobile (OS-native picker UI)
 - (03-03) gap-2 (8px) minimum spacing between interactive elements
+- (02.1-03) Use /opt/render/.cache/puppeteer for persistent Puppeteer cache (Render preserves this path)
+- (02.1-03) Install Chrome via npx puppeteer browsers install chrome in build script
+- (02.1-03) Set executable permission in git for Unix deployment (Windows local + Render remote)
 
 ### Pending Todos
 
@@ -88,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T20:43:50Z
-Stopped at: Completed 03-03-PLAN.md (Touch-Optimized Interaction) - Phase 03 complete
+Last session: 2026-01-26T07:49:13Z
+Stopped at: Completed 02.1-03-PLAN.md (Render Deployment Configuration) - Phase 02.1 complete
 Resume file: None
