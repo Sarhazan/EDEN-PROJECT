@@ -455,6 +455,13 @@
         }
 
         function toggleTaskCompletion(taskId, checkbox) {
+            // Check if user has acknowledged all tasks first
+            if (!isAcknowledged) {
+                checkbox.checked = false; // Prevent checking
+                alert('{{ACKNOWLEDGE_REQUIRED}}');
+                return;
+            }
+
             const completionForm = document.getElementById('completion-form-' + taskId);
 
             if (checkbox.checked) {

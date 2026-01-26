@@ -3,6 +3,7 @@
   "greeting": "שלום {{name}}",
   "acknowledgeButton": "אישור קבלת כל המשימות",
   "acknowledgeDescription": "לחיצה על כפתור זה תאשר שקיבלת את כל המשימות ותעדכן את המנהל",
+  "acknowledgeRequired": "יש ללחוץ תחילה על כפתור 'אישור קבלת כל המשימות' לפני ביצוע משימות בודדות",
   "completeButton": "שלח השלמה",
   "addNoteLabel": "הערות (אופציונלי)",
   "addNotePlaceholder": "הוסף הערות על המשימה...",

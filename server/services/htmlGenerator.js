@@ -106,6 +106,7 @@ class HtmlGeneratorService {
         GREETING: t('greeting', { name: data.employeeName }),
         ACKNOWLEDGE_BUTTON: t('acknowledgeButton'),
         ACKNOWLEDGE_DESCRIPTION: t('acknowledgeDescription'),
+        ACKNOWLEDGE_REQUIRED: t('acknowledgeRequired'),
         COMPLETE_BUTTON: t('completeButton'),
         ADD_NOTE_LABEL: t('addNoteLabel'),
         ADD_NOTE_PLACEHOLDER: t('addNotePlaceholder'),

@@ -3,6 +3,7 @@
   "greeting": "مرحبا {{name}}",
   "acknowledgeButton": "تأكيد استلام جميع المهام",
   "acknowledgeDescription": "النقر على هذا الزر يؤكد أنك استلمت جميع المهام وسيتم إخطار المدير",
+  "acknowledgeRequired": "يجب النقر على زر 'تأكيد استلام جميع المهام' أولاً قبل تنفيذ مهام فردية",
   "completeButton": "إرسال الإكمال",
   "addNoteLabel": "ملاحظات (اختياري)",
   "addNotePlaceholder": "أضف ملاحظات حول المهمة...",
