@@ -10,7 +10,7 @@ import '../components/forms/datepicker-custom.css';
 import axios from 'axios';
 import { Resizable } from 're-resizable';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 export default function MyDayPage() {
   const { tasks, systems, employees, locations, setIsTaskModalOpen, setEditingTask, updateTaskStatus } = useApp();
@@ -42,15 +42,24 @@ export default function MyDayPage() {
     return { left: '66.67%', right: '33.33%' };
   });
 
-  // Listen to localStorage changes for star filter (cross-tab sync)
+  // Listen to localStorage changes for star filter (cross-tab sync) and custom event (same-tab sync)
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'starFilter') {
         setStarFilter(e.newValue === 'true');
       }
     };
+
+    const handleStarFilterChanged = (e) => {
+      setStarFilter(e.detail.value);
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('starFilterChanged', handleStarFilterChanged);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('starFilterChanged', handleStarFilterChanged);
+    };
   }, []);
 
   // Debounced localStorage save for column widths

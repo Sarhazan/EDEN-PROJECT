@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { FaUpload, FaSpinner, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 export default function LocationForm({ location, onClose }) {
   const { addLocation, updateLocation } = useApp();

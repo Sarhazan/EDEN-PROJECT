@@ -4,7 +4,7 @@ import HistoryFilters from '../components/history/HistoryFilters';
 import HistoryStats from '../components/history/HistoryStats';
 import HistoryTable from '../components/history/HistoryTable';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 export default function HistoryPage() {
   const { filters, updateFilter, updateFilters, clearFilters } = useHistoryFilters();
@@ -20,15 +20,24 @@ export default function HistoryPage() {
     return localStorage.getItem('starFilter') === 'true';
   });
 
-  // Listen to localStorage changes for star filter (cross-tab sync)
+  // Listen to localStorage changes for star filter (cross-tab sync) and custom event (same-tab sync)
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'starFilter') {
         setStarFilter(e.newValue === 'true');
       }
     };
+
+    const handleStarFilterChanged = (e) => {
+      setStarFilter(e.detail.value);
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('starFilterChanged', handleStarFilterChanged);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('starFilterChanged', handleStarFilterChanged);
+    };
   }, []);
 
   // Fetch filter options on mount

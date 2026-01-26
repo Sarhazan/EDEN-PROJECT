@@ -3,7 +3,9 @@ import { FaWhatsapp, FaCheck, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+// Socket.IO connects to base URL without /api path
+const SOCKET_URL = API_URL.replace(/\/api$/, '');
 
 export default function SettingsPage() {
   const [whatsappStatus, setWhatsappStatus] = useState({
@@ -20,7 +22,7 @@ export default function SettingsPage() {
 
   // Set up Socket.IO connection for real-time WhatsApp updates
   useEffect(() => {
-    const newSocket = io(API_URL);
+    const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
 
     newSocket.on('whatsapp:qr', ({ qrDataUrl }) => {
@@ -28,6 +30,12 @@ export default function SettingsPage() {
       setQrCode(qrDataUrl);  // qrDataUrl is already a data URL, use directly in img src
       setWhatsappStatus(prev => ({ ...prev, needsAuth: true, isReady: false }));
       setSuccessMessage('סרוק את הקוד בטלפון שלך');
+    });
+
+    newSocket.on('whatsapp:authenticated', () => {
+      console.log('WhatsApp authenticated - initializing session...');
+      setQrCode(null); // Hide QR immediately
+      setSuccessMessage('✓ QR נסרק! מאתחל את החיבור...');
     });
 
     newSocket.on('whatsapp:ready', () => {

@@ -14,7 +14,7 @@ export default function HistoryTable({ tasks, loading }) {
     return <div className="p-8 text-center text-gray-500">לא נמצאו משימות</div>;
   }
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
   return (
     <>

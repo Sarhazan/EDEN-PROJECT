@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import Modal from '../components/shared/Modal';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 export default function LocationsPage() {
   const { locations, addLocation, updateLocation, deleteLocation, loading } = useApp();

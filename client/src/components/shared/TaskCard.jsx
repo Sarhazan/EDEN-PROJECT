@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { format } from 'date-fns';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 const priorityColors = {
   urgent: 'bg-rose-50 text-rose-700',
