@@ -52,8 +52,9 @@ io.on('connection', (socket) => {
   });
 });
 
-// WhatsApp uses a local gateway running on your computer
-// No initialization needed here - gateway handles everything
+// Initialize WhatsApp service with Socket.IO
+const whatsappService = require('./services/whatsapp');
+whatsappService.setIo(io);
 
 // API Routes
 const tasksRouter = require('./routes/tasks');
@@ -72,6 +73,11 @@ app.use('/api/history', historyRouter);
 // Set io instance in routes after all routes are loaded
 tasksRouter.setIo(io);
 taskConfirmationRouter.setIo(io);
+
+// Initialize WhatsApp client (auto-reconnects if session exists)
+whatsappService.initialize().catch(err => {
+  console.error('WhatsApp initialization error:', err);
+});
 
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
@@ -104,7 +110,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`Local: http://localhost:${PORT}`);
   console.log(`Network: http://192.168.1.35:${PORT}`);
-  console.log(`WhatsApp: Using local gateway (${process.env.WHATSAPP_GATEWAY_URL || 'http://192.168.1.35:3003'})`);
+  console.log(`WhatsApp: Integrated directly - no separate gateway needed`);
 });
 
 // Export io instance for use in routes
