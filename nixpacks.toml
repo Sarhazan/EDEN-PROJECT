@@ -6,7 +6,10 @@ aptPkgs = ['libnss3', 'libatk1.0-0', 'libatk-bridge2.0-0', 'libcups2', 'libgbm1'
 cmds = ['npm ci']
 
 [phases.build]
-cmds = ['cd server && npm install']
+cmds = [
+  'cd client && npm ci && npm run build',
+  'npx puppeteer browsers install chrome'
+]
 
 [start]
-cmd = 'cd server && node index.js'
+cmd = 'node server/index.js'
