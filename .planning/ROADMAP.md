@@ -53,21 +53,24 @@ Plans:
 Plans:
 - [x] 02-01-PLAN.md — Install re-resizable, implement resizable columns with localStorage persistence, add reset button
 
-### Phase 2.1: WhatsApp Gateway Integration (INSERTED)
-**Goal**: WhatsApp messages are reliably sent from single number via local gateway
+### Phase 2.1: Server-Integrated WhatsApp (INSERTED)
+**Goal**: WhatsApp integrated in main server with persistent connection - manager scans QR once and stays connected
 **Depends on**: Phase 2 (no UI dependencies)
-**Requirements**: None (existing implementation validation and UX improvements)
+**Requirements**: WA-INTG-01, WA-INTG-02, WA-INTG-03, WA-INTG-04, WA-INTG-05
+**Prerequisite**: Render Starter plan ($7/month) or equivalent always-on hosting required
 **Success Criteria** (what must be TRUE):
-  1. Manager can start local WhatsApp gateway with simple npm command
-  2. Manager scans QR code once and WhatsApp session persists
-  3. All task notifications are sent successfully from connected WhatsApp number
-  4. Messages appear in recipient's WhatsApp with proper formatting
-  5. System shows clear error message when gateway is not running
-**Plans**: 2 plans
+  1. WhatsApp client runs inside main server process (not separate gateway)
+  2. Manager opens Settings page and sees QR code in browser
+  3. After scanning QR once, WhatsApp stays connected even if manager closes browser
+  4. All task notifications send successfully from connected number
+  5. Manager can disconnect WhatsApp from Settings page UI
+  6. Server restart preserves WhatsApp session (no QR re-scan needed)
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02.1-01-PLAN.md — Enhanced error handling with Hebrew messages and UI status indicator
-- [ ] 02.1-02-PLAN.md — End-to-end validation, convenience scripts, and manager documentation
+- [ ] 02.1-01-PLAN.md — Backend WhatsApp service with Socket.IO integration
+- [ ] 02.1-02-PLAN.md — API routes + frontend with disconnect button
+- [ ] 02.1-03-PLAN.md — Render deployment configuration (render-build.sh)
 
 ### Phase 3: Mobile Responsive Experience
 **Goal**: Managers can effectively use Eden on smartphones with touch-optimized interface and RTL support
@@ -125,7 +128,7 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Stars System | 3/3 | Complete | 2026-01-25 |
 | 2. Resizable Columns | 1/1 | Complete | 2026-01-25 |
-| 2.1. WhatsApp Gateway (INSERTED) | 0/2 | In progress | - |
+| 2.1. WhatsApp Gateway (INSERTED) | 0/3 | In progress | - |
 | 3. Mobile Responsive | 3/3 | Complete | 2026-01-25 |
 | 4. WhatsApp Monitoring | 0/? | Not started | - |
 | 5. WhatsApp Web Integration | 0/? | Not started | - |
