@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaWhatsapp, FaCheck, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -15,8 +16,42 @@ export default function SettingsPage() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+  const [socket, setSocket] = useState(null);
 
-  // Check WhatsApp status on component mount and poll every 10 seconds
+  // Set up Socket.IO connection for real-time WhatsApp updates
+  useEffect(() => {
+    const newSocket = io(API_URL);
+    setSocket(newSocket);
+
+    newSocket.on('whatsapp:qr', ({ qrDataUrl }) => {
+      console.log('Received QR code via Socket.IO');
+      setQrCode(qrDataUrl);  // qrDataUrl is already a data URL, use directly in img src
+      setWhatsappStatus(prev => ({ ...prev, needsAuth: true, isReady: false }));
+      setSuccessMessage('סרוק את הקוד בטלפון שלך');
+    });
+
+    newSocket.on('whatsapp:ready', () => {
+      console.log('WhatsApp ready via Socket.IO');
+      setQrCode(null);
+      setWhatsappStatus({ isReady: true, needsAuth: false, isInitialized: true });
+      setSuccessMessage('מחובר לוואטסאפ בהצלחה!');
+    });
+
+    newSocket.on('whatsapp:disconnected', ({ reason }) => {
+      console.log('WhatsApp disconnected:', reason);
+      setQrCode(null);
+      setWhatsappStatus({ isReady: false, needsAuth: false, isInitialized: false });
+      if (reason !== 'manual') {
+        setError('WhatsApp disconnected: ' + reason);
+      }
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
+
+  // Check WhatsApp status on component mount
   useEffect(() => {
     const checkStatus = async () => {
       try {
@@ -46,27 +81,21 @@ export default function SettingsPage() {
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 10000); // Poll every 10 seconds
-    return () => clearInterval(interval);
-  }, []); // Run once on mount
+  }, []);
 
   const handleConnect = async () => {
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
-    setQrCode(null);
 
     try {
-      const response = await axios.post(`${API_URL}/whatsapp/connect`, {}, { timeout: 60000 });
+      const response = await axios.post(`${API_URL}/whatsapp/connect`);
 
       if (response.data.isReady) {
-        setSuccessMessage('מחובר לוואטסאפ בהצלחה!');
+        setSuccessMessage('כבר מחובר לוואטסאפ!');
         setWhatsappStatus({ isReady: true, needsAuth: false, isInitialized: true });
-      } else if (response.data.qrCode) {
-        setQrCode(response.data.qrCode);
-        setSuccessMessage('סרוק את הקוד עם הטלפון שלך');
-        // Start polling to check when scan completes
-        startPolling();
+      } else if (response.data.initializing) {
+        setSuccessMessage('מאתחל... קוד QR יופיע בקרוב');
       }
     } catch (error) {
       setError(error.response?.data?.error || 'שגיאה בהתחברות לוואטסאפ');
@@ -75,31 +104,20 @@ export default function SettingsPage() {
     }
   };
 
-  const startPolling = () => {
-    console.log('🔄 Starting WhatsApp status polling...');
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await axios.get(`${API_URL}/whatsapp/status`);
-        console.log('📊 WhatsApp status:', response.data);
+  const handleDisconnect = async () => {
+    setLoading(true);
+    setError(null);
 
-        if (response.data.isReady) {
-          // Scan successful!
-          console.log('✅ WhatsApp connected! Stopping polling.');
-          clearInterval(pollInterval);
-          setQrCode(null);
-          setWhatsappStatus({ isReady: true, needsAuth: false, isInitialized: true });
-          setSuccessMessage('מחובר לוואטסאפ בהצלחה! תוכל עכשיו לשלוח הודעות');
-        }
-      } catch (error) {
-        console.error('Error polling status:', error);
-      }
-    }, 2000); // Check every 2 seconds
-
-    // Stop polling after 2 minutes
-    setTimeout(() => {
-      console.log('⏱️ Polling timeout - stopping after 2 minutes');
-      clearInterval(pollInterval);
-    }, 120000);
+    try {
+      await axios.post(`${API_URL}/whatsapp/disconnect`);
+      setSuccessMessage('התנתק מוואטסאפ');
+      setWhatsappStatus({ isReady: false, needsAuth: false, isInitialized: false });
+      setQrCode(null);
+    } catch (error) {
+      setError(error.response?.data?.error || 'שגיאה בהתנתקות');
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -169,7 +187,7 @@ export default function SettingsPage() {
             <h3 className="font-semibold mb-3 text-center">סרוק את הקוד בוואטסאפ שלך</h3>
             <div className="flex flex-col items-center gap-3">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrCode)}`}
+                src={qrCode}
                 alt="WhatsApp QR Code"
                 className="w-64 h-64 border-4 border-gray-300 rounded-lg"
               />
@@ -203,6 +221,16 @@ export default function SettingsPage() {
             <FaWhatsapp />
             {isCheckingStatus ? 'בודק סטטוס...' : loading ? 'מתחבר...' : whatsappStatus.isReady ? 'QR חדש (לחיבור מחדש)' : qrCode ? 'QR חדש' : 'התחבר לוואטסאפ'}
           </button>
+          {whatsappStatus.isReady && (
+            <button
+              onClick={handleDisconnect}
+              disabled={loading}
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <FaTimes />
+              {loading ? 'מתנתק...' : 'התנתק מוואטסאפ'}
+            </button>
+          )}
         </div>
 
         {/* Info Box */}
@@ -210,8 +238,8 @@ export default function SettingsPage() {
           <p className="font-semibold mb-2">ℹ️ חשוב לדעת:</p>
           <ul className="list-disc list-inside space-y-1">
             <li>סריקת QR code נדרשת פעם אחת</li>
-            <li>הסשן נשמר בשרת עד לעדכון הבא</li>
-            <li>לאחר עדכון מערכת - צריך לסרוק QR מחדש</li>
+            <li>הסשן נשמר בשרת גם אחרי הפעלה מחדש</li>
+            <li>לחץ על "התנתק מוואטסאפ" כדי להתנתק ידנית</li>
             <li>ההודעות נשלחות מחשבון הוואטסאפ האישי שלך</li>
             <li>עליך לוודא שלעובדים יש מספרי טלפון תקינים במערכת</li>
           </ul>
