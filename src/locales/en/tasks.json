@@ -3,7 +3,7 @@
   "greeting": "Hello {{name}}",
   "acknowledgeButton": "Acknowledge Receipt of All Tasks",
   "acknowledgeDescription": "Clicking this button confirms you received all tasks and will notify the manager",
-  "acknowledgeRequired": "Please click the 'Acknowledge Receipt of All Tasks' button first before completing individual tasks",
+  "acknowledgeRequired": "Please click the \"Acknowledge Receipt of All Tasks\" button first before completing individual tasks",
   "completeButton": "Submit Completion",
   "addNoteLabel": "Notes (optional)",
   "addNotePlaceholder": "Add notes about the task...",
