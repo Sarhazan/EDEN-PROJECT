@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 ## Current Position
 
 Phase: 02.1 of 5 (WhatsApp Gateway Integration - INSERTED)
-Plan: 3 of 3 (02.1-03 Render Deployment Configuration)
-Status: Phase complete
-Last activity: 2026-01-26 — Completed 02.1-03-PLAN.md
+Plan: 2 of 3 (02.1-01 WhatsApp Service Creation)
+Status: In progress
+Last activity: 2026-01-26 — Completed 02.1-01-PLAN.md
 
-Progress: [████████████░░] 80% (8/10 plans)
+Progress: [█████████████░] 90% (9/10 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 3.3 min
-- Total execution time: 0.41 hours
+- Total execution time: 0.44 hours
 
 **By Phase:**
 
@@ -29,12 +29,12 @@ Progress: [████████████░░] 80% (8/10 plans)
 |-------|-------|-------|----------|
 | 01-stars-system | 3 | 8min | 2.7min |
 | 02-resizable-columns | 1 | 3min | 3.0min |
-| 02.1-whatsapp-gateway | 3 | <3min | <1min |
+| 02.1-whatsapp-gateway | 2 | 3min | 1.5min |
 | 03-mobile-responsive | 3 | 15.4min | 5.1min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3.4min), 03-02 (5min), 03-03 (7min), 02.1-03 (<1min)
-- Trend: Phase 02.1 very fast (simple infrastructure setup)
+- Last 5 plans: 03-02 (5min), 03-03 (7min), 02.1-03 (<1min), 02.1-01 (3min)
+- Trend: Phase 02.1 continues fast execution (infrastructure setup)
 
 *Updated after each plan completion*
 
@@ -78,6 +78,11 @@ Recent decisions affecting current work:
 - (03-03) scale-90 for icon buttons, scale-95 for text buttons (proportional to size)
 - (03-03) Native <select> elements for mobile (OS-native picker UI)
 - (03-03) gap-2 (8px) minimum spacing between interactive elements
+- (02.1-01) WhatsApp client runs inside main server process (not separate gateway)
+- (02.1-01) QR codes generated as data URLs using qrcode package for browser display
+- (02.1-01) Socket.IO events (whatsapp:qr, whatsapp:ready, whatsapp:disconnected) for real-time updates
+- (02.1-01) LocalAuth with clientId 'eden-whatsapp' and dataPath './.wwebjs_auth'
+- (02.1-01) Frame detachment errors trigger client reset and disconnected event
 - (02.1-03) Use /opt/render/.cache/puppeteer for persistent Puppeteer cache (Render preserves this path)
 - (02.1-03) Install Chrome via npx puppeteer browsers install chrome in build script
 - (02.1-03) Set executable permission in git for Unix deployment (Windows local + Render remote)
@@ -92,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-26T07:49:13Z
-Stopped at: Completed 02.1-03-PLAN.md (Render Deployment Configuration) - Phase 02.1 complete
+Last session: 2026-01-26T07:51:17Z
+Stopped at: Completed 02.1-01-PLAN.md (WhatsApp Service Creation)
 Resume file: None
