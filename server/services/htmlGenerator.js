@@ -299,12 +299,19 @@ class HtmlGeneratorService {
         html = html.replace(regex, translations[key]);
       });
 
+      // Debug: Log tasks before JSON stringify
+      console.log('[generateTaskHtmlContent] Tasks to inject (first task title):', tasksToInject[0]?.title);
+      console.log('[generateTaskHtmlContent] Language:', language);
+
       // Then replace existing data placeholders
+      const tasksJson = JSON.stringify(tasksToInject);
+      console.log('[generateTaskHtmlContent] Tasks JSON sample:', tasksJson.substring(0, 200));
+
       html = html
         .replace(/\{\{API_URL\}\}/g, apiUrl)
         .replace(/\{\{TOKEN\}\}/g, data.token)
         .replace(/\{\{EMPLOYEE_NAME\}\}/g, data.employeeName)
-        .replace(/\{\{TASKS_JSON\}\}/g, JSON.stringify(tasksToInject))
+        .replace(/\{\{TASKS_JSON\}\}/g, tasksJson)
         .replace(/\{\{IS_ACKNOWLEDGED\}\}/g, data.isAcknowledged ? 'true' : 'false')
         .replace(/\{\{ACKNOWLEDGED_AT\}\}/g, data.acknowledgedAt || '');
 
