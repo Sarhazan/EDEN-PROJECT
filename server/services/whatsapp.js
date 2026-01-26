@@ -12,6 +12,7 @@ class WhatsAppService {
     this.client = null;
     this.isReady = false;
     this.qrCode = null;
+    this.qrDataUrl = null; // Store the latest QR data URL
     this.io = null;
   }
 
@@ -42,7 +43,9 @@ class WhatsAppService {
           '--disable-dev-shm-usage',
           '--disable-gpu'
         ]
-      }
+      },
+      // Disable automatic "seen" marking to avoid errors
+      qrMaxRetries: 5
     });
 
     // QR Code event - generate and emit to all connected browsers
@@ -58,6 +61,9 @@ class WhatsAppService {
           margin: 2
         });
 
+        // Store the latest QR data URL
+        this.qrDataUrl = qrDataUrl;
+
         if (this.io) {
           this.io.emit('whatsapp:qr', { qrDataUrl });
           console.log('✓ QR code emitted to connected clients');
@@ -72,15 +78,22 @@ class WhatsAppService {
       console.log('✅ WhatsApp client is ready!');
       this.isReady = true;
       this.qrCode = null;
+      this.qrDataUrl = null; // Clear QR data URL when connected
 
       if (this.io) {
         this.io.emit('whatsapp:ready');
       }
     });
 
-    // Authenticated event
+    // Authenticated event - QR scanned, initializing session
     this.client.on('authenticated', () => {
       console.log('✅ WhatsApp authenticated successfully');
+      this.qrCode = null;
+      this.qrDataUrl = null; // Clear QR immediately after scan
+
+      if (this.io) {
+        this.io.emit('whatsapp:authenticated');
+      }
     });
 
     // Disconnected event
@@ -130,8 +143,22 @@ class WhatsAppService {
 
       console.log(`📤 Sending message to ${chatId}...`);
 
-      // Send the message
-      await this.client.sendMessage(chatId, message);
+      // Verify the number is registered on WhatsApp
+      console.log('Checking if number is registered on WhatsApp...');
+      const isRegistered = await this.client.isRegisteredUser(chatId);
+
+      if (!isRegistered) {
+        console.error(`❌ Number ${formattedNumber} is not registered on WhatsApp`);
+        throw new Error(`המספר ${phoneNumber} לא רשום ב-WhatsApp`);
+      }
+
+      console.log('✓ Number is registered, proceeding with send');
+
+      // Send message with sendSeen disabled to avoid WhatsApp Web API issues
+      console.log('Sending message with sendSeen=false...');
+      await this.client.sendMessage(chatId, message, {
+        sendSeen: false
+      });
 
       console.log('✅ Message sent successfully');
       return { success: true };
@@ -180,7 +207,7 @@ class WhatsAppService {
         }
         const chatId = `${formattedNumber}@c.us`;
 
-        await this.client.sendMessage(chatId, message);
+        await this.client.sendMessage(chatId, message, { sendSeen: false });
         results.push({ phoneNumber, success: true });
         console.log(`✅ Sent to ${phoneNumber}`);
 

@@ -7,6 +7,14 @@
 
 Requirements for v2.0: Enhanced UX & Mobile Experience. Each maps to roadmap phases.
 
+### WhatsApp Integration - Server Integration
+
+- [ ] **WA-INTG-01**: WhatsApp client (whatsapp-web.js) runs inside main server process, not separate gateway
+- [ ] **WA-INTG-02**: QR code displayed in Settings page UI (browser), not terminal
+- [ ] **WA-INTG-03**: Disconnect button in Settings page allows manager to manually disconnect WhatsApp
+- [ ] **WA-INTG-04**: Always-on server (Render Starter $7/month or equivalent) maintains persistent WhatsApp connection
+- [ ] **WA-INTG-05**: WhatsApp session persists across server restarts via LocalAuth (.wwebjs_auth directory)
+
 ### WhatsApp Connection - Loading States
 
 - [ ] **WA-LOAD-01**: אינדיקטור טעינה מוצג כשלוחצים "התחבר ל-WhatsApp" בהגדרות

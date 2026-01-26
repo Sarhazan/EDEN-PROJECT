@@ -18,6 +18,8 @@ export default function Sidebar() {
     const newValue = !starFilter;
     setStarFilter(newValue);
     localStorage.setItem('starFilter', newValue.toString());
+    // Dispatch custom event to notify same-tab components
+    window.dispatchEvent(new CustomEvent('starFilterChanged', { detail: { value: newValue } }));
   };
 
   const navItems = [

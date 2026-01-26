@@ -1,8 +1,8 @@
 ---
-status: verifying
+status: resolved
 trigger: "Investigate issue: whatsapp-messages-not-sending"
 created: 2026-01-26T00:00:00Z
-updated: 2026-01-26T00:20:00Z
+updated: 2026-01-26T00:25:00Z
 ---
 
 ## Current Focus

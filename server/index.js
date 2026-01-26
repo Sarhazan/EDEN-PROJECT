@@ -47,6 +47,13 @@ initializeDataRetention();
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
+  // Send current QR code if available (for clients connecting after QR was generated)
+  const whatsappService = require('./services/whatsapp');
+  if (whatsappService.qrDataUrl && !whatsappService.isReady) {
+    socket.emit('whatsapp:qr', { qrDataUrl: whatsappService.qrDataUrl });
+    console.log('✓ Sent existing QR to new client');
+  }
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });

@@ -104,11 +104,14 @@ export default function MyDayPage() {
     const now = new Date();
     const currentTime = format(now, 'HH:mm');
 
-    // Combine both recurring and one-time tasks for sending
-    const allTasksToConsider = [...recurringTasks, ...oneTimeTasks];
+    // Query ALL tasks for the selected date directly (ignore UI filters for bulk send)
+    // This ensures bulk send works regardless of active status/priority/system/employee filters
+    const allTasksForDate = tasks.filter((t) =>
+      shouldTaskAppearOnDate(t, selectedDate)
+    );
 
     // Filter tasks to send (not sent yet, and time hasn't passed)
-    let tasksToSend = allTasksToConsider.filter(task => {
+    let tasksToSend = allTasksForDate.filter(task => {
       // Only draft tasks (not sent yet)
       if (task.status !== 'draft') return false;
 
@@ -124,8 +127,14 @@ export default function MyDayPage() {
       return true;
     });
 
-    // Note: Employee filter is already applied to recurringTasks and oneTimeTasks
-    // so no need to apply it again here
+    // If employee filter is active, respect it for bulk send
+    if (filterCategory === 'employee' && filterValue) {
+      if (filterValue === 'general') {
+        tasksToSend = tasksToSend.filter((t) => !t.employee_id);
+      } else {
+        tasksToSend = tasksToSend.filter((t) => t.employee_id === parseInt(filterValue));
+      }
+    }
 
     if (tasksToSend.length === 0) {
       alert('אין משימות לשליחה (כל המשימות כבר נשלחו או שהזמן עבר)');

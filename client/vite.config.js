@@ -7,5 +7,6 @@ export default defineConfig({
   server: {
     host: '0.0.0.0', // Listen on all network interfaces
     port: 5174,
+    strictPort: true, // Fail if port is already in use (don't auto-increment)
   },
 })
