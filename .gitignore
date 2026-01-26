@@ -48,6 +48,14 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+nul
+
+# Database shared memory and WAL files (SQLite)
+*.db-shm
+*.db-wal
+
+# Generated HTML task confirmation pages (auto-cleaned after 30 days)
+docs/task-*.html
 
 .vercel
 
