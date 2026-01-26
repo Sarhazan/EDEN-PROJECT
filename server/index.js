@@ -86,6 +86,73 @@ whatsappService.initialize().catch(err => {
   console.error('WhatsApp initialization error:', err);
 });
 
+// Dynamic route for task confirmation pages
+// This generates HTML dynamically from the database instead of serving static files
+// Required for Railway/cloud deployments where static files don't persist
+app.get('/docs/task-:token.html', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { db } = require('./database/schema');
+    const htmlGenerator = require('./services/htmlGenerator');
+
+    // Get confirmation record from database
+    const confirmation = db.prepare(`
+      SELECT * FROM task_confirmations WHERE token = ?
+    `).get(token);
+
+    if (!confirmation) {
+      return res.status(404).send('<h1>דף לא נמצא</h1><p>הקישור אינו תקף או שפג תוקפו.</p>');
+    }
+
+    // Check if token expired
+    const now = new Date();
+    const expiresAt = new Date(confirmation.expires_at);
+    if (now > expiresAt) {
+      return res.status(410).send('<h1>פג תוקף</h1><p>הקישור פג תוקף. אנא בקש קישור חדש מהמנהל.</p>');
+    }
+
+    // Parse task IDs and get tasks
+    const taskIds = JSON.parse(confirmation.task_ids);
+    const tasks = db.prepare(`
+      SELECT
+        t.*,
+        s.name as system_name,
+        e.name as employee_name,
+        e.language as employee_language
+      FROM tasks t
+      LEFT JOIN systems s ON t.system_id = s.id
+      LEFT JOIN employees e ON t.employee_id = e.id
+      WHERE t.id IN (${taskIds.map(() => '?').join(',')})
+      ORDER BY t.start_time ASC
+    `).all(...taskIds);
+
+    // Get employee info
+    const employee = db.prepare(`
+      SELECT id, name, phone, language FROM employees WHERE id = ?
+    `).get(confirmation.employee_id);
+
+    if (!employee) {
+      return res.status(404).send('<h1>עובד לא נמצא</h1>');
+    }
+
+    // Generate HTML dynamically
+    const html = await htmlGenerator.generateTaskHtmlContent({
+      token: token,
+      employeeName: employee.name,
+      tasks: tasks,
+      isAcknowledged: confirmation.is_acknowledged === 1,
+      acknowledgedAt: confirmation.acknowledged_at,
+      language: employee.language || 'he'
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (error) {
+    console.error('Error generating task confirmation page:', error);
+    res.status(500).send('<h1>שגיאה</h1><p>אירעה שגיאה בטעינת הדף. אנא נסה שוב.</p>');
+  }
+});
+
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from the React app build directory
@@ -96,7 +163,8 @@ if (process.env.NODE_ENV === 'production') {
   // This must come after all API routes
   app.use((req, res, next) => {
     // Only handle GET requests for HTML (not API calls, static assets, etc.)
-    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    // Skip /docs paths as they're handled by the dynamic route above
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/docs')) {
       res.sendFile(path.join(clientPath, 'index.html'));
     } else {
       next();

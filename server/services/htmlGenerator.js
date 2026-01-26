@@ -224,6 +224,99 @@ class HtmlGeneratorService {
   }
 
   /**
+   * Generate HTML content for employee tasks (returns HTML string without saving to file)
+   * Used for dynamic serving in cloud deployments where static files don't persist
+   * @param {Object} data - { token, employeeName, tasks, isAcknowledged, acknowledgedAt, language }
+   * @returns {string} - Generated HTML content
+   */
+  async generateTaskHtmlContent(data) {
+    try {
+      console.log('Generating HTML content for token:', data.token);
+
+      const language = data.language || 'he';
+      console.log(`Generating HTML for language: ${language}`);
+
+      // Get translations using getFixedT to lock language context
+      let t;
+      try {
+        t = i18n.getFixedT(language, 'tasks');
+      } catch (error) {
+        console.error('Translation error, falling back to Hebrew:', error);
+        t = i18n.getFixedT('he', 'tasks');
+      }
+
+      // Determine text direction: RTL for Hebrew and Arabic, LTR for English and Russian
+      const textDirection = ['he', 'ar'].includes(language) ? 'rtl' : 'ltr';
+
+      // Read template
+      const template = fs.readFileSync(this.templatePath, 'utf8');
+      console.log('Template loaded successfully');
+
+      // Prepare API URL - use PUBLIC_API_URL for external access, fallback to API_URL
+      const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://192.168.1.35:3002';
+
+      // Translate all UI strings
+      const translations = {
+        PAGE_TITLE: t('pageTitle'),
+        GREETING: t('greeting', { name: data.employeeName }),
+        ACKNOWLEDGE_BUTTON: t('acknowledgeButton'),
+        ACKNOWLEDGE_DESCRIPTION: t('acknowledgeDescription'),
+        ACKNOWLEDGE_REQUIRED: t('acknowledgeRequired'),
+        COMPLETE_BUTTON: t('completeButton'),
+        ADD_NOTE_LABEL: t('addNoteLabel'),
+        ADD_NOTE_PLACEHOLDER: t('addNotePlaceholder'),
+        UPLOAD_IMAGE_LABEL: t('uploadImageLabel'),
+        UPLOAD_IMAGE_HINT: t('uploadImageHint'),
+        TASK_COMPLETED: t('taskCompleted'),
+        ACKNOWLEDGED_AT_TEXT: t('acknowledgedAtText'),
+        LOADING: t('loading'),
+        FOOTER_TEXT: t('footerText'),
+        COMPLETION_DETAILS: t('completionDetails'),
+        SENDING: t('sending'),
+        ERROR: t('error'),
+        ERROR_UNKNOWN: t('errorUnknown'),
+        ERROR_SENDING: t('errorSending'),
+        ACKNOWLEDGING: t('acknowledging'),
+        ACKNOWLEDGE_SUCCESS: t('acknowledgeSuccess'),
+        ACKNOWLEDGE_ERROR: t('acknowledgeError'),
+        PRIORITY_URGENT: t('priority.urgent'),
+        PRIORITY_NORMAL: t('priority.normal'),
+        PRIORITY_OPTIONAL: t('priority.optional'),
+        BADGE_TIME: t('badge.time'),
+        BADGE_DURATION: t('badge.duration', { minutes: '{{minutes}}' }),
+        BADGE_COMPLETED: t('badge.completed'),
+        LANGUAGE: language,
+        TEXT_DIRECTION: textDirection
+      };
+
+      // Translate task content if language is not Hebrew
+      const tasksToInject = await this._translateTasks(data.tasks, language);
+
+      // Replace translation placeholders
+      let html = template;
+      Object.keys(translations).forEach(key => {
+        const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+        html = html.replace(regex, translations[key]);
+      });
+
+      // Then replace existing data placeholders
+      html = html
+        .replace(/\{\{API_URL\}\}/g, apiUrl)
+        .replace(/\{\{TOKEN\}\}/g, data.token)
+        .replace(/\{\{EMPLOYEE_NAME\}\}/g, data.employeeName)
+        .replace(/\{\{TASKS_JSON\}\}/g, JSON.stringify(tasksToInject))
+        .replace(/\{\{IS_ACKNOWLEDGED\}\}/g, data.isAcknowledged ? 'true' : 'false')
+        .replace(/\{\{ACKNOWLEDGED_AT\}\}/g, data.acknowledgedAt || '');
+
+      console.log('HTML content generated successfully for token:', data.token);
+      return html;
+    } catch (error) {
+      console.error('Error generating HTML content:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete old HTML files (older than 30 days)
    */
   async cleanOldFiles() {
