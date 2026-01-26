@@ -113,6 +113,9 @@ app.get('/docs/task-:token.html', async (req, res) => {
 
     // Parse task IDs and get tasks
     const taskIds = JSON.parse(confirmation.task_ids);
+    console.log(`[Dynamic HTML] Token: ${token.substring(0, 8)}...`);
+    console.log(`[Dynamic HTML] Looking for task IDs: ${JSON.stringify(taskIds)}`);
+
     const tasks = db.prepare(`
       SELECT
         t.*,
@@ -125,6 +128,8 @@ app.get('/docs/task-:token.html', async (req, res) => {
       WHERE t.id IN (${taskIds.map(() => '?').join(',')})
       ORDER BY t.start_time ASC
     `).all(...taskIds);
+
+    console.log(`[Dynamic HTML] Found ${tasks.length} tasks out of ${taskIds.length} requested`);
 
     // Get employee info
     const employee = db.prepare(`
