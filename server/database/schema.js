@@ -321,14 +321,18 @@ function initializeDatabase() {
 
   console.log('Database tables initialized successfully');
   console.log('History indexes created successfully');
+}
 
-  // Auto-seed database if empty (for Railway/cloud deployments)
+// Check if database needs seeding (for Railway/cloud deployments)
+function checkAndSeedDatabase() {
   const employeeCount = db.prepare('SELECT COUNT(*) as count FROM employees').get();
   if (employeeCount.count === 0) {
     console.log('Database is empty, seeding with demo data...');
     const { seedDatabase } = require('./seed');
     seedDatabase();
+    return true;
   }
+  return false;
 }
 
-module.exports = { db, initializeDatabase };
+module.exports = { db, initializeDatabase, checkAndSeedDatabase };

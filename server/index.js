@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
-const { initializeDatabase } = require('./database/schema');
+const { initializeDatabase, checkAndSeedDatabase } = require('./database/schema');
 
 // Load environment variables from .env file if it exists
 const envPath = path.join(__dirname, '.env');
@@ -38,6 +38,9 @@ app.use('/docs', express.static(path.join(__dirname, '..', 'docs')));
 
 // Initialize database
 initializeDatabase();
+
+// Auto-seed if database is empty (for Railway/cloud deployments)
+checkAndSeedDatabase();
 
 // Initialize data retention (scheduled cleanup)
 const { initializeDataRetention } = require('./services/dataRetention');
