@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 ## Current Position
 
 Phase: 02.1 of 5 (WhatsApp Gateway Integration - INSERTED)
-Plan: 2 of 3 (02.1-01 WhatsApp Service Creation)
+Plan: 3 of 3 (02.1-02 API Routes + Frontend Integration)
 Status: In progress
-Last activity: 2026-01-26 — Completed 02.1-01-PLAN.md
+Last activity: 2026-01-26 — Completed 02.1-02-PLAN.md
 
-Progress: [█████████████░] 90% (9/10 plans)
+Progress: [█████████████░] 100% (10/10 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 3.3 min
-- Total execution time: 0.44 hours
+- Total plans completed: 10
+- Average duration: 3.2 min
+- Total execution time: 0.53 hours
 
 **By Phase:**
 
@@ -29,12 +29,12 @@ Progress: [█████████████░] 90% (9/10 plans)
 |-------|-------|-------|----------|
 | 01-stars-system | 3 | 8min | 2.7min |
 | 02-resizable-columns | 1 | 3min | 3.0min |
-| 02.1-whatsapp-gateway | 2 | 3min | 1.5min |
+| 02.1-whatsapp-gateway | 3 | 6min | 2.0min |
 | 03-mobile-responsive | 3 | 15.4min | 5.1min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (5min), 03-03 (7min), 02.1-03 (<1min), 02.1-01 (3min)
-- Trend: Phase 02.1 continues fast execution (infrastructure setup)
+- Last 5 plans: 03-03 (7min), 02.1-03 (<1min), 02.1-01 (3min), 02.1-02 (3min)
+- Trend: Phase 02.1 completing quickly (infrastructure setup)
 
 *Updated after each plan completion*
 
@@ -83,6 +83,10 @@ Recent decisions affecting current work:
 - (02.1-01) Socket.IO events (whatsapp:qr, whatsapp:ready, whatsapp:disconnected) for real-time updates
 - (02.1-01) LocalAuth with clientId 'eden-whatsapp' and dataPath './.wwebjs_auth'
 - (02.1-01) Frame detachment errors trigger client reset and disconnected event
+- (02.1-02) Routes now call synchronous getStatus() instead of async gateway calls
+- (02.1-02) POST /connect returns immediately with initializing flag, QR arrives via Socket.IO
+- (02.1-02) QR code displayed using data URL from Socket.IO (no external qrserver.com API)
+- (02.1-02) Removed polling logic - Socket.IO handles all real-time updates
 - (02.1-03) Use /opt/render/.cache/puppeteer for persistent Puppeteer cache (Render preserves this path)
 - (02.1-03) Install Chrome via npx puppeteer browsers install chrome in build script
 - (02.1-03) Set executable permission in git for Unix deployment (Windows local + Render remote)
@@ -97,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-26T07:51:17Z
-Stopped at: Completed 02.1-01-PLAN.md (WhatsApp Service Creation)
+Last session: 2026-01-26T07:56:04Z
+Stopped at: Completed 02.1-02-PLAN.md (API Routes + Frontend Integration)
 Resume file: None
