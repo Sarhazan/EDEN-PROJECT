@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaSync } from 'react-icons/fa';
+import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
-import { useVersionCheck } from '../../hooks/useVersionCheck';
 
 export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation }) {
   const { connectionStatus, logout } = useApp();
   const location = useLocation();
   const [starFilter, setStarFilter] = useState(false);
-  const { updateAvailable, doUpdate } = useVersionCheck();
 
   // Get add button config based on current route
   const getAddButtonConfig = () => {
@@ -131,18 +129,6 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
         )}
       </nav>
 
-      {/* Update Available Banner */}
-      {updateAvailable && (
-        <div className="px-4 py-3 border-t border-gray-700/50">
-          <button
-            onClick={doUpdate}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg animate-pulse"
-          >
-            <FaSync className="text-lg" />
-            <span>עדכון זמין - לחץ לעדכון</span>
-          </button>
-        </div>
-      )}
 
       {/* Connection Status Indicator */}
       <div className="px-4 py-3 border-t border-gray-700/50">
