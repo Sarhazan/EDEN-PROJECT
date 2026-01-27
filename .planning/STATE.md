@@ -90,10 +90,16 @@ Recent decisions affecting current work:
 - (02.1-03) Use /opt/render/.cache/puppeteer for persistent Puppeteer cache (Render preserves this path)
 - (02.1-03) Install Chrome via npx puppeteer browsers install chrome in build script
 - (02.1-03) Set executable permission in git for Unix deployment (Windows local + Render remote)
+- (env) Three environments: Local, EDEN-TEST (Railway develop), EDEN-PRODUCTION (Railway master)
+- (env) VITE_ENV=test enables "EDEN DEV" label, data management buttons, version check
+- (env) VITE_ENV unset/empty shows "PRODUCTION" label, disables data management buttons
+- (env) ALLOW_DEMO_SEED=true server-side enables auto-seeding (TEST only, never PRODUCTION)
+- (env) Environment label shown in sidebar - yellow "EDEN DEV" for test, green "PRODUCTION" for prod
 
 ### Pending Todos
 
-No pending todos.
+3 todos in `.planning/todos/pending/`:
+- `2026-01-27-employee-task-pagination.md` - Acknowledgment button + task pagination for employee page
 
 ### Blockers/Concerns
 
@@ -101,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-26T07:56:04Z
-Stopped at: Completed 02.1-02-PLAN.md (API Routes + Frontend Integration)
+Last session: 2026-01-27T14:30:00Z
+Stopped at: Configured 3 environments (Local, EDEN-TEST, PRODUCTION) with Railway deployment
 Resume file: None
