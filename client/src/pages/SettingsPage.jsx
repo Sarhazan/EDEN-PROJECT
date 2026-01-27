@@ -7,6 +7,8 @@ import { io } from 'socket.io-client';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 // Socket.IO connects to base URL without /api path
 const SOCKET_URL = API_URL.replace(/\/api$/, '');
+// Check if we're in test environment (allow dangerous operations only in test)
+const IS_TEST_ENV = import.meta.env.VITE_ENV === 'test';
 
 export default function SettingsPage() {
   const { seedData, clearData } = useApp();
@@ -508,7 +510,12 @@ export default function SettingsPage() {
                 }
               }
             }}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+            disabled={!IS_TEST_ENV}
+            className={`flex-1 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+              IS_TEST_ENV
+                ? 'bg-blue-500 hover:bg-blue-600 text-white cursor-pointer'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
             <FaDatabase />
             טען נתוני דמה
@@ -526,7 +533,12 @@ export default function SettingsPage() {
                 }
               }
             }}
-            className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+            disabled={!IS_TEST_ENV}
+            className={`flex-1 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+              IS_TEST_ENV
+                ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
             <FaTrash />
             נקה נתונים
@@ -540,6 +552,11 @@ export default function SettingsPage() {
             <li><strong>טען נתוני דמה</strong> - מוחק את כל הנתונים הקיימים ומחליף אותם בנתוני דמה לבדיקות</li>
             <li><strong>נקה נתונים</strong> - מוחק את כל הנתונים לצמיתות. פעולה זו אינה הפיכה!</li>
           </ul>
+          {!IS_TEST_ENV && (
+            <p className="mt-3 text-red-600 font-semibold">
+              🔒 פעולות אלו מושבתות בסביבת הפרודקשן למניעת מחיקת נתונים בטעות
+            </p>
+          )}
         </div>
       </div>
     </div>
