@@ -156,7 +156,7 @@ function MainContent() {
         />
       )}
 
-      <main className={isPublicRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1')}>
+      <main className={isPublicRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1 w-full overflow-x-hidden')}>
         <Routes>
           <Route path="/" element={<MyDayPage />} />
           <Route path="/tasks" element={<AllTasksPage />} />
