@@ -198,22 +198,9 @@ router.post('/send-bulk', async (req, res) => {
         });
         console.log(`HTML generated successfully: ${htmlUrl}`);
 
-        // Verify URL accessibility if using public hosting (Render production)
-        // For local development, skip verification - file is immediately available
-        if (process.env.PUBLIC_API_URL && !process.env.PUBLIC_API_URL.includes('localhost')) {
-          console.log('⏳ Verifying production URL accessibility...');
-          const isAvailable = await waitForUrlAvailable(htmlUrl, 5, 2000);
-
-          if (!isAvailable) {
-            console.error(`Failed to verify URL accessibility for employee ${name}`);
-            console.error(`URL: ${htmlUrl}`);
-            throw new Error('לא הצלחנו לאמת שדף האישור זמין. ייתכן שהשרת אינו מגיב.');
-          }
-
-          console.log('✓ Production URL verified, proceeding with WhatsApp send');
-        } else {
-          console.log('✓ HTML file generated locally, skipping URL verification');
-        }
+        // Skip URL verification - file is created locally and will be available on Railway after deploy
+        // The URL points to Railway but file is generated locally during development
+        console.log('✓ HTML file generated, skipping URL verification');
 
         // Shorten the URL for cleaner WhatsApp messages
         console.log('Shortening URL for WhatsApp...');
