@@ -197,26 +197,26 @@ export default function TaskCard({ task, onEdit }) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
             <h3 className={`
               task-title
-              text-lg font-semibold text-gray-900 leading-snug
+              text-base sm:text-lg font-semibold text-gray-900 leading-snug break-words
               ${task.status === 'completed' ? 'line-through' : ''}
             `}>
               {task.title}
             </h3>
 
-            <div className="flex gap-2 items-start flex-shrink-0">
+            <div className="flex gap-1 sm:gap-2 items-center flex-shrink-0 flex-wrap">
               <button
                 onClick={handleStarClick}
-                className={`p-2 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-90 ${
+                className={`p-1.5 sm:p-2 rounded-lg min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-90 ${
                   task.is_starred === 1
                     ? 'text-yellow-500 hover:text-yellow-600'
                     : 'text-gray-400 hover:text-gray-500'
                 }`}
                 title={task.is_starred === 1 ? 'בטל כוכב' : 'סמן בכוכב'}
               >
-                {task.is_starred === 1 ? <FaStar className="text-xl" /> : <FaRegStar className="text-xl" />}
+                {task.is_starred === 1 ? <FaStar className="text-lg sm:text-xl" /> : <FaRegStar className="text-lg sm:text-xl" />}
               </button>
               {(task.status === 'sent' || task.status === 'received') && task.sent_at && (
                 <div className="flex flex-col gap-1">
@@ -261,7 +261,7 @@ export default function TaskCard({ task, onEdit }) {
                 <button
                   onClick={handleSendTask}
                   disabled={isSending}
-                  className="text-primary hover:text-indigo-700 p-2 rounded-lg hover:bg-indigo-50 min-h-[44px] min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-primary hover:text-indigo-700 p-1.5 sm:p-2 rounded-lg hover:bg-indigo-50 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="שלח משימה בוואטסאפ"
                 >
                   {isSending ? '...' : <FaPaperPlane />}
@@ -269,14 +269,14 @@ export default function TaskCard({ task, onEdit }) {
               )}
               <button
                 onClick={() => onEdit(task)}
-                className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 min-h-[44px] min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90"
+                className="text-blue-600 hover:text-blue-700 p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90"
                 title="ערוך"
               >
                 <FaEdit />
               </button>
               <button
                 onClick={handleDelete}
-                className="text-rose-600 hover:text-rose-700 p-2 rounded-lg hover:bg-rose-50 min-h-[44px] min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90"
+                className="text-rose-600 hover:text-rose-700 p-1.5 sm:p-2 rounded-lg hover:bg-rose-50 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90"
                 title="מחק"
               >
                 <FaTrash />
@@ -318,8 +318,8 @@ export default function TaskCard({ task, onEdit }) {
             )}
           </div>
 
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-gray-500">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <span className="flex items-center gap-1">
                 <span className="text-base">📅</span>
                 {format(new Date(task.start_date), 'dd/MM/yyyy')}
