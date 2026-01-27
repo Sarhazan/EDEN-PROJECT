@@ -173,8 +173,8 @@ export default function TaskCard({ task, onEdit }) {
       bg-white rounded-xl shadow-md p-5
       min-h-[64px]
       transition-all duration-200
-      hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01]
-      active:scale-[0.98] active:shadow-md
+      hover:shadow-lg
+      active:scale-[0.995] active:shadow-md
       ${task.status === 'completed' ? 'opacity-70' : ''}
       ${task.status === 'pending_approval' ? 'task-pending-approval' : ''}
       ${task.is_late ? 'border-l-4 border-red-500 bg-red-50' : ''}
@@ -213,7 +213,7 @@ export default function TaskCard({ task, onEdit }) {
             <div className="flex gap-1 sm:gap-2 items-center flex-shrink-0 flex-wrap">
               <button
                 onClick={handleStarClick}
-                className={`p-1.5 sm:p-2 rounded-lg min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-90 ${
+                className={`p-1.5 sm:p-2 rounded-lg min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95 ${
                   task.is_starred === 1
                     ? 'text-yellow-500 hover:text-yellow-600'
                     : 'text-gray-400 hover:text-gray-500'
@@ -265,7 +265,7 @@ export default function TaskCard({ task, onEdit }) {
                 <button
                   onClick={handleSendTask}
                   disabled={isSending}
-                  className="text-primary hover:text-indigo-700 p-1.5 sm:p-2 rounded-lg hover:bg-indigo-50 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-primary hover:text-indigo-700 p-1.5 sm:p-2 rounded-lg hover:bg-indigo-50 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="שלח משימה בוואטסאפ"
                 >
                   {isSending ? '...' : <FaPaperPlane />}
@@ -273,14 +273,14 @@ export default function TaskCard({ task, onEdit }) {
               )}
               <button
                 onClick={() => onEdit(task)}
-                className="text-blue-600 hover:text-blue-700 p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90"
+                className="text-blue-600 hover:text-blue-700 p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-95"
                 title="ערוך"
               >
                 <FaEdit />
               </button>
               <button
                 onClick={handleDelete}
-                className="text-rose-600 hover:text-rose-700 p-1.5 sm:p-2 rounded-lg hover:bg-rose-50 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-90"
+                className="text-rose-600 hover:text-rose-700 p-1.5 sm:p-2 rounded-lg hover:bg-rose-50 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center transition-all duration-150 active:scale-95"
                 title="מחק"
               >
                 <FaTrash />

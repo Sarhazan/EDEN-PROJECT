@@ -135,7 +135,7 @@ export default function LocationForm({ location, onClose }) {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, image: '' })}
-                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-90 transition-all duration-150"
+                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition-all duration-150"
               >
                 <FaTrash />
               </button>

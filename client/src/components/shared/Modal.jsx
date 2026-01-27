@@ -34,7 +34,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-90 transition-all duration-200"
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition-all duration-200"
           >
             <FaTimes size={20} />
           </button>
