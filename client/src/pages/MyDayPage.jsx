@@ -571,9 +571,9 @@ export default function MyDayPage() {
         </div>
 
         {/* 3. Tasks by system */}
-        <div className="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4">
+        <div className="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4 overflow-hidden">
           <div className="text-lg font-bold text-orange-700 mb-3 text-center">לפי מערכת</div>
-          <div className="flex items-end justify-between gap-1 h-24">
+          <div className="flex items-end justify-between gap-1 h-24 overflow-x-auto">
             {(() => {
               // Calculate maxCount once for all bars
               const maxCount = Math.max(
@@ -590,7 +590,7 @@ export default function MyDayPage() {
                     if (count === 0) return null;
 
                     return (
-                      <div key={system.id} className="flex-1 flex flex-col items-center gap-1 min-w-[60px]">
+                      <div key={system.id} className="flex-1 flex flex-col items-center gap-1 min-w-[40px] sm:min-w-[60px]">
                         <div className="w-full flex flex-col justify-end h-16">
                           <div
                             className="w-full bg-orange-500 rounded-t-lg"
@@ -599,8 +599,8 @@ export default function MyDayPage() {
                             }}
                           />
                         </div>
-                        <div className="text-sm font-bold text-orange-700">{count}</div>
-                        <div className="text-xs text-orange-600 text-center truncate w-full" title={system.name}>
+                        <div className="text-xs sm:text-sm font-bold text-orange-700">{count}</div>
+                        <div className="text-[10px] sm:text-xs text-orange-600 text-center truncate w-full" title={system.name}>
                           {system.name}
                         </div>
                       </div>
@@ -608,7 +608,7 @@ export default function MyDayPage() {
                   })}
 
                   {stats.oneTimeTasks > 0 && (
-                    <div className="flex-1 flex flex-col items-center gap-1 min-w-[60px]">
+                    <div className="flex-1 flex flex-col items-center gap-1 min-w-[40px] sm:min-w-[60px]">
                       <div className="w-full flex flex-col justify-end h-16">
                         <div
                           className="w-full bg-blue-400 rounded-t-lg"
@@ -617,8 +617,8 @@ export default function MyDayPage() {
                           }}
                         />
                       </div>
-                      <div className="text-sm font-bold text-blue-700">{stats.oneTimeTasks}</div>
-                      <div className="text-xs text-blue-600 text-center">חד פעמיות</div>
+                      <div className="text-xs sm:text-sm font-bold text-blue-700">{stats.oneTimeTasks}</div>
+                      <div className="text-[10px] sm:text-xs text-blue-600 text-center">חד פעמיות</div>
                     </div>
                   )}
                 </>
@@ -699,17 +699,17 @@ export default function MyDayPage() {
       </div>
 
       {/* Timeline Chart - Next 7 Days */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6 overflow-hidden">
         <h3 className="text-lg font-semibold mb-4">משימות לשבוע הקרוב</h3>
         <div className="overflow-x-auto -mx-4 px-4">
-          <div className="flex items-end justify-between gap-2 h-40 pt-4">
+          <div className="flex items-end justify-between gap-1 sm:gap-2 h-40 pt-4">
             {timelineData.timeline.map((day, index) => {
               const barHeight = (day.count / timelineData.maxCount) * 100;
               return (
                 <div
                   key={index}
                   onClick={() => setSelectedDate(day.date)}
-                  className="flex-1 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[60px]"
+                  className="flex-1 flex flex-col items-center gap-1 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[40px] sm:min-w-[60px]"
                 >
                 {/* Bar */}
                 <div className="w-full flex flex-col justify-end h-28">
