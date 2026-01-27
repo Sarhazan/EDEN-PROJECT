@@ -165,9 +165,11 @@ class HtmlGeneratorService {
       // For production, uncomment this:
       // await this.pushToGitHub(filename);
 
-      // Return local URL (served directly from Express static middleware)
-      const publicUrl = `${this.baseUrl}/${filename}`;
-      console.log('Generated URL:', publicUrl);
+      // Return React app URL instead of static HTML file
+      // The React app at /confirm/{token} has full camera upload support
+      const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://localhost:3002';
+      const publicUrl = `${apiUrl}/confirm/${data.token}`;
+      console.log('Generated URL (React app):', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Error generating HTML:', error);
