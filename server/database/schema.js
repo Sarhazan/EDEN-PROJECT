@@ -333,7 +333,15 @@ function initializeDatabase() {
 }
 
 // Check if database needs seeding (for Railway/cloud deployments)
+// DISABLED BY DEFAULT - only seed if ALLOW_DEMO_SEED=true is explicitly set
 function checkAndSeedDatabase() {
+  // Only seed if explicitly allowed via environment variable
+  // Set ALLOW_DEMO_SEED=true in EDEN-TEST, leave unset in EDEN-PRODUCTION
+  if (process.env.ALLOW_DEMO_SEED !== 'true') {
+    console.log('Demo seeding disabled (ALLOW_DEMO_SEED not set)');
+    return false;
+  }
+
   const employeeCount = db.prepare('SELECT COUNT(*) as count FROM employees').get();
   if (employeeCount.count === 0) {
     console.log('Database is empty, seeding with demo data...');
