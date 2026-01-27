@@ -105,7 +105,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-No pending todos.
+1 pending todo:
+- **Separate WhatsApp connections per environment** (integration) - Production and dev share same phone connection
 
 ### In Progress
 
