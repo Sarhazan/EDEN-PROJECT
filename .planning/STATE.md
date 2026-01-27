@@ -93,7 +93,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-No pending todos.
+1 pending todo in `.planning/todos/pending/`:
+- `2026-01-27-manual-update-push-from-test-to-production.md` — Manual update push from TEST to PRODUCTION
 
 ### Blockers/Concerns
 
