@@ -2,11 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 
 const CHECK_INTERVAL = 60000; // Check every minute
 
+// Disable version check in production - only show in TEST environment
+const IS_TEST_ENV = import.meta.env.VITE_ENV === 'test';
+
 export function useVersionCheck() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [currentVersion, setCurrentVersion] = useState(null);
 
   const checkVersion = useCallback(async () => {
+    // Skip version check in production
+    if (!IS_TEST_ENV) return;
+
     try {
       // Add cache-busting to always get fresh version.json
       const response = await fetch(`/version.json?t=${Date.now()}`);
@@ -40,6 +46,9 @@ export function useVersionCheck() {
   }, []);
 
   useEffect(() => {
+    // Skip in production
+    if (!IS_TEST_ENV) return;
+
     // Initial check
     checkVersion();
 
