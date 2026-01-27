@@ -4,7 +4,6 @@ import { AppProvider, useApp } from './context/AppContext';
 import Sidebar from './components/layout/Sidebar';
 import MobileDrawer from './components/layout/MobileDrawer';
 import HamburgerButton from './components/layout/HamburgerButton';
-import DataControls from './components/layout/DataControls';
 import Modal from './components/shared/Modal';
 import TaskForm from './components/forms/TaskForm';
 import SystemForm from './components/forms/SystemForm';
@@ -97,7 +96,6 @@ function MainContent() {
           onAddLocation={() => setIsLocationModalOpen(true)}
         />
       )}
-      {!isPublicRoute && <DataControls />}
 
       {/* Mobile Hamburger Button */}
       {!isPublicRoute && isMobile && (

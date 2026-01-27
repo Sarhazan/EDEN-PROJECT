@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FaWhatsapp, FaCheck, FaTimes, FaGoogle, FaKey, FaPlug, FaSpinner } from 'react-icons/fa';
+import { FaWhatsapp, FaCheck, FaTimes, FaGoogle, FaKey, FaPlug, FaSpinner, FaDatabase, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
+import { useApp } from '../context/AppContext';
 import { io } from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
@@ -8,6 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 const SOCKET_URL = API_URL.replace(/\/api$/, '');
 
 export default function SettingsPage() {
+  const { seedData, clearData } = useApp();
   const [whatsappStatus, setWhatsappStatus] = useState({
     isReady: false,
     needsAuth: false,
@@ -480,6 +482,64 @@ export default function SettingsPage() {
           <p className="mt-2 text-xs text-gray-600">
             💰 עלות: 500,000 תווים ראשונים בחודש חינם, לאחר מכן $20 למיליון תווים
           </p>
+        </div>
+      </div>
+
+      {/* Data Management Section */}
+      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <FaDatabase className="text-gray-500 text-3xl" />
+          <h2 className="text-2xl font-semibold">ניהול נתונים</h2>
+        </div>
+
+        <p className="text-gray-600 mb-4">
+          כלים לניהול נתוני המערכת. השתמש בזהירות - פעולות אלו משפיעות על כל הנתונים.
+        </p>
+
+        <div className="flex gap-3">
+          <button
+            onClick={async () => {
+              if (confirm('פעולה זו תמחק את כל הנתונים הקיימים ותטען נתוני דמה. להמשיך?')) {
+                try {
+                  await seedData();
+                  alert('נתוני דמה נטענו בהצלחה!');
+                } catch (error) {
+                  alert('שגיאה: ' + error.message);
+                }
+              }
+            }}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <FaDatabase />
+            טען נתוני דמה
+          </button>
+          <button
+            onClick={async () => {
+              if (confirm('אזהרה! פעולה זו תמחק את כל הנתונים ולא ניתן לשחזר. האם אתה בטוח?')) {
+                if (confirm('האם אתה בטוח לחלוטין? כל הנתונים יימחקו לצמיתות!')) {
+                  try {
+                    await clearData();
+                    alert('כל הנתונים נמחקו בהצלחה');
+                  } catch (error) {
+                    alert('שגיאה: ' + error.message);
+                  }
+                }
+              }
+            }}
+            className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <FaTrash />
+            נקה נתונים
+          </button>
+        </div>
+
+        {/* Warning Box */}
+        <div className="mt-6 p-4 bg-yellow-50 rounded-lg text-sm text-gray-700 border border-yellow-200">
+          <p className="font-semibold mb-2">⚠️ אזהרה:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li><strong>טען נתוני דמה</strong> - מוחק את כל הנתונים הקיימים ומחליף אותם בנתוני דמה לבדיקות</li>
+            <li><strong>נקה נתונים</strong> - מוחק את כל הנתונים לצמיתות. פעולה זו אינה הפיכה!</li>
+          </ul>
         </div>
       </div>
     </div>
