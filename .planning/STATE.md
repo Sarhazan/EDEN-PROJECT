@@ -93,7 +93,9 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+2 pending todos in `.planning/todos/pending/`:
+- `2026-01-25-improve-mobile-responsive-layout.md` — UI improvements for mobile
+- `2026-01-27-convert-fab-to-fixed-button.md` — Convert FAB to fixed button below starred tasks
 
 ### Blockers/Concerns
 
