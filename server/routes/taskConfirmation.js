@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 const { db } = require('../database/schema');
 const { getCurrentTimestampIsrael } = require('../utils/dateUtils');
 const translation = require('../services/translation');
@@ -23,6 +24,41 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+/**
+ * Convert HEIC/HEIF images to JPEG for browser compatibility
+ * @param {string} filePath - Path to the uploaded file
+ * @returns {Promise<string>} - Path to the converted file (or original if no conversion needed)
+ */
+async function convertToJpegIfNeeded(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const heicExtensions = ['.heic', '.heif'];
+
+  if (!heicExtensions.includes(ext)) {
+    return filePath; // No conversion needed
+  }
+
+  console.log(`Converting HEIC/HEIF image to JPEG: ${filePath}`);
+
+  // Generate new filename with .jpg extension
+  const newFilePath = filePath.replace(/\.(heic|heif)$/i, '.jpg');
+
+  try {
+    await sharp(filePath)
+      .jpeg({ quality: 90 })
+      .toFile(newFilePath);
+
+    // Delete original HEIC file
+    fs.unlinkSync(filePath);
+
+    console.log(`Successfully converted to: ${newFilePath}`);
+    return newFilePath;
+  } catch (error) {
+    console.error('Error converting HEIC to JPEG:', error);
+    // Return original file if conversion fails
+    return filePath;
+  }
+}
+
 // Configure multer with secure filename generation
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -38,14 +74,27 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit (RESEARCH.md recommendation)
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for camera photos
   fileFilter: (req, file, cb) => {
-    // Only allow images (RESEARCH.md security pattern)
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (allowedTypes.includes(file.mimetype)) {
+    // Allow common image types including mobile camera formats
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/gif',
+      'image/webp',
+      'image/heic',    // iPhone camera format
+      'image/heif'     // iPhone camera format
+    ];
+    // Also check by extension for cases where mimetype is wrong
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif'];
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('רק קבצי JPG ו-PNG מותרים'));
+      console.error(`File rejected: mimetype=${file.mimetype}, ext=${ext}, original=${file.originalname}`);
+      cb(new Error('רק קבצי תמונה מותרים (JPG, PNG, GIF, WebP, HEIC)'));
     }
   }
 });
@@ -170,11 +219,19 @@ router.post('/:token/complete', upload.single('image'), async (req, res) => {
 
     // Save image if uploaded
     if (req.file) {
-      const imagePath = `/uploads/${req.file.filename}`;
+      // Convert HEIC/HEIF to JPEG for browser compatibility
+      const originalPath = req.file.path;
+      const convertedPath = await convertToJpegIfNeeded(originalPath);
+      const finalFilename = path.basename(convertedPath);
+      const imagePath = `/uploads/${finalFilename}`;
+
       db.prepare(`
         INSERT INTO task_attachments (task_id, file_path, file_type)
         VALUES (?, ?, 'image')
       `).run(taskId, imagePath);
+
+      // Update req.file for response
+      req.file.filename = finalFilename;
     }
 
     // Save note if provided, translate to Hebrew if needed
