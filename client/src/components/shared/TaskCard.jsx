@@ -6,11 +6,9 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 // Backend URL for static assets (uploads) - without /api suffix
-// In production (Railway), VITE_BACKEND_URL is not set, so we use empty string for same-origin requests
-// In development, we use localhost:3002
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL !== undefined
-  ? import.meta.env.VITE_BACKEND_URL
-  : 'http://localhost:3002';
+// In production: VITE_BACKEND_URL="" (empty string) for same-origin requests
+// In development: VITE_BACKEND_URL not set, defaults to localhost:3002
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:3002';
 
 const priorityColors = {
   urgent: 'bg-rose-50 text-rose-700',
