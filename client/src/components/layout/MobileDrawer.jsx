@@ -1,9 +1,12 @@
 import { useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useSwipeable } from 'react-swipeable'
-import { FaTimes } from 'react-icons/fa'
+import { FaTimes, FaSync } from 'react-icons/fa'
+import { useVersionCheck } from '../../hooks/useVersionCheck'
 
 export default function MobileDrawer({ isOpen, onClose, navItems }) {
+  const { updateAvailable, doUpdate } = useVersionCheck();
+
   // Configure swipe gesture - swipe right-to-left closes in RTL
   const swipeHandlers = useSwipeable({
     onSwipedRight: onClose,
@@ -85,6 +88,17 @@ export default function MobileDrawer({ isOpen, onClose, navItems }) {
               <span className="text-base font-medium">{item.label}</span>
             </NavLink>
           ))}
+
+          {/* Update Available Button */}
+          {updateAvailable && (
+            <button
+              onClick={doUpdate}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl min-h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg animate-pulse mt-4"
+            >
+              <FaSync className="text-lg" />
+              <span>עדכון זמין - לחץ לעדכון</span>
+            </button>
+          )}
         </nav>
       </div>
     </>
