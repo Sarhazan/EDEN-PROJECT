@@ -128,7 +128,25 @@ router.get('/', (req, res) => {
       ORDER BY t.start_date DESC, t.start_time DESC
     `).all();
 
-    const enrichedTasks = tasks.map(enrichTaskWithTiming);
+    // Fetch attachments for all tasks
+    const attachments = db.prepare(`
+      SELECT * FROM task_attachments
+    `).all();
+
+    // Group attachments by task_id
+    const attachmentsByTaskId = attachments.reduce((acc, att) => {
+      if (!acc[att.task_id]) acc[att.task_id] = [];
+      acc[att.task_id].push(att);
+      return acc;
+    }, {});
+
+    // Add attachments to each task
+    const tasksWithAttachments = tasks.map(task => ({
+      ...task,
+      attachments: attachmentsByTaskId[task.id] || []
+    }));
+
+    const enrichedTasks = tasksWithAttachments.map(enrichTaskWithTiming);
     res.json(enrichedTasks);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -150,7 +168,27 @@ router.get('/today', (req, res) => {
       ORDER BY t.priority DESC, t.start_time ASC
     `).all(today);
 
-    const enrichedTasks = tasks.map(enrichTaskWithTiming);
+    // Fetch attachments for today's tasks
+    const taskIds = tasks.map(t => t.id);
+    let attachmentsByTaskId = {};
+    if (taskIds.length > 0) {
+      const attachments = db.prepare(`
+        SELECT * FROM task_attachments WHERE task_id IN (${taskIds.map(() => '?').join(',')})
+      `).all(...taskIds);
+      attachmentsByTaskId = attachments.reduce((acc, att) => {
+        if (!acc[att.task_id]) acc[att.task_id] = [];
+        acc[att.task_id].push(att);
+        return acc;
+      }, {});
+    }
+
+    // Add attachments to each task
+    const tasksWithAttachments = tasks.map(task => ({
+      ...task,
+      attachments: attachmentsByTaskId[task.id] || []
+    }));
+
+    const enrichedTasks = tasksWithAttachments.map(enrichTaskWithTiming);
     res.json(enrichedTasks);
   } catch (error) {
     res.status(500).json({ error: error.message });
