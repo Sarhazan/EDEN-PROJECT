@@ -15,6 +15,7 @@ class WhatsAppService {
     this.qrDataUrl = null; // Store the latest QR data URL
     this.io = null;
     this.initializationTimeout = null;
+    this.readyPollingInterval = null;
   }
 
   /**
@@ -121,6 +122,12 @@ class WhatsAppService {
       this.qrDataUrl = null; // Clear QR data URL when connected
       this.clearInitTimeout(); // Clear timeout since we're ready
 
+      // Clear polling if active
+      if (this.readyPollingInterval) {
+        clearInterval(this.readyPollingInterval);
+        this.readyPollingInterval = null;
+      }
+
       if (this.io) {
         this.io.emit('whatsapp:ready');
       }
@@ -134,6 +141,10 @@ class WhatsAppService {
 
       // Set timeout for ready event - if it doesn't fire within 2 minutes, something is wrong
       this.setInitTimeout();
+
+      // WORKAROUND: Poll for ready state since ready event sometimes doesn't fire
+      // This is a known issue with whatsapp-web.js in cloud environments
+      this.startReadyPolling();
 
       if (this.io) {
         this.io.emit('whatsapp:authenticated');
@@ -214,6 +225,73 @@ class WhatsAppService {
       clearTimeout(this.initializationTimeout);
       this.initializationTimeout = null;
     }
+  }
+
+  /**
+   * WORKAROUND: Poll for ready state after authentication
+   * The ready event sometimes doesn't fire in cloud environments
+   * This polls the client to check if it's actually ready
+   */
+  startReadyPolling() {
+    if (this.readyPollingInterval) {
+      clearInterval(this.readyPollingInterval);
+    }
+
+    let attempts = 0;
+    const maxAttempts = 30; // 30 attempts * 5 seconds = 2.5 minutes max
+
+    console.log('🔄 Starting ready state polling (workaround for ready event not firing)');
+
+    this.readyPollingInterval = setInterval(async () => {
+      attempts++;
+
+      if (this.isReady) {
+        // Ready event fired normally, stop polling
+        console.log('✓ Ready event fired, stopping polling');
+        clearInterval(this.readyPollingInterval);
+        this.readyPollingInterval = null;
+        return;
+      }
+
+      if (!this.client) {
+        // Client was destroyed, stop polling
+        console.log('⚠ Client destroyed, stopping polling');
+        clearInterval(this.readyPollingInterval);
+        this.readyPollingInterval = null;
+        return;
+      }
+
+      if (attempts > maxAttempts) {
+        console.log('⏰ Ready polling timeout after', maxAttempts, 'attempts');
+        clearInterval(this.readyPollingInterval);
+        this.readyPollingInterval = null;
+        return;
+      }
+
+      try {
+        // Try to get client info - if this succeeds, the client is actually ready
+        console.log(`🔍 Polling attempt ${attempts}/${maxAttempts} - checking if client is ready...`);
+        const info = await this.client.getState();
+        console.log(`   Client state: ${info}`);
+
+        if (info === 'CONNECTED') {
+          console.log('✅ Client is CONNECTED! Manually triggering ready state...');
+          this.isReady = true;
+          this.qrCode = null;
+          this.qrDataUrl = null;
+          this.clearInitTimeout();
+
+          if (this.io) {
+            this.io.emit('whatsapp:ready');
+          }
+
+          clearInterval(this.readyPollingInterval);
+          this.readyPollingInterval = null;
+        }
+      } catch (error) {
+        console.log(`   Polling check failed: ${error.message}`);
+      }
+    }, 5000); // Check every 5 seconds
   }
 
   /**
