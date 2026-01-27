@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { FaCheckCircle, FaClock, FaExclamationTriangle, FaCheckDouble, FaCamera, FaTimes, FaPaperPlane } from 'react-icons/fa';
+import { FaCheckCircle, FaClock, FaExclamationTriangle, FaCheckDouble, FaCamera, FaTimes, FaPaperPlane, FaThumbsUp, FaListOl } from 'react-icons/fa';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+const DEFAULT_TASKS_PER_PAGE = 3;
 
 export default function TaskConfirmationPage() {
   const { token } = useParams();
@@ -25,9 +26,24 @@ export default function TaskConfirmationPage() {
   const fileInputRef = useRef(null);
   const MAX_IMAGES = 5;
 
+  // Pagination state
+  const [tasksPerPage, setTasksPerPage] = useState(DEFAULT_TASKS_PER_PAGE);
+
   useEffect(() => {
     fetchTasks();
+    fetchTasksPerPageSetting();
   }, [token]);
+
+  const fetchTasksPerPageSetting = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/accounts/settings/tasks_per_employee_page`);
+      if (response.data.value) {
+        setTasksPerPage(parseInt(response.data.value, 10));
+      }
+    } catch (err) {
+      console.log('Using default tasks per page:', DEFAULT_TASKS_PER_PAGE);
+    }
+  };
 
   const fetchTasks = async () => {
     try {
@@ -291,9 +307,49 @@ export default function TaskConfirmationPage() {
           </div>
         </div>
 
-        {/* Tasks List */}
+        {/* Tasks List - Only shown after acknowledging */}
+        {isAcknowledged && (
+          <>
+            {/* Queue indicator - shows total tasks and how many are visible */}
+            {(() => {
+              const pendingTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'pending_approval');
+              const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'pending_approval');
+              const visiblePendingTasks = pendingTasks.slice(0, tasksPerPage);
+              const queuedTasks = pendingTasks.length - visiblePendingTasks.length;
+
+              return queuedTasks > 0 ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-center justify-center gap-3">
+                  <FaListOl className="text-blue-600 text-xl" />
+                  <span className="text-blue-800 font-medium">
+                    מציג {visiblePendingTasks.length} משימות | עוד {queuedTasks} בתור
+                  </span>
+                </div>
+              ) : null;
+            })()}
+          </>
+        )}
+
         <div className="space-y-4 mb-6">
-          {tasks.map((task) => (
+          {/* Show message before acknowledgment */}
+          {!isAcknowledged && tasks.length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+              <p className="text-yellow-800 text-lg font-medium">
+                יש לך {tasks.length} משימות ממתינות
+              </p>
+              <p className="text-yellow-700 mt-2">
+                לחץ על "קיבלתי 👍" למטה כדי לראות את המשימות
+              </p>
+            </div>
+          )}
+
+          {/* Tasks - filtered based on acknowledgment and pagination */}
+          {(isAcknowledged ? (() => {
+            // Filter: completed/pending_approval tasks + first N pending tasks
+            const pendingTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'pending_approval');
+            const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'pending_approval');
+            const visiblePendingTasks = pendingTasks.slice(0, tasksPerPage);
+            return [...visiblePendingTasks, ...completedTasks];
+          })() : []).map((task) => (
             <div
               key={task.id}
               className={`bg-white rounded-lg shadow-md p-6 border-r-4 transition-all ${
@@ -468,19 +524,30 @@ export default function TaskConfirmationPage() {
           ))}
         </div>
 
-        {/* Acknowledge Button */}
+        {/* Summary after all tasks done */}
+        {isAcknowledged && tasks.length > 0 && tasks.every(t => t.status === 'completed' || t.status === 'pending_approval') && (
+          <div className="bg-green-50 border border-green-300 rounded-lg p-6 mb-6 text-center">
+            <FaCheckDouble className="text-green-600 text-4xl mx-auto mb-3" />
+            <p className="text-green-800 text-xl font-bold">
+              כל הכבוד! סיימת את כל המשימות 🎉
+            </p>
+          </div>
+        )}
+
+        {/* Acknowledge Button - "קיבלתי 👍" */}
         {!isAcknowledged && (
           <div className="bg-white rounded-lg shadow-xl p-6">
             <button
               onClick={handleAcknowledge}
               disabled={acknowledging}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-lg"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-6 rounded-xl flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-2xl shadow-lg active:scale-95"
             >
-              <FaCheckCircle className="text-2xl" />
-              <span>{acknowledging ? 'מאשר...' : 'אישור קבלת כל המשימות'}</span>
+              <FaThumbsUp className="text-4xl" />
+              <span>{acknowledging ? 'מאשר...' : 'קיבלתי'}</span>
+              <span className="text-4xl">👍</span>
             </button>
-            <p className="text-center text-gray-600 mt-3 text-sm">
-              לחיצה על כפתור זה תאשר שקיבלת את כל המשימות ותעדכן את המנהל
+            <p className="text-center text-gray-600 mt-4 text-base">
+              לחץ על "קיבלתי" כדי לראות את המשימות שלך
             </p>
           </div>
         )}

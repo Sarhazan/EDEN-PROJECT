@@ -93,6 +93,49 @@
 - דיווחים וסטטיסטיקות מתקדמות - לא בשלב הראשון, רק תצוגה בסיסית
 - תזכורות אוטומטיות לעובדים - לא צריך בשלב זה
 
+## Environments
+
+המערכת רצה בשלוש סביבות נפרדות:
+
+### 1. Local Development (לוקאלי)
+- **URL**: http://localhost:5179 (client), http://localhost:3002 (server)
+- **מטרה**: פיתוח ובדיקות מקומיות
+- **Database**: `maintenance.db` מקומי
+- **WhatsApp**: חיבור WhatsApp Web מקומי (QR scan נדרש)
+- **משתני סביבה**: ללא `VITE_ENV` (ברירת מחדל)
+- **הגבלות**: אין - כל הפיצ'רים זמינים כולל כפתורי ניהול נתונים
+
+### 2. EDEN-TEST (Railway - סביבת בדיקות)
+- **URL**: https://web-production-9e1eb.up.railway.app
+- **Branch**: `develop`
+- **מטרה**: בדיקות לפני פרודקשן, הדגמות
+- **Database**: Railway Volume (SQLite)
+- **WhatsApp**: חיבור נפרד מפרודקשן
+- **משתני סביבה**:
+  - `VITE_ENV=test` - מציג "EDEN DEV" בסיידבר, מאפשר כפתורי ניהול נתונים
+  - `ALLOW_DEMO_SEED=true` - מאפשר טעינת נתוני דמה אוטומטית
+- **הגבלות**: אין - כל הפיצ'רים זמינים לבדיקות
+
+### 3. EDEN-PRODUCTION (Railway - פרודקשן)
+- **URL**: [להגדרה]
+- **Branch**: `master`
+- **מטרה**: סביבת פרודקשן אמיתית עם נתונים אמיתיים
+- **Database**: Railway Volume (SQLite) - נתונים אמיתיים
+- **WhatsApp**: חיבור WhatsApp הראשי לשליחת משימות
+- **משתני סביבה**:
+  - `VITE_ENV` לא מוגדר (או ריק) - מציג "PRODUCTION" בסיידבר
+  - `ALLOW_DEMO_SEED` לא מוגדר - מונע טעינת נתוני דמה בטעות
+- **הגבלות**:
+  - כפתורי "טען נתוני דמה" ו"נקה נתונים" מושבתים (disabled)
+  - כפתור "עדכון זמין" לא מוצג (רק בסביבת TEST)
+
+### Environment Indicators
+| סביבה | תגית בסיידבר | צבע | כפתורי ניהול נתונים |
+|-------|-------------|------|---------------------|
+| Local | ללא | - | ✅ מופעלים |
+| EDEN-TEST | EDEN DEV | צהוב | ✅ מופעלים |
+| PRODUCTION | PRODUCTION | ירוק | ❌ מושבתים |
+
 ## Current State
 
 **Shipped:** v1.0 MVP (2026-01-25)
@@ -157,4 +200,4 @@
 | Daily recurring tasks start tomorrow | Avoid same-day execution confusion | ✅ Working | v1.0 |
 
 ---
-*Last updated: 2026-01-25 after v2.0 milestone initialization*
+*Last updated: 2026-01-27 after environment setup (Local, EDEN-TEST, PRODUCTION)*

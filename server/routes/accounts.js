@@ -117,4 +117,38 @@ router.post('/google-translate/test', async (req, res) => {
   }
 });
 
+// ============================================
+// General Settings Routes
+// ============================================
+
+// GET /api/accounts/settings/:key - Get a specific setting
+router.get('/settings/:key', (req, res) => {
+  try {
+    const { key } = req.params;
+    const setting = db.prepare(`SELECT value FROM settings WHERE key = ?`).get(key);
+    res.json({ key, value: setting?.value || null });
+  } catch (error) {
+    console.error('Error getting setting:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/accounts/settings/:key - Set a specific setting
+router.put('/settings/:key', (req, res) => {
+  try {
+    const { key } = req.params;
+    const { value } = req.body;
+
+    db.prepare(`
+      INSERT OR REPLACE INTO settings (key, value, updated_at)
+      VALUES (?, ?, datetime('now'))
+    `).run(key, value);
+
+    res.json({ success: true, key, value });
+  } catch (error) {
+    console.error('Error setting value:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

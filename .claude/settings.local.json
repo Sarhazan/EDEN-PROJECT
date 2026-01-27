@@ -59,7 +59,9 @@
       "mcp__plugin_playwright_playwright__browser_select_option",
       "mcp__plugin_playwright_playwright__browser_tabs",
       "mcp__plugin_playwright_playwright__browser_press_key",
-      "Bash(claude mcp add:*)"
+      "Bash(claude mcp add:*)",
+      "Skill(gsd:new-milestone)",
+      "Skill(gsd:new-milestone:*)"
     ],
     "additionalDirectories": [
       "c:\\dev\\projects\\claude projects\\eden claude"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaWhatsapp, FaCheck, FaTimes, FaGoogle, FaKey, FaPlug, FaSpinner, FaDatabase, FaTrash } from 'react-icons/fa';
+import { FaWhatsapp, FaCheck, FaTimes, FaGoogle, FaKey, FaPlug, FaSpinner, FaDatabase, FaTrash, FaCog } from 'react-icons/fa';
 import axios from 'axios';
 import { useApp } from '../context/AppContext';
 import { io } from 'socket.io-client';
@@ -30,6 +30,11 @@ export default function SettingsPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState(null);
   const [googleSuccess, setGoogleSuccess] = useState(null);
+
+  // Employee page settings
+  const [tasksPerPage, setTasksPerPage] = useState(3);
+  const [tasksPerPageSaving, setTasksPerPageSaving] = useState(false);
+  const [tasksPerPageSaved, setTasksPerPageSaved] = useState(false);
 
   // Set up Socket.IO connection for real-time WhatsApp updates
   useEffect(() => {
@@ -151,6 +156,42 @@ export default function SettingsPage() {
     };
     fetchAccountsStatus();
   }, []);
+
+  // Fetch tasks per page setting on mount
+  useEffect(() => {
+    const fetchTasksPerPage = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/accounts/settings/tasks_per_employee_page`);
+        if (response.data.value) {
+          setTasksPerPage(parseInt(response.data.value, 10));
+        }
+      } catch (err) {
+        console.error('Error fetching tasks per page:', err);
+      }
+    };
+    fetchTasksPerPage();
+  }, []);
+
+  const handleTasksPerPageChange = async (newValue) => {
+    const value = parseInt(newValue, 10);
+    if (value < 1 || value > 20) return;
+
+    setTasksPerPage(value);
+    setTasksPerPageSaving(true);
+    setTasksPerPageSaved(false);
+
+    try {
+      await axios.put(`${API_URL}/accounts/settings/tasks_per_employee_page`, {
+        value: value.toString()
+      });
+      setTasksPerPageSaved(true);
+      setTimeout(() => setTasksPerPageSaved(false), 2000);
+    } catch (err) {
+      console.error('Error saving tasks per page:', err);
+    } finally {
+      setTasksPerPageSaving(false);
+    }
+  };
 
   const handleGoogleConnect = async () => {
     if (!googleApiKey.trim()) {
@@ -484,6 +525,59 @@ export default function SettingsPage() {
           <p className="mt-2 text-xs text-gray-600">
             💰 עלות: 500,000 תווים ראשונים בחודש חינם, לאחר מכן $20 למיליון תווים
           </p>
+        </div>
+      </div>
+
+      {/* Employee Page Settings Section */}
+      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <FaCog className="text-gray-500 text-3xl" />
+          <h2 className="text-2xl font-semibold">הגדרות דף עובד</h2>
+        </div>
+
+        <p className="text-gray-600 mb-4">
+          הגדר כמה משימות יוצגו בכל פעם בדף האישור של העובד. כאשר העובד משלים משימה, הבאה בתור מופיעה אוטומטית.
+        </p>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            מספר משימות בדף
+          </label>
+          <div className="flex items-center gap-4">
+            <input
+              type="number"
+              min="1"
+              max="20"
+              value={tasksPerPage}
+              onChange={(e) => handleTasksPerPageChange(e.target.value)}
+              className="w-24 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg"
+            />
+            <span className="text-gray-500">משימות</span>
+            {tasksPerPageSaving && (
+              <span className="text-blue-500 flex items-center gap-1">
+                <FaSpinner className="animate-spin" /> שומר...
+              </span>
+            )}
+            {tasksPerPageSaved && (
+              <span className="text-green-500 flex items-center gap-1">
+                <FaCheck /> נשמר!
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            ברירת מחדל: 3 משימות. טווח מותר: 1-20 משימות.
+          </p>
+        </div>
+
+        {/* Info Box */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
+          <p className="font-semibold mb-2">ℹ️ איך זה עובד:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>העובד רואה כפתור "קיבלתי 👍" לפני שהוא יכול לסמן משימות</li>
+            <li>לאחר לחיצה על "קיבלתי", מוצגות עד {tasksPerPage} משימות</li>
+            <li>כאשר משימה הושלמה, המשימה הבאה בתור מופיעה</li>
+            <li>מערכת תור דינמית - תמיד יש עד {tasksPerPage} משימות פעילות</li>
+          </ul>
         </div>
       </div>
 
