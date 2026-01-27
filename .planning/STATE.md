@@ -93,8 +93,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-1 pending todo in `.planning/todos/pending/`:
-- `2026-01-27-multi-image-upload-employee-interface.md` — Allow multiple image uploads from employee interface
+No pending todos.
 
 ### Blockers/Concerns
 

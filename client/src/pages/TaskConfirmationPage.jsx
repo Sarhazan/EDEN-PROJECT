@@ -19,10 +19,11 @@ export default function TaskConfirmationPage() {
   // Task completion state
   const [completingTaskId, setCompletingTaskId] = useState(null);
   const [completionNote, setCompletionNote] = useState('');
-  const [completionImage, setCompletionImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [completionImages, setCompletionImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [submittingCompletion, setSubmittingCompletion] = useState(false);
   const fileInputRef = useRef(null);
+  const MAX_IMAGES = 5;
 
   useEffect(() => {
     fetchTasks();
@@ -100,42 +101,43 @@ export default function TaskConfirmationPage() {
   const openCompletionForm = (taskId) => {
     setCompletingTaskId(taskId);
     setCompletionNote('');
-    setCompletionImage(null);
-    setImagePreview(null);
+    setCompletionImages([]);
+    setImagePreviews([]);
   };
 
   // Close completion form
   const closeCompletionForm = () => {
     setCompletingTaskId(null);
     setCompletionNote('');
-    setCompletionImage(null);
-    setImagePreview(null);
+    setCompletionImages([]);
+    setImagePreviews([]);
   };
 
   // Handle image selection from camera or gallery
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setCompletionImage(file);
+    if (file && completionImages.length < MAX_IMAGES) {
+      setCompletionImages(prev => [...prev, file]);
       // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
+        setImagePreviews(prev => [...prev, reader.result]);
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  // Remove selected image
-  const removeImage = () => {
-    setCompletionImage(null);
-    setImagePreview(null);
+    // Reset input to allow selecting the same file again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  // Submit task completion with image and note
+  // Remove selected image by index
+  const removeImage = (index) => {
+    setCompletionImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Submit task completion with images and note
   const handleSubmitCompletion = async () => {
     if (!completingTaskId) return;
 
@@ -149,9 +151,10 @@ export default function TaskConfirmationPage() {
         formData.append('note', completionNote.trim());
       }
 
-      if (completionImage) {
-        formData.append('image', completionImage);
-      }
+      // Append all images
+      completionImages.forEach((image) => {
+        formData.append('images', image);
+      });
 
       const response = await axios.post(
         `${API_URL}/confirm/${token}/complete`,
@@ -344,24 +347,32 @@ export default function TaskConfirmationPage() {
                       {/* Camera/Image input */}
                       <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          צלם תמונה (אופציונלי)
+                          צלם תמונות (אופציונלי, עד {MAX_IMAGES})
                         </label>
 
-                        {imagePreview ? (
-                          <div className="relative inline-block">
-                            <img
-                              src={imagePreview}
-                              alt="תצוגה מקדימה"
-                              className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300"
-                            />
-                            <button
-                              onClick={removeImage}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                            >
-                              <FaTimes size={12} />
-                            </button>
+                        {/* Image previews grid */}
+                        {imagePreviews.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {imagePreviews.map((preview, index) => (
+                              <div key={index} className="relative inline-block">
+                                <img
+                                  src={preview}
+                                  alt={`תמונה ${index + 1}`}
+                                  className="w-24 h-24 object-cover rounded-lg border-2 border-gray-300"
+                                />
+                                <button
+                                  onClick={() => removeImage(index)}
+                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                >
+                                  <FaTimes size={12} />
+                                </button>
+                              </div>
+                            ))}
                           </div>
-                        ) : (
+                        )}
+
+                        {/* Camera button - always visible unless max reached */}
+                        {completionImages.length < MAX_IMAGES && (
                           <div>
                             <input
                               ref={fileInputRef}
@@ -377,8 +388,13 @@ export default function TaskConfirmationPage() {
                               className="inline-flex items-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-lg cursor-pointer hover:bg-blue-600 transition-colors"
                             >
                               <FaCamera size={20} />
-                              <span>צלם תמונה</span>
+                              <span>{imagePreviews.length > 0 ? 'הוסף תמונה' : 'צלם תמונה'}</span>
                             </label>
+                            {imagePreviews.length > 0 && (
+                              <span className="mr-2 text-sm text-gray-500">
+                                ({imagePreviews.length}/{MAX_IMAGES})
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>

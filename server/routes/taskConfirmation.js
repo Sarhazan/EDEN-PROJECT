@@ -189,8 +189,8 @@ router.get('/:token', (req, res) => {
   }
 });
 
-// Complete task with image and note
-router.post('/:token/complete', upload.single('image'), async (req, res) => {
+// Complete task with images and note
+router.post('/:token/complete', upload.array('images', 5), async (req, res) => {
   try {
     const { token } = req.params;
     const { taskId, note } = req.body;
@@ -217,21 +217,23 @@ router.post('/:token/complete', upload.single('image'), async (req, res) => {
       return res.status(403).json({ error: 'משימה לא שייכת לקישור זה' });
     }
 
-    // Save image if uploaded
-    if (req.file) {
-      // Convert HEIC/HEIF to JPEG for browser compatibility
-      const originalPath = req.file.path;
-      const convertedPath = await convertToJpegIfNeeded(originalPath);
-      const finalFilename = path.basename(convertedPath);
-      const imagePath = `/uploads/${finalFilename}`;
+    // Save images if uploaded
+    const savedImages = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        // Convert HEIC/HEIF to JPEG for browser compatibility
+        const originalPath = file.path;
+        const convertedPath = await convertToJpegIfNeeded(originalPath);
+        const finalFilename = path.basename(convertedPath);
+        const imagePath = `/uploads/${finalFilename}`;
 
-      db.prepare(`
-        INSERT INTO task_attachments (task_id, file_path, file_type)
-        VALUES (?, ?, 'image')
-      `).run(taskId, imagePath);
+        db.prepare(`
+          INSERT INTO task_attachments (task_id, file_path, file_type)
+          VALUES (?, ?, 'image')
+        `).run(taskId, imagePath);
 
-      // Update req.file for response
-      req.file.filename = finalFilename;
+        savedImages.push(imagePath);
+      }
     }
 
     // Save note if provided, translate to Hebrew if needed
@@ -290,7 +292,7 @@ router.post('/:token/complete', upload.single('image'), async (req, res) => {
     res.json({
       success: true,
       message: 'המשימה עודכנה בהצלחה',
-      imagePath: req.file ? `/uploads/${req.file.filename}` : null
+      imagePaths: savedImages
     });
   } catch (error) {
     console.error('Error completing task:', error);
