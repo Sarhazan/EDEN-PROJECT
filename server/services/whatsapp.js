@@ -75,11 +75,10 @@ class WhatsAppService {
       puppeteer: puppeteerOptions,
       // Disable automatic "seen" marking to avoid errors
       qrMaxRetries: 5,
-      // Use remote web version cache from official wppconnect-team repository
-      // This ensures WhatsApp Web version compatibility and prevents ready event issues
+      // Disable web version cache - let whatsapp-web.js fetch directly from WhatsApp
+      // This avoids version mismatch issues that can prevent the ready event
       webVersionCache: {
-        type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1032534684-alpha.html'
+        type: 'none'
       },
       // Increase timeouts for cloud environments
       authTimeoutMs: 120000 // 2 minutes for auth
@@ -186,7 +185,7 @@ class WhatsAppService {
 
     // Initialize client
     console.log('⏳ Starting WhatsApp client initialization...');
-    console.log('   Using webVersionCache: wppconnect-team/wa-version (2.3000.1032534684-alpha)');
+    console.log('   webVersionCache: disabled (type: none)');
     await this.client.initialize();
   }
 
