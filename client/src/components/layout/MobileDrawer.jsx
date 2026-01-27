@@ -99,6 +99,17 @@ export default function MobileDrawer({ isOpen, onClose, navItems }) {
               <span>עדכון זמין - לחץ לעדכון</span>
             </button>
           )}
+
+          {/* Environment Indicator */}
+          <div className="mt-4 text-center">
+            <span className={`text-xs px-2 py-1 rounded ${
+              import.meta.env.VITE_ENV === 'test'
+                ? 'bg-yellow-500/20 text-yellow-400'
+                : 'bg-green-500/20 text-green-400'
+            }`}>
+              {import.meta.env.VITE_ENV === 'test' ? 'EDEN DEV' : 'PRODUCTION'}
+            </span>
+          </div>
         </nav>
       </div>
     </>

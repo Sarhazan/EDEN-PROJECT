@@ -159,6 +159,17 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
           <FaSignOutAlt className="text-lg" />
           <span className="text-sm font-medium">התנתק</span>
         </button>
+
+        {/* Environment Indicator */}
+        <div className="mt-3 text-center">
+          <span className={`text-xs px-2 py-1 rounded ${
+            import.meta.env.VITE_ENV === 'test'
+              ? 'bg-yellow-500/20 text-yellow-400'
+              : 'bg-green-500/20 text-green-400'
+          }`}>
+            {import.meta.env.VITE_ENV === 'test' ? 'EDEN DEV' : 'PRODUCTION'}
+          </span>
+        </div>
       </div>
     </div>
   );
