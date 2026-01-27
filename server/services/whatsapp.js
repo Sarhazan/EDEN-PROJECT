@@ -28,12 +28,19 @@ class WhatsAppService {
    * Initialize WhatsApp client with LocalAuth and event handlers
    */
   async initialize() {
-    console.log('🚀 Initializing WhatsApp client...');
+    // Use environment-specific clientId and dataPath to separate production from dev
+    const env = process.env.NODE_ENV || 'development';
+    const clientId = `eden-whatsapp-${env}`;
+    const dataPath = `./.wwebjs_auth_${env}`;
+
+    console.log(`🚀 Initializing WhatsApp client (${env})...`);
+    console.log(`   clientId: ${clientId}`);
+    console.log(`   dataPath: ${dataPath}`);
 
     this.client = new Client({
       authStrategy: new LocalAuth({
-        clientId: 'eden-whatsapp',
-        dataPath: './.wwebjs_auth'
+        clientId: clientId,
+        dataPath: dataPath
       }),
       puppeteer: {
         headless: true,
@@ -101,6 +108,8 @@ class WhatsAppService {
       console.log('❌ WhatsApp disconnected:', reason);
       this.isReady = false;
       this.client = null;
+      this.qrCode = null;
+      this.qrDataUrl = null; // Clear QR data so new clients don't get stale QR
 
       if (this.io) {
         this.io.emit('whatsapp:disconnected', { reason });
@@ -247,16 +256,29 @@ class WhatsAppService {
   }
 
   /**
-   * Disconnect WhatsApp client
+   * Disconnect WhatsApp client (full logout - clears session for fresh connection)
    */
   async disconnect() {
     try {
       if (this.client) {
-        await this.client.destroy();
+        console.log('🔌 Logging out and disconnecting WhatsApp...');
+
+        // Use logout() to properly disconnect from the phone and clear session
+        // This allows a fresh QR scan on next connect
+        try {
+          await this.client.logout();
+          console.log('✓ Logged out from WhatsApp (phone disconnected)');
+        } catch (logoutError) {
+          // If logout fails (e.g., not connected), just destroy
+          console.log('Logout not possible, destroying client:', logoutError.message);
+          await this.client.destroy();
+        }
+
         this.client = null;
         this.isReady = false;
         this.qrCode = null;
-        console.log('🔌 WhatsApp disconnected');
+        this.qrDataUrl = null;
+        console.log('🔌 WhatsApp fully disconnected');
 
         if (this.io) {
           this.io.emit('whatsapp:disconnected', { reason: 'manual' });
@@ -264,6 +286,11 @@ class WhatsAppService {
       }
     } catch (error) {
       console.error('Error during disconnect:', error);
+      // Even on error, clear our state
+      this.client = null;
+      this.isReady = false;
+      this.qrCode = null;
+      this.qrDataUrl = null;
       throw error;
     }
   }

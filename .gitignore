@@ -18,9 +18,10 @@ dist/
 *.sqlite3
 database.sqlite
 
-# WhatsApp session data (ignore locally, but Railway will persist it)
-# On Railway, the session will be stored in persistent volume
+# WhatsApp session data (environment-specific folders)
+# Each environment (production, development) has its own session folder
 .wwebjs_auth/
+.wwebjs_auth_*/
 .wwebjs_cache/
 
 # Uploaded files
