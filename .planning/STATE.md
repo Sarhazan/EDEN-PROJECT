@@ -93,9 +93,10 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-2 pending todos in `.planning/todos/pending/`:
+3 pending todos in `.planning/todos/pending/`:
 - `2026-01-25-improve-mobile-responsive-layout.md` — UI improvements for mobile
 - `2026-01-27-convert-fab-to-fixed-button.md` — Convert FAB to fixed button below starred tasks
+- `2026-01-27-multi-image-upload-employee-interface.md` — Allow multiple image uploads from employee interface
 
 ### Blockers/Concerns
 
