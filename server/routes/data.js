@@ -3,8 +3,12 @@ const router = express.Router();
 const { seedDatabase, clearDatabase } = require('../database/seed');
 
 // Middleware to block dangerous operations in production
+// Allows operations if ALLOW_DEMO_SEED=true (for test environments like EDEN-TEST)
 const blockInProduction = (req, res, next) => {
-  if (process.env.NODE_ENV === 'production') {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const allowDemoSeed = process.env.ALLOW_DEMO_SEED === 'true';
+
+  if (isProduction && !allowDemoSeed) {
     return res.status(403).json({
       error: 'פעולה זו מושבתת בסביבת הפרודקשן',
       message: 'Data management operations are disabled in production environment'
