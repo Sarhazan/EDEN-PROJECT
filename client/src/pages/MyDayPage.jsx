@@ -237,10 +237,15 @@ export default function MyDayPage() {
   // Calculate statistics and filter tasks
   const stats = useMemo(() => {
     // Filter tasks for selected date (excluding completed tasks)
-    const todayTasks = tasks.filter((t) =>
+    let todayTasks = tasks.filter((t) =>
       shouldTaskAppearOnDate(t, selectedDate) &&
       t.status !== 'completed'
     );
+
+    // Apply star filter to statistics if active
+    if (starFilter) {
+      todayTasks = todayTasks.filter((t) => t.is_starred === 1);
+    }
 
     // 1. Total tasks for today (excluding completed)
     const totalToday = todayTasks.length;
@@ -266,15 +271,20 @@ export default function MyDayPage() {
     const inProgressTasks = todayTasks.filter((t) => t.status === 'in_progress').length;
 
     // 5. Count completed tasks separately for completion rate
-    const completedTasks = tasks.filter((t) =>
+    let completedTasks = tasks.filter((t) =>
       shouldTaskAppearOnDate(t, selectedDate) &&
       t.status === 'completed'
-    ).length;
+    );
+    // Apply star filter to completed tasks too
+    if (starFilter) {
+      completedTasks = completedTasks.filter((t) => t.is_starred === 1);
+    }
+    const completedCount = completedTasks.length;
 
     // Completion rate calculation (completed / (uncompleted + completed))
-    const totalIncludingCompleted = totalToday + completedTasks;
+    const totalIncludingCompleted = totalToday + completedCount;
     const completionRate =
-      totalIncludingCompleted > 0 ? Math.round((completedTasks / totalIncludingCompleted) * 100) : 0;
+      totalIncludingCompleted > 0 ? Math.round((completedCount / totalIncludingCompleted) * 100) : 0;
 
     return {
       total: totalToday,
@@ -290,12 +300,12 @@ export default function MyDayPage() {
         new: newTasks,
         sent: sentTasks,
         inProgress: inProgressTasks,
-        completed: completedTasks
+        completed: completedCount
       },
-      completed: completedTasks,
+      completed: completedCount,
       completionRate
     };
-  }, [tasks, selectedDate]);
+  }, [tasks, selectedDate, starFilter]);
 
   // Filter recurring tasks (all systems including general, selected date, not completed) and sort by time
   const recurringTasks = useMemo(() => {
@@ -409,12 +419,17 @@ export default function MyDayPage() {
   // Calculate tomorrow's tasks count (for any selected date)
   const tomorrowTasksCount = useMemo(() => {
     const tomorrow = addDays(selectedDate, 1);
-    return tasks.filter(
+    let filtered = tasks.filter(
       (t) =>
         shouldTaskAppearOnDate(t, tomorrow) &&
         t.status !== 'completed'
-    ).length;
-  }, [tasks, selectedDate]);
+    );
+    // Apply star filter
+    if (starFilter) {
+      filtered = filtered.filter((t) => t.is_starred === 1);
+    }
+    return filtered.length;
+  }, [tasks, selectedDate, starFilter]);
 
   // Count late tasks
   const lateTasksCount = useMemo(() => {
@@ -428,10 +443,14 @@ export default function MyDayPage() {
 
     for (let i = 0; i < 7; i++) {
       const currentDate = addDays(startDate, i);
-      const tasksForDay = tasks.filter((task) =>
+      let tasksForDay = tasks.filter((task) =>
         shouldTaskAppearOnDate(task, currentDate) &&
         task.status !== 'completed'
       );
+      // Apply star filter
+      if (starFilter) {
+        tasksForDay = tasksForDay.filter((t) => t.is_starred === 1);
+      }
 
       timeline.push({
         date: currentDate,
@@ -445,7 +464,7 @@ export default function MyDayPage() {
     const maxCount = Math.max(...timeline.map(d => d.count), 1);
 
     return { timeline, maxCount };
-  }, [tasks, selectedDate]);
+  }, [tasks, selectedDate, starFilter]);
 
   return (
     <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
