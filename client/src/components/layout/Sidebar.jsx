@@ -1,11 +1,36 @@
 import { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
-import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar } from 'react-icons/fa';
+import { NavLink, useLocation } from 'react-router-dom';
+import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
-export default function Sidebar() {
+export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation }) {
   const { connectionStatus, logout } = useApp();
+  const location = useLocation();
   const [starFilter, setStarFilter] = useState(false);
+
+  // Get add button config based on current route
+  const getAddButtonConfig = () => {
+    const path = location.pathname;
+
+    if (path === '/' || path === '/tasks') {
+      return { show: true, label: 'משימה חדשה', onClick: onAddTask };
+    }
+    if (path === '/systems') {
+      return { show: true, label: 'מערכת חדשה', onClick: onAddSystem };
+    }
+    if (path === '/suppliers') {
+      return { show: true, label: 'ספק חדש', onClick: onAddSupplier };
+    }
+    if (path === '/employees') {
+      return { show: true, label: 'עובד חדש', onClick: onAddEmployee };
+    }
+    if (path === '/locations') {
+      return { show: true, label: 'מיקום חדש', onClick: onAddLocation };
+    }
+    return { show: false };
+  };
+
+  const addButtonConfig = getAddButtonConfig();
 
   // Initialize from localStorage on mount
   useEffect(() => {
@@ -91,6 +116,17 @@ export default function Sidebar() {
           {starFilter ? <FaStar className="text-xl" /> : <FaRegStar className="text-xl" />}
           <span className="text-base font-medium">משימות מסומנות</span>
         </button>
+
+        {/* Dynamic Add Button */}
+        {addButtonConfig.show && (
+          <button
+            onClick={addButtonConfig.onClick}
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 bg-primary text-white hover:bg-indigo-700 mt-2"
+          >
+            <FaPlus className="text-xl" />
+            <span className="text-base font-medium">{addButtonConfig.label}</span>
+          </button>
+        )}
       </nav>
 
       {/* Connection Status Indicator */}

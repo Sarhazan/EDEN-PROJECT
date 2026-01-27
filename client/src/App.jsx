@@ -87,7 +87,16 @@ function MainContent() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      {!isPublicRoute && isDesktop && <Sidebar className="hidden lg:block" />}
+      {!isPublicRoute && isDesktop && (
+        <Sidebar
+          className="hidden lg:block"
+          onAddTask={() => setIsTaskModalOpen(true)}
+          onAddSystem={() => setIsSystemModalOpen(true)}
+          onAddSupplier={() => setIsSupplierModalOpen(true)}
+          onAddEmployee={() => setIsEmployeeModalOpen(true)}
+          onAddLocation={() => setIsLocationModalOpen(true)}
+        />
+      )}
       {!isPublicRoute && <DataControls />}
 
       {/* Mobile Hamburger Button */}

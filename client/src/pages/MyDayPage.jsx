@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { format, isBefore, startOfDay, addDays, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { FaCalendarDay, FaPaperPlane, FaPlus } from 'react-icons/fa';
+import { FaCalendarDay, FaPaperPlane } from 'react-icons/fa';
 import TaskCard from '../components/shared/TaskCard';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -489,13 +489,6 @@ export default function MyDayPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
-          <button
-            onClick={() => setIsTaskModalOpen(true)}
-            className="bg-primary hover:bg-indigo-700 text-white px-3 sm:px-4 py-2 rounded-lg min-h-[44px] transition-all duration-150 active:scale-95 flex items-center gap-2 text-sm sm:text-base"
-          >
-            <FaPlus />
-            <span>משימה חדשה</span>
-          </button>
           <button
             onClick={() => setSelectedDate(new Date())}
             className="bg-white border border-gray-300 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95 text-sm sm:text-base"
