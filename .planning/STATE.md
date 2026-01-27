@@ -95,6 +95,13 @@ Recent decisions affecting current work:
 - (env) VITE_ENV unset/empty shows "PRODUCTION" label, disables data management buttons
 - (env) ALLOW_DEMO_SEED=true server-side enables auto-seeding (TEST only, never PRODUCTION)
 - (env) Environment label shown in sidebar - yellow "EDEN DEV" for test, green "PRODUCTION" for prod
+- (employee-page) "קיבלתי 👍" button replaces Acknowledge button - larger touch target, prominent emoji
+- (employee-page) tasks_per_employee_page setting stored in settings table (default: 3, range: 1-20)
+- (employee-page) Tasks hidden until employee clicks "קיבלתי" - shows count of pending tasks
+- (employee-page) Dynamic queue: only N tasks visible at once, next task appears when one completes
+- (employee-page) Queue indicator shows "מציג X משימות | עוד Y בתור" when tasks are queued
+- (employee-page) Completed/pending_approval tasks always shown alongside active tasks
+- (employee-page) Celebration message when all tasks complete: "כל הכבוד! סיימת את כל המשימות 🎉"
 
 ### Pending Todos
 
@@ -102,17 +109,14 @@ No pending todos.
 
 ### In Progress
 
-Working on: Employee task pagination with acknowledgment button
-- כפתור "קיבלתי" 👍 לפני שהעובד יכול לסמן משימות
-- פרמטר בהגדרות: מספר משימות בדף (ברירת מחדל: 3)
-- תור משימות דינמי
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Session Continuity
 
-Last session: 2026-01-27T22:00:00Z
-Stopped at: Starting work on Employee task pagination feature
+Last session: 2026-01-28T00:00:00Z
+Stopped at: Completed Employee task pagination feature
 Resume file: None

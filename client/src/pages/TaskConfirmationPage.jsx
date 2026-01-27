@@ -282,6 +282,12 @@ export default function TaskConfirmationPage() {
     );
   }
 
+  // Calculate visible tasks (only pending ones, up to tasksPerPage)
+  const pendingTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'pending_approval');
+  const completedCount = tasks.filter(t => t.status === 'completed' || t.status === 'pending_approval').length;
+  const visibleTasks = pendingTasks.slice(0, tasksPerPage);
+  const queuedCount = pendingTasks.length - visibleTasks.length;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -296,66 +302,75 @@ export default function TaskConfirmationPage() {
                 שלום {employee.name}
               </p>
             )}
-            {isAcknowledged && (
-              <div className="mt-4 bg-green-100 border border-green-300 rounded-lg p-3 flex items-center justify-center gap-2">
-                <FaCheckDouble className="text-green-600" />
-                <span className="text-green-800 font-medium">
-                  קבלת המשימות אושרה ב-{new Date(acknowledgedAt).toLocaleString('he-IL')}
-                </span>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Tasks List - Only shown after acknowledging */}
-        {isAcknowledged && (
-          <>
-            {/* Queue indicator - shows total tasks and how many are visible */}
-            {(() => {
-              const pendingTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'pending_approval');
-              const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'pending_approval');
-              const visiblePendingTasks = pendingTasks.slice(0, tasksPerPage);
-              const queuedTasks = pendingTasks.length - visiblePendingTasks.length;
-
-              return queuedTasks > 0 ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-center justify-center gap-3">
-                  <FaListOl className="text-blue-600 text-xl" />
-                  <span className="text-blue-800 font-medium">
-                    מציג {visiblePendingTasks.length} משימות | עוד {queuedTasks} בתור
-                  </span>
-                </div>
-              ) : null;
-            })()}
-          </>
-        )}
-
-        <div className="space-y-4 mb-6">
-          {/* Show message before acknowledgment */}
-          {!isAcknowledged && tasks.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-              <p className="text-yellow-800 text-lg font-medium">
+        {/* "קיבלתי" Button - Shows at TOP when not acknowledged */}
+        {!isAcknowledged && (
+          <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
+            <div className="text-center mb-6">
+              <p className="text-2xl font-bold text-gray-800 mb-2">
                 יש לך {tasks.length} משימות ממתינות
               </p>
-              <p className="text-yellow-700 mt-2">
-                לחץ על "קיבלתי 👍" למטה כדי לראות את המשימות
+              <p className="text-gray-600">
+                לחץ על הכפתור כדי לאשר קבלה ולראות את המשימות
               </p>
             </div>
-          )}
+            <button
+              onClick={handleAcknowledge}
+              disabled={acknowledging}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-6 rounded-xl flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-2xl shadow-lg active:scale-95"
+            >
+              <FaThumbsUp className="text-4xl" />
+              <span>{acknowledging ? 'מאשר...' : 'קיבלתי'}</span>
+              <span className="text-4xl">👍</span>
+            </button>
+          </div>
+        )}
 
-          {/* Tasks - filtered based on acknowledgment and pagination */}
-          {(isAcknowledged ? (() => {
-            // Filter: completed/pending_approval tasks + first N pending tasks
-            const pendingTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'pending_approval');
-            const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'pending_approval');
-            const visiblePendingTasks = pendingTasks.slice(0, tasksPerPage);
-            return [...visiblePendingTasks, ...completedTasks];
-          })() : []).map((task) => (
+        {/* Tasks List - Only shown AFTER acknowledging */}
+        {isAcknowledged && (
+          <>
+            {/* Queue indicator */}
+            {queuedCount > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-center justify-center gap-3">
+                <FaListOl className="text-blue-600 text-xl" />
+                <span className="text-blue-800 font-medium">
+                  מציג {visibleTasks.length} משימות | עוד {queuedCount} בתור
+                </span>
+              </div>
+            )}
+
+            {/* Completed tasks counter */}
+            {completedCount > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 flex items-center justify-center gap-2">
+                <FaCheckDouble className="text-green-600" />
+                <span className="text-green-700 font-medium">
+                  {completedCount} משימות הושלמו/נשלחו לאישור
+                </span>
+              </div>
+            )}
+
+            {/* All tasks done - celebration */}
+            {pendingTasks.length === 0 && completedCount > 0 && (
+              <div className="bg-green-50 border border-green-300 rounded-lg p-8 mb-6 text-center">
+                <FaCheckDouble className="text-green-600 text-5xl mx-auto mb-4" />
+                <p className="text-green-800 text-2xl font-bold mb-2">
+                  כל הכבוד! 🎉
+                </p>
+                <p className="text-green-700 text-lg">
+                  סיימת את כל המשימות
+                </p>
+              </div>
+            )}
+
+            {/* Task cards - ONLY pending tasks, up to tasksPerPage */}
+            <div className="space-y-4 mb-6">
+              {visibleTasks.map((task) => (
             <div
               key={task.id}
               className={`bg-white rounded-lg shadow-md p-6 border-r-4 transition-all ${
-                task.status === 'completed' || task.status === 'pending_approval'
-                  ? 'border-green-500 opacity-75'
-                  : task.priority === 'urgent'
+                task.priority === 'urgent'
                   ? 'border-red-500'
                   : task.priority === 'normal'
                   ? 'border-blue-500'
@@ -366,7 +381,7 @@ export default function TaskConfirmationPage() {
                 {/* Task Content */}
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-4 mb-2">
-                    <h3 className={`text-lg font-bold ${task.status === 'completed' || task.status === 'pending_approval' ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                    <h3 className="text-lg font-bold text-gray-800">
                       {task.title}
                     </h3>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getPriorityColor(task.priority)}`}>
@@ -375,7 +390,7 @@ export default function TaskConfirmationPage() {
                   </div>
 
                   {task.description && (
-                    <p className={`text-gray-600 mb-3 ${task.status === 'completed' || task.status === 'pending_approval' ? 'line-through' : ''}`}>
+                    <p className="text-gray-600 mb-3">
                       {task.description}
                     </p>
                   )}
@@ -490,66 +505,22 @@ export default function TaskConfirmationPage() {
                     </div>
                   )}
 
-                  {/* Complete task button - shown for tasks that can be completed */}
-                  {task.status !== 'completed' && task.status !== 'pending_approval' && completingTaskId !== task.id && (
+                  {/* Complete task button */}
+                  {completingTaskId !== task.id && (
                     <button
                       onClick={() => openCompletionForm(task.id)}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95"
                     >
                       <FaCheckCircle />
                       <span>סיימתי - שלח לאישור</span>
                     </button>
                   )}
-
-                  {/* Status indicator for pending approval */}
-                  {task.status === 'pending_approval' && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-                      <span className="text-orange-700 font-medium">
-                        ממתין לאישור המנהל
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Status indicator for completed */}
-                  {task.status === 'completed' && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                      <span className="text-green-700 font-medium">
-                        המשימה הושלמה ואושרה
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Summary after all tasks done */}
-        {isAcknowledged && tasks.length > 0 && tasks.every(t => t.status === 'completed' || t.status === 'pending_approval') && (
-          <div className="bg-green-50 border border-green-300 rounded-lg p-6 mb-6 text-center">
-            <FaCheckDouble className="text-green-600 text-4xl mx-auto mb-3" />
-            <p className="text-green-800 text-xl font-bold">
-              כל הכבוד! סיימת את כל המשימות 🎉
-            </p>
-          </div>
-        )}
-
-        {/* Acknowledge Button - "קיבלתי 👍" */}
-        {!isAcknowledged && (
-          <div className="bg-white rounded-lg shadow-xl p-6">
-            <button
-              onClick={handleAcknowledge}
-              disabled={acknowledging}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-6 rounded-xl flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-2xl shadow-lg active:scale-95"
-            >
-              <FaThumbsUp className="text-4xl" />
-              <span>{acknowledging ? 'מאשר...' : 'קיבלתי'}</span>
-              <span className="text-4xl">👍</span>
-            </button>
-            <p className="text-center text-gray-600 mt-4 text-base">
-              לחץ על "קיבלתי" כדי לראות את המשימות שלך
-            </p>
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Footer */}
