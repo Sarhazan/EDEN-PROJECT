@@ -68,12 +68,16 @@ class WhatsAppService {
           margin: 2
         });
 
-        // Store the latest QR data URL
-        this.qrDataUrl = qrDataUrl;
+        // Only store and emit if client is still valid (not disconnected during async QR generation)
+        if (this.client) {
+          this.qrDataUrl = qrDataUrl;
 
-        if (this.io) {
-          this.io.emit('whatsapp:qr', { qrDataUrl });
-          console.log('✓ QR code emitted to connected clients');
+          if (this.io) {
+            this.io.emit('whatsapp:qr', { qrDataUrl });
+            console.log('✓ QR code emitted to connected clients');
+          }
+        } else {
+          console.log('⚠ QR generated but client already disconnected - discarding');
         }
       } catch (error) {
         console.error('Error generating QR code:', error);
