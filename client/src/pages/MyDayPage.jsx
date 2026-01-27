@@ -448,37 +448,37 @@ export default function MyDayPage() {
   }, [tasks, selectedDate]);
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold">היום שלי</h1>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold">היום שלי</h1>
             {tomorrowTasksCount > 0 && (
-              <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+              <span className="text-xs sm:text-sm font-semibold text-blue-600 bg-blue-50 px-2 sm:px-3 py-1 rounded-lg">
                 משימות למחר: {tomorrowTasksCount}
               </span>
             )}
             {lateTasksCount > 0 && (
-              <span className="text-sm font-semibold text-red-600 bg-red-50 px-3 py-1 rounded-lg">
+              <span className="text-xs sm:text-sm font-semibold text-red-600 bg-red-50 px-2 sm:px-3 py-1 rounded-lg">
                 משימות באיחור: {lateTasksCount}
               </span>
             )}
           </div>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
             {format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: he })}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={() => setSelectedDate(new Date())}
-            className="bg-white border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95"
+            className="bg-white border border-gray-300 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95 text-sm sm:text-base"
           >
             היום
           </button>
           <button
             onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-            className="bg-white border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50"
+            className="bg-white border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] min-w-[44px]"
           >
             ←
           </button>
@@ -486,13 +486,13 @@ export default function MyDayPage() {
             selected={selectedDate}
             onChange={(date) => setSelectedDate(date)}
             dateFormat="dd/MM/yyyy"
-            className="border border-gray-300 px-3 py-2 rounded-lg"
+            className="border border-gray-300 px-3 py-2 rounded-lg w-28 sm:w-auto min-h-[44px]"
             minDate={today}
           />
           <button
             onClick={() => setSelectedDate(addDays(selectedDate, -1))}
             disabled={isSameDay(selectedDate, today)}
-            className={`bg-white border border-gray-300 px-3 py-2 rounded-lg ${
+            className={`bg-white border border-gray-300 px-3 py-2 rounded-lg min-h-[44px] min-w-[44px] ${
               isSameDay(selectedDate, today)
                 ? 'opacity-50 cursor-not-allowed'
                 : 'hover:bg-gray-50'
@@ -504,7 +504,7 @@ export default function MyDayPage() {
       </div>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-2 gap-4 mb-6 md:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 lg:grid-cols-4">
         {/* 1. Total tasks for today */}
         <div className="bg-blue-50 border-r-4 border-blue-500 rounded-lg p-4">
           <div className="flex items-center gap-3">
