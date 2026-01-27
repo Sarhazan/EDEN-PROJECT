@@ -1,5 +1,5 @@
 ---
-status: verifying
+status: resolved
 trigger: "Continue debugging: star-filter-not-working-in-my-day. Previous fix was applied to lateTasks, but the star filter is STILL not working. When משימות מסומנות (starred tasks) button is clicked, non-starred tasks remain visible in My Day section."
 created: 2026-01-25T10:00:00Z
 updated: 2026-01-25T10:10:00Z

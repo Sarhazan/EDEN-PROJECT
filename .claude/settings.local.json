@@ -57,7 +57,9 @@
       "Bash(python -m http.server:*)",
       "mcp__plugin_playwright_playwright__browser_console_messages",
       "mcp__plugin_playwright_playwright__browser_select_option",
-      "mcp__plugin_playwright_playwright__browser_tabs"
+      "mcp__plugin_playwright_playwright__browser_tabs",
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "Bash(claude mcp add:*)"
     ],
     "additionalDirectories": [
       "c:\\dev\\projects\\claude projects\\eden claude"

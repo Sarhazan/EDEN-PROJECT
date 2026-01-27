@@ -38,8 +38,8 @@ export default function MyDayPage() {
         console.error('Failed to parse column widths:', e);
       }
     }
-    // Default: 66.67% / 33.33% (matches col-span-8 / col-span-4)
-    return { left: '66.67%', right: '33.33%' };
+    // Default: 60% for left column, right column uses flex: 1
+    return { left: '60%', right: 'auto' };
   });
 
   // Listen to localStorage changes for star filter (cross-tab sync) and custom event (same-tab sync)
@@ -87,7 +87,7 @@ export default function MyDayPage() {
 
   // Reset column widths to default
   const handleResetColumnWidths = () => {
-    const defaultWidths = { left: '66.67%', right: '33.33%' };
+    const defaultWidths = { left: '60%', right: 'auto' };
     setColumnWidths(defaultWidths);
     localStorage.setItem('myDayColumnWidths', JSON.stringify(defaultWidths));
   };
@@ -932,7 +932,7 @@ export default function MyDayPage() {
         /* Split layout when not filtering by employee */
         <>
           {/* Desktop: Resizable columns (>= 1024px) */}
-          <div className="hidden lg:flex gap-6">
+          <div className="hidden lg:flex gap-0 relative w-full">
             {/* Recurring Tasks (All Systems) - RIGHT SIDE - Resizable */}
             <Resizable
               size={{ width: columnWidths.left, height: 'auto' }}
@@ -940,45 +940,45 @@ export default function MyDayPage() {
                 const container = ref.parentElement;
                 const containerWidth = container.offsetWidth;
                 const newLeftWidth = ref.offsetWidth;
-                const newRightWidth = containerWidth - newLeftWidth - 24; // 24px = gap-6
 
-                // Enforce min-width: 250px for both columns
-                if (newLeftWidth < 250 || newRightWidth < 250) return;
+                // Enforce min-width: 250px for left column
+                if (newLeftWidth < 250) return;
 
-                // Enforce max-width: 70% for both columns
+                // Enforce max-width: 70% for left column (ensures right column gets at least 30%)
                 const leftPercent = (newLeftWidth / containerWidth) * 100;
-                const rightPercent = (newRightWidth / containerWidth) * 100;
-                if (leftPercent > 70 || rightPercent > 70) return;
+                if (leftPercent > 70) return;
 
+                // Only store the left column width - right column will use flex: 1
                 setColumnWidths({
                   left: `${newLeftWidth}px`,
-                  right: `${newRightWidth}px`
+                  right: 'auto'
                 });
               }}
+              minWidth={250}
+              maxWidth="70%"
               enable={{
                 top: false,
-                right: true, // Only allow horizontal resize on right edge
+                right: false,
                 bottom: false,
-                left: false,
+                left: true,
                 topRight: false,
                 bottomRight: false,
                 bottomLeft: false,
                 topLeft: false
               }}
-              minWidth={250}
-              maxWidth="70%"
-              className="relative"
               handleStyles={{
-                right: {
-                  width: '8px',
-                  right: '-4px',
+                left: {
+                  width: '12px',
+                  left: '0px',
                   cursor: 'col-resize',
-                  backgroundColor: 'transparent',
-                  zIndex: 10
+                  zIndex: 30,
+                  backgroundColor: '#9ca3af',
+                  borderRadius: '8px 0 0 8px',
+                  transition: 'background-color 0.2s'
                 }
               }}
               handleClasses={{
-                right: 'hover:bg-indigo-200 transition-colors'
+                left: 'hover:!bg-indigo-500'
               }}
             >
               <div className="bg-white rounded-lg shadow-md p-4 h-full">
@@ -1095,8 +1095,8 @@ export default function MyDayPage() {
               </div>
             </Resizable>
 
-            {/* One-Time and Late Tasks - LEFT SIDE - Controlled width */}
-            <div style={{ width: columnWidths.right }} className="relative">
+            {/* One-Time and Late Tasks - LEFT SIDE - Flex to fill remaining space */}
+            <div className="relative flex-1 min-w-[250px]">
               <div className="bg-white rounded-lg shadow-md p-4">
                 <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
 

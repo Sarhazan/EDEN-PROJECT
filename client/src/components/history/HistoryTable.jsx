@@ -14,7 +14,12 @@ export default function HistoryTable({ tasks, loading }) {
     return <div className="p-8 text-center text-gray-500">לא נמצאו משימות</div>;
   }
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+  // Backend URL for static assets (uploads) - without /api suffix
+  // In production (Railway), VITE_BACKEND_URL is not set, so we use empty string for same-origin requests
+  // In development, we use localhost:3002
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL !== undefined
+    ? import.meta.env.VITE_BACKEND_URL
+    : 'http://localhost:3002';
 
   return (
     <>
@@ -60,10 +65,10 @@ export default function HistoryTable({ tasks, loading }) {
                       {task.attachments.map((attachment) => (
                         <img
                           key={attachment.id}
-                          src={`${API_URL}/${attachment.file_path}`}
+                          src={`${BACKEND_URL}${attachment.file_path}`}
                           alt="תמונה"
                           className="h-16 w-16 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => setLightboxImage(`${API_URL}/${attachment.file_path}`)}
+                          onClick={() => setLightboxImage(`${BACKEND_URL}${attachment.file_path}`)}
                         />
                       ))}
                     </div>
