@@ -98,6 +98,7 @@ export default function EmployeeForm({ employee, onClose }) {
           <option value="en">English</option>
           <option value="ru">Русский (Russian)</option>
           <option value="ar">العربية (Arabic)</option>
+          <option value="hi">हिन्दी (Hindi)</option>
         </select>
         <p className="mt-1 text-sm text-gray-500">
           השפה שבה העובד יקבל הודעות ודפים אינטראקטיביים

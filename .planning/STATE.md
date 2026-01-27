@@ -93,9 +93,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-2 pending todos in `.planning/todos/pending/`:
+1 pending todo in `.planning/todos/pending/`:
 - `2026-01-27-multi-image-upload-employee-interface.md` — Allow multiple image uploads from employee interface
-- `2026-01-27-add-hindi-language-employee-card.md` — Add Hindi language option for employee card translation
 
 ### Blockers/Concerns
 
