@@ -21,7 +21,7 @@ import EmployeesPage from './pages/EmployeesPage';
 import LocationsPage from './pages/LocationsPage';
 import SettingsPage from './pages/SettingsPage';
 import TaskConfirmationPage from './pages/TaskConfirmationPage';
-import { FaPlus, FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaWrench } from 'react-icons/fa';
+import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaWrench } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
 function MainContent() {
@@ -77,55 +77,6 @@ function MainContent() {
     setIsLocationModalOpen(false);
   };
 
-  // Determine floating button action based on current route
-  const getFloatingButtonConfig = () => {
-    const path = location.pathname;
-
-    if (path === '/' || path === '/tasks') {
-      return {
-        show: true,
-        label: 'הוסף משימה',
-        onClick: () => setIsTaskModalOpen(true)
-      };
-    }
-
-    if (path === '/systems') {
-      return {
-        show: true,
-        label: 'הוסף מערכת',
-        onClick: () => setIsSystemModalOpen(true)
-      };
-    }
-
-    if (path === '/suppliers') {
-      return {
-        show: true,
-        label: 'הוסף ספק',
-        onClick: () => setIsSupplierModalOpen(true)
-      };
-    }
-
-    if (path === '/employees') {
-      return {
-        show: true,
-        label: 'הוסף עובד',
-        onClick: () => setIsEmployeeModalOpen(true)
-      };
-    }
-
-    if (path === '/locations') {
-      return {
-        show: true,
-        label: 'הוסף מיקום',
-        onClick: () => setIsLocationModalOpen(true)
-      };
-    }
-
-    return { show: false };
-  };
-
-  const buttonConfig = getFloatingButtonConfig();
-
   // Check if we're on the confirmation page (public route)
   const isPublicRoute = location.pathname.startsWith('/confirm/');
 
@@ -169,20 +120,6 @@ function MainContent() {
           <Route path="/confirm/:token" element={<TaskConfirmationPage />} />
         </Routes>
       </main>
-
-      {/* Floating Add Button */}
-      {!isPublicRoute && buttonConfig.show && (
-        <button
-          onClick={buttonConfig.onClick}
-          className="fixed top-1/2 -translate-y-1/2 right-6 bg-primary hover:bg-indigo-700 text-white rounded-full min-h-[56px] min-w-[56px] shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-90 flex items-center justify-center gap-2 group z-50"
-          title={buttonConfig.label}
-        >
-          <FaPlus className="text-2xl" />
-          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap">
-            {buttonConfig.label}
-          </span>
-        </button>
-      )}
 
       {/* Global Task Modal */}
       <Modal
