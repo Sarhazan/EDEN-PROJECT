@@ -70,6 +70,28 @@ export default function SettingsPage() {
       }
     });
 
+    // Loading progress during initialization
+    newSocket.on('whatsapp:loading', ({ percent, message }) => {
+      console.log(`WhatsApp loading: ${percent}% - ${message}`);
+      setSuccessMessage(`טוען WhatsApp: ${percent}%`);
+    });
+
+    // Auth failure event
+    newSocket.on('whatsapp:auth_failure', ({ message }) => {
+      console.error('WhatsApp auth failure:', message);
+      setQrCode(null);
+      setWhatsappStatus({ isReady: false, needsAuth: false, isInitialized: false });
+      setError('שגיאת אימות WhatsApp. נסה להתחבר מחדש.');
+      setSuccessMessage(null);
+    });
+
+    // Initialization timeout - ready event never fired
+    newSocket.on('whatsapp:init_timeout', ({ message }) => {
+      console.error('WhatsApp initialization timeout');
+      setError(message || 'החיבור נתקע. יש לנסות להתנתק ולהתחבר מחדש.');
+      setSuccessMessage(null);
+    });
+
     return () => {
       newSocket.disconnect();
     };

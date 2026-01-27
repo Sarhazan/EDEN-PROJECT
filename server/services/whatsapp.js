@@ -14,6 +14,7 @@ class WhatsAppService {
     this.qrCode = null;
     this.qrDataUrl = null; // Store the latest QR data URL
     this.io = null;
+    this.initializationTimeout = null;
   }
 
   /**
@@ -32,27 +33,55 @@ class WhatsAppService {
     const env = process.env.NODE_ENV || 'development';
     const clientId = `eden-whatsapp-${env}`;
     const dataPath = `./.wwebjs_auth_${env}`;
+    const isProduction = env === 'production';
 
     console.log(`🚀 Initializing WhatsApp client (${env})...`);
     console.log(`   clientId: ${clientId}`);
     console.log(`   dataPath: ${dataPath}`);
+    console.log(`   isProduction: ${isProduction}`);
+
+    // Configure Puppeteer options based on environment
+    let puppeteerOptions = {
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-extensions',
+        '--disable-software-rasterizer',
+        '--single-process'
+      ]
+    };
+
+    // In production (Railway), use @sparticuz/chromium for better compatibility
+    if (isProduction) {
+      try {
+        const chromium = require('@sparticuz/chromium');
+        puppeteerOptions.executablePath = await chromium.executablePath();
+        puppeteerOptions.args = chromium.args;
+        puppeteerOptions.headless = chromium.headless;
+        console.log('✓ Using @sparticuz/chromium for production');
+      } catch (chromiumError) {
+        console.log('⚠ @sparticuz/chromium not available, using default Puppeteer:', chromiumError.message);
+      }
+    }
 
     this.client = new Client({
       authStrategy: new LocalAuth({
         clientId: clientId,
         dataPath: dataPath
       }),
-      puppeteer: {
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu'
-        ]
-      },
+      puppeteer: puppeteerOptions,
       // Disable automatic "seen" marking to avoid errors
-      qrMaxRetries: 5
+      qrMaxRetries: 5,
+      // Use remote web version cache to avoid version mismatch issues
+      webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/AkhilDeveloperv/whatsapp-web-version/main/webVersion.json'
+      },
+      // Increase timeouts for cloud environments
+      authTimeoutMs: 120000 // 2 minutes for auth
     });
 
     // QR Code event - generate and emit to all connected browsers
@@ -90,6 +119,7 @@ class WhatsAppService {
       this.isReady = true;
       this.qrCode = null;
       this.qrDataUrl = null; // Clear QR data URL when connected
+      this.clearInitTimeout(); // Clear timeout since we're ready
 
       if (this.io) {
         this.io.emit('whatsapp:ready');
@@ -101,6 +131,9 @@ class WhatsAppService {
       console.log('✅ WhatsApp authenticated successfully');
       this.qrCode = null;
       this.qrDataUrl = null; // Clear QR immediately after scan
+
+      // Set timeout for ready event - if it doesn't fire within 2 minutes, something is wrong
+      this.setInitTimeout();
 
       if (this.io) {
         this.io.emit('whatsapp:authenticated');
@@ -114,14 +147,67 @@ class WhatsAppService {
       this.client = null;
       this.qrCode = null;
       this.qrDataUrl = null; // Clear QR data so new clients don't get stale QR
+      this.clearInitTimeout();
 
       if (this.io) {
         this.io.emit('whatsapp:disconnected', { reason });
       }
     });
 
+    // Loading screen event - useful for tracking initialization progress
+    this.client.on('loading_screen', (percent, message) => {
+      console.log(`📊 Loading: ${percent}% - ${message}`);
+      if (this.io) {
+        this.io.emit('whatsapp:loading', { percent, message });
+      }
+    });
+
+    // Auth failure event
+    this.client.on('auth_failure', (message) => {
+      console.error('❌ WhatsApp auth failure:', message);
+      this.isReady = false;
+      this.clearInitTimeout();
+
+      if (this.io) {
+        this.io.emit('whatsapp:auth_failure', { message });
+      }
+    });
+
+    // Remote session saved event
+    this.client.on('remote_session_saved', () => {
+      console.log('💾 Remote session saved');
+    });
+
     // Initialize client
+    console.log('⏳ Starting WhatsApp client initialization...');
     await this.client.initialize();
+  }
+
+  /**
+   * Set initialization timeout - ready should fire within 2 minutes of auth
+   */
+  setInitTimeout() {
+    this.clearInitTimeout();
+    this.initializationTimeout = setTimeout(() => {
+      if (!this.isReady) {
+        console.error('⏰ WhatsApp initialization timeout - ready event not received after 2 minutes');
+        if (this.io) {
+          this.io.emit('whatsapp:init_timeout', {
+            message: 'החיבור נתקע. יש לנסות להתנתק ולהתחבר מחדש.'
+          });
+        }
+      }
+    }, 120000); // 2 minutes
+  }
+
+  /**
+   * Clear initialization timeout
+   */
+  clearInitTimeout() {
+    if (this.initializationTimeout) {
+      clearTimeout(this.initializationTimeout);
+      this.initializationTimeout = null;
+    }
   }
 
   /**
