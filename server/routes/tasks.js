@@ -543,11 +543,25 @@ router.put('/:id', (req, res) => {
 
     const weeklyDaysJson = weekly_days && weekly_days.length > 0 ? JSON.stringify(weekly_days) : null;
 
-    const result = db.prepare(`
-      UPDATE tasks
-      SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(title, description, system_id || null, employee_id || null, frequency, start_date, start_time, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, req.params.id);
+    // Get current task to check if status is changing to 'sent'
+    const currentTask = db.prepare('SELECT status, sent_at FROM tasks WHERE id = ?').get(req.params.id);
+
+    // If status is changing to 'sent' and sent_at is not already set, set it now
+    let result;
+    if (status === 'sent' && currentTask && !currentTask.sent_at) {
+      const timestamp = getCurrentTimestampIsrael();
+      result = db.prepare(`
+        UPDATE tasks
+        SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, sent_at = ?, updated_at = ?
+        WHERE id = ?
+      `).run(title, description, system_id || null, employee_id || null, frequency, start_date, start_time, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, timestamp, timestamp, req.params.id);
+    } else {
+      result = db.prepare(`
+        UPDATE tasks
+        SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(title, description, system_id || null, employee_id || null, frequency, start_date, start_time, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, req.params.id);
+    }
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'משימה לא נמצאה' });
