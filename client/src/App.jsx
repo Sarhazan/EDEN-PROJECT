@@ -5,6 +5,7 @@ import Sidebar from './components/layout/Sidebar';
 import MobileDrawer from './components/layout/MobileDrawer';
 import HamburgerButton from './components/layout/HamburgerButton';
 import Modal from './components/shared/Modal';
+import QuickTaskModal from './components/forms/QuickTaskModal';
 import TaskForm from './components/forms/TaskForm';
 import SystemForm from './components/forms/SystemForm';
 import SupplierForm from './components/forms/SupplierForm';
@@ -22,6 +23,8 @@ import SettingsPage from './pages/SettingsPage';
 import TaskConfirmationPage from './pages/TaskConfirmationPage';
 import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaWrench } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function MainContent() {
   const { isTaskModalOpen, setIsTaskModalOpen, editingTask, setEditingTask, isAuthenticated, login } = useApp();
@@ -128,14 +131,21 @@ function MainContent() {
         </Routes>
       </main>
 
-      {/* Global Task Modal */}
-      <Modal
-        isOpen={isTaskModalOpen}
-        onClose={handleCloseTaskModal}
-        title={editingTask ? 'ערוך משימה' : 'משימה חדשה'}
-      >
-        <TaskForm task={editingTask} onClose={handleCloseTaskModal} />
-      </Modal>
+      {/* Quick Task Modal (new tasks) */}
+      {isTaskModalOpen && !editingTask && (
+        <QuickTaskModal isOpen={true} onClose={handleCloseTaskModal} />
+      )}
+
+      {/* Edit Task Modal (existing tasks) */}
+      {isTaskModalOpen && editingTask && (
+        <Modal
+          isOpen={true}
+          onClose={handleCloseTaskModal}
+          title="ערוך משימה"
+        >
+          <TaskForm task={editingTask} onClose={handleCloseTaskModal} />
+        </Modal>
+      )}
 
       {/* System Modal */}
       <Modal
@@ -172,6 +182,20 @@ function MainContent() {
       >
         <LocationForm onClose={handleCloseLocationModal} />
       </Modal>
+
+      {/* Toast Container */}
+      <ToastContainer
+        position="bottom-center"
+        autoClose={2000}
+        hideProgressBar
+        newestOnTop={false}
+        closeOnClick
+        rtl={true}
+        pauseOnFocusLoss={false}
+        draggable={false}
+        pauseOnHover={false}
+        theme="light"
+      />
     </div>
   );
 }
