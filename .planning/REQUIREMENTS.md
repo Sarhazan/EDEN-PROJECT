@@ -1,7 +1,7 @@
 # Requirements: Eden v3.0
 
 **Defined:** 2026-02-05
-**Core Value:** מנהל המבנה רואה בזמן אמת מה קורה בשטח - איזה משימה הושלמה, מי עושה מה, ומה מתעכב
+**Core Value:** Manager sees in real-time what's happening on the ground -- which task completed, who's doing what, and what's delayed
 
 ## v3.0 Requirements
 
@@ -9,18 +9,18 @@ Requirements for v3.0 Quick Task Entry & Clean UI.
 
 ### Quick Task Modal
 
-- [ ] **MODAL-01**: מודל נפתח עם layout מינימלי — שדה כותרת + תגית "היום" בלבד
-- [ ] **MODAL-02**: תגית "היום" לחיצה — פותחת date picker inline לשינוי תאריך
-- [ ] **MODAL-03**: Radio toggle בין חד-פעמית לחוזרת
-- [ ] **MODAL-04**: מצב חד-פעמית — שומר משימה מיד עם כותרת + תאריך בלבד (ללא מערכת, ללא עובד)
-- [ ] **MODAL-05**: מצב חוזרת — מרחיב את המודל ומציג את כל השדות (תדירות, ימים, שעה, מערכת, עובד)
-- [ ] **MODAL-06**: משימה שנוצרה ללא עובד ניתנת לעריכה מאוחר יותר להוספת עובד ושליחה ב-WhatsApp
+- [ ] **MODAL-01**: Modal opens with minimal layout -- title field + "today" tag only
+- [ ] **MODAL-02**: "Today" tag is tappable -- opens inline date picker to change date
+- [ ] **MODAL-03**: Radio toggle between one-time and recurring
+- [ ] **MODAL-04**: One-time mode -- saves task immediately with title + date only (no system, no employee)
+- [ ] **MODAL-05**: Recurring mode -- expands the modal to show all fields (frequency, days, time, system, employee)
+- [ ] **MODAL-06**: Task created without employee can be edited later to add employee and send via WhatsApp
 
 ### MyDay Page Redesign
 
-- [ ] **MYDAY-01**: ציר זמן מעוצב מחדש — מציג 15 ימים קדימה עם עיצוב חלק ונקי יותר
-- [ ] **MYDAY-02**: כרטיסי סטטיסטיקות מוקטנים — פחות בולטים, שומרים את המידע בצורה קומפקטית
-- [ ] **MYDAY-03**: קוד פילטרים מאוחד — 3 העתקים ממוזגים לקומפוננטה משותפת אחת
+- [ ] **MYDAY-01**: Redesigned timeline -- shows 15 days ahead with cleaner, smoother design
+- [ ] **MYDAY-02**: Smaller stats cards -- less prominent, keep the info in compact form
+- [ ] **MYDAY-03**: Unified filter code -- 3 copies merged into one shared component
 
 ## Future Requirements
 
@@ -28,44 +28,44 @@ Deferred from v2.0, not in v3.0 scope:
 
 ### WhatsApp Monitoring
 
-- **WMON-01**: Loading states ומצבי חיבור ויזואליים ל-WhatsApp
-- **WMON-02**: Auto-reconnect עם אינדיקטור סטטוס
-- **WMON-03**: התראות על ניתוק WhatsApp
+- **WMON-01**: Loading states and visual connection states for WhatsApp
+- **WMON-02**: Auto-reconnect with status indicator
+- **WMON-03**: Alerts on WhatsApp disconnection
 
 ### External Integrations
 
-- **EXTINT-01**: שילוב Gmail לקבלת משימות ממייל
-- **EXTINT-02**: שילוב Outlook לקבלת משימות ממייל
+- **EXTINT-01**: Gmail integration for receiving tasks from email
+- **EXTINT-02**: Outlook integration for receiving tasks from email
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| הסרה מלאה של סטטיסטיקות | המשתמש רוצה לשמור את המידע, רק להקטין |
-| שינוי backend/API | v3.0 הוא שיפור UI בלבד, ה-API קיים |
-| WhatsApp monitoring | נדחה, לא בפוקוס של v3.0 |
-| External integrations | נדחה, לא בפוקוס של v3.0 |
-| Authentication | המערכת פתוחה by design |
+| Full stats removal | User wants to keep the info, just make it smaller |
+| Backend/API changes | v3.0 is UI improvement only, API exists |
+| WhatsApp monitoring | Deferred, not in v3.0 focus |
+| External integrations | Deferred, not in v3.0 focus |
+| Authentication | System is open by design |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MODAL-01 | TBD | Pending |
-| MODAL-02 | TBD | Pending |
-| MODAL-03 | TBD | Pending |
-| MODAL-04 | TBD | Pending |
-| MODAL-05 | TBD | Pending |
-| MODAL-06 | TBD | Pending |
-| MYDAY-01 | TBD | Pending |
-| MYDAY-02 | TBD | Pending |
-| MYDAY-03 | TBD | Pending |
+| MODAL-01 | Phase 1 | Pending |
+| MODAL-02 | Phase 1 | Pending |
+| MODAL-03 | Phase 1 | Pending |
+| MODAL-04 | Phase 1 | Pending |
+| MODAL-05 | Phase 1 | Pending |
+| MODAL-06 | Phase 1 | Pending |
+| MYDAY-01 | Phase 2 | Pending |
+| MYDAY-02 | Phase 2 | Pending |
+| MYDAY-03 | Phase 2 | Pending |
 
 **Coverage:**
 - v3.0 requirements: 9 total
-- Mapped to phases: 0
-- Unmapped: 9
+- Mapped to phases: 9
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after initial definition*
+*Last updated: 2026-02-05 after roadmap creation*
