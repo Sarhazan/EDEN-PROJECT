@@ -1,32 +1,42 @@
 # Project Milestones: Eden - מערכת ניהול אחזקת מבנים
 
-## v2.0 Enhanced UX & Mobile Experience (Shipped: 2026-01-27)
+## v2.0 Enhanced UX & Mobile Experience (Shipped: 2026-02-05)
 
-**Delivered:** Mobile-first responsive design, task starring system, resizable columns, WhatsApp gateway integration, and improved Settings page
+**Delivered:** Mobile-first responsive design with RTL support, task starring system, resizable columns, server-integrated WhatsApp gateway, employee page enhancements, and three-environment deployment
 
-**Phases completed:** 1-3, 2.1 (10 plans total)
+**Phases completed:** 1, 2, 2.1, 3 (10 plans total, rescoped from 7 phases)
 
 **Key accomplishments:**
 
-- Stars System: Task prioritization with starring and filter to focus on important tasks
-- Resizable Columns: Customizable column widths in "My Day" view with localStorage persistence
-- Mobile Responsive: Hamburger menu with RTL slide-in drawer, touch-optimized UI (44x44px targets), responsive grids
-- WhatsApp Gateway Integration: Server-integrated WhatsApp client with QR code in Settings, persistent session
-- Settings Page: Centralized WhatsApp connection, Google Translate API, and data management controls
+- Stars System: Task prioritization with starring, global filtering, real-time Socket.IO sync, and localStorage persistence
+- Resizable Columns: Drag-to-resize column layout in "My Day" view with 250px min / 70% max constraints (desktop-only)
+- WhatsApp Gateway Integration: Embedded WhatsApp Web client in main server with Socket.IO QR delivery, persistent sessions via LocalAuth
+- Mobile Responsive Experience: Full mobile-first transformation — RTL drawer navigation, responsive grids, 44x44px touch targets (Apple HIG), swipe-to-close
+- Employee Page: Task pagination with "קיבלתי" acknowledgment button, multi-image uploads, Hindi language support
+- Environment Management: Local / EDEN-TEST (Railway develop) / EDEN-PRODUCTION (Railway master) with safety guards
 
 **Stats:**
 
-- 10 plans across 4 phases
-- 143 commits (Jan 25-27, 2026)
+- 220 files modified, 26,954 insertions, 949 deletions
+- 11,654 lines of JS/JSX/CSS
+- 4 phases, 10 plans
+- 161 commits (Jan 25-28, 2026)
 - 3 days from start to ship
-- New dependencies: react-swipeable, re-resizable
+- New dependencies: react-swipeable, re-resizable, qrcode
 
-**Deferred to v3.0:**
+**Rescoped:** Original v2.0 included 7 phases. Phases 4-6 deferred to v3.0:
 - Phase 4: WhatsApp Connection Monitoring (loading states, status display, auto-reconnect, alerts)
 - Phase 5: WhatsApp Web Integration (enhanced message delivery)
 - Phase 6: External Accounts Integration (Gmail, Outlook)
 
-**Git range:** `cb81001` → `0e36d09`
+**Known issues at ship:**
+- Star filter missing in MobileDrawer (mobile users can't filter starred tasks)
+- Star button touch target 36x36px on mobile (below 44x44px spec)
+- Phase 2.1 unverified (no VERIFICATION.md)
+
+**Git range:** `v1.0` → `1a832ea`
+
+**What's next:** v3.0 — WhatsApp monitoring, enhanced notifications, external integrations
 
 ---
 

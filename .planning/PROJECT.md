@@ -2,7 +2,7 @@
 
 ## What This Is
 
-מערכת לניהול משימות אחזקת מבנים עם שילוב WhatsApp. מנהל מבנה יכול ליצור משימות חוזרות או חד-פעמיות, להקצותן לעובדים דרך WhatsApp, ולעקוב בזמן אמת אחרי ההתקדמות. העובדים מקבלים דפים אינטראקטיביים שדרכם הם מסמנים משימות כהושלמו, מצרפים תמונות והערות.
+מערכת לניהול משימות אחזקת מבנים עם שילוב WhatsApp, מותאמת למובייל עם תמיכה מלאה ב-RTL. מנהל מבנה יכול ליצור משימות חוזרות או חד-פעמיות, לסמן משימות חשובות בכוכב, להקצות לעובדים דרך WhatsApp, ולעקוב בזמן אמת אחרי ההתקדמות — מדסקטופ או מהטלפון. העובדים מקבלים דפים אינטראקטיביים שדרכם הם מסמנים משימות כהושלמו, מצרפים תמונות והערות.
 
 ## Core Value
 
@@ -62,36 +62,39 @@
 - ✓ ממשק המנהל תמיד בעברית עם תרגום אוטומטי להערות מעובדים — v1.0
 - ✓ תמיכה ב-RTL (Right-to-Left) לעברית וערבית, LTR לאנגלית ורוסית — v1.0
 
+**v2.0 (shipped 2026-02-05):**
+- ✓ מערכת כוכבים - סימון משימות חשובות עם toggle ושמירה ב-DB — v2.0
+- ✓ פילטר כוכב גלובלי עם localStorage persistence ו-cross-tab sync — v2.0
+- ✓ כוכב מוצג גם במשימות שהושלמו בהיסטוריה — v2.0
+- ✓ עמודות resizable ב"היום שלי" עם drag-to-resize ו-localStorage — v2.0
+- ✓ WhatsApp client משולב בשרת הראשי (לא gateway נפרד) — v2.0
+- ✓ QR code מוצג ב-Settings page דרך Socket.IO (לא API חיצוני) — v2.0
+- ✓ כפתור disconnect ב-Settings page — v2.0
+- ✓ WhatsApp session persistent עם LocalAuth — v2.0
+- ✓ Hamburger menu במובייל עם RTL drawer slide-in — v2.0
+- ✓ Responsive grids - משימות stack vertically במובייל — v2.0
+- ✓ Touch targets מינימום 44x44px (Apple HIG) — v2.0
+- ✓ Swipe-to-close drawer במובייל — v2.0
+- ✓ FAB בגודל 56x56px במובייל — v2.0
+- ✓ Native select elements במובייל — v2.0
+- ✓ Modal/Form ברוחב מלא במובייל — v2.0
+- ✓ Employee task pagination עם כפתור "קיבלתי" — v2.0
+- ✓ העלאת מספר תמונות מדף העובד — v2.0
+- ✓ שלוש סביבות: Local, EDEN-TEST, EDEN-PRODUCTION — v2.0
+- ✓ הגנות סביבה: כפתורי ניהול נתונים מושבתים בפרודקשן — v2.0
+
 ### Active
 
-## Current Milestone: v2.0 - Enhanced UX & Mobile Experience
-
-**Goal:** שיפור חוויית המשתמש של חיבור WhatsApp, הוספת מערכת כוכבים למשימות חשובות, והתאמה מלאה למובייל
-
-**Target features:**
-
-**WhatsApp Connection UX (4 features):**
-- אינדיקטור חיבור עם אנימציה וטיימר (30 שניות ליצירת QR + 15-30 שניות לאחר סריקה)
-- סטטוס חיבור WhatsApp בסיידבר (נפרד מסטטוס WebSocket)
-- Auto-reconnect אוטומטי כשיש ניתוק WhatsApp
-- התרעה ברורה למשתמש כשחיבור WhatsApp מתנתק
-
-**Task Management (1 feature):**
-- מערכת כוכבים - סימון משימות חשובות ב"היום שלי" + פילטר כוכב (כוכב נשאר גם אחרי השלמה, אבל משימות שהושלמו לא מופיעות בסינון כוכב)
-
-**Mobile Responsiveness (1 feature):**
-- התאמה מלאה לסמארטפון - hamburger menu עם drawer, responsive grids (stack vertically), touch-friendly UI
-
-**UI Improvements (1 feature):**
-- Resizable columns ב"היום שלי" - מחוון (slider) לשינוי גודל העמודות של משימות קבועות וחד-פעמיות (שמור ב-localStorage)
+(No active requirements — next milestone not yet planned)
 
 ### Out of Scope
 
 - התרעות/נוטיפיקציות בדפדפן - לא רלוונטי, המנהל רואה בזמן אמת
-- אפליקציית מובייל נפרדת - הדפים האינטראקטיביים כבר מותאמים למובייל
+- אפליקציית מובייל נפרדת - responsive web app עובד היטב במובייל
 - אימות משתמשים - המערכת פתוחה, הדפים האינטראקטיביים נגישים לכל מי שיש לו את הקישור
-- דיווחים וסטטיסטיקות מתקדמות - לא בשלב הראשון, רק תצוגה בסיסית
+- דיווחים וסטטיסטיקות מתקדמות - לא בשלב הזה, רק תצוגה בסיסית
 - תזכורות אוטומטיות לעובדים - לא צריך בשלב זה
+- Offline mode — Core value הוא real-time, offline סותר את זה
 
 ## Environments
 
@@ -117,7 +120,7 @@
 - **הגבלות**: אין - כל הפיצ'רים זמינים לבדיקות
 
 ### 3. EDEN-PRODUCTION (Railway - פרודקשן)
-- **URL**: [להגדרה]
+- **URL**: https://web-production-0b462.up.railway.app
 - **Branch**: `master`
 - **מטרה**: סביבת פרודקשן אמיתית עם נתונים אמיתיים
 - **Database**: Railway Volume (SQLite) - נתונים אמיתיים
@@ -138,41 +141,45 @@
 
 ## Current State
 
-**Shipped:** v1.0 MVP (2026-01-25)
+**Shipped:** v2.0 Enhanced UX & Mobile Experience (2026-02-05)
 
 **Codebase:**
-- 9,232 lines of JavaScript/JSX (client + server)
+- 11,654 lines of JavaScript/JSX/CSS (client + server)
 - Frontend: React 19 + Vite + Tailwind CSS (http://localhost:5179)
 - Backend: Node.js + Express + SQLite with better-sqlite3 (http://localhost:3002)
 - WebSocket: Socket.IO 4.8.2 integrated with Express server
-- WhatsApp: whatsapp-web.js (unofficial API)
-- Deployment: Vercel for static interactive HTML pages
+- WhatsApp: whatsapp-web.js integrated in main server (LocalAuth persistent sessions)
+- Deployment: Railway (TEST on develop, PRODUCTION on master)
 - Database: SQLite with WAL mode, 2-year data retention
-- Internationalization: i18next with 4 languages (he/en/ru/ar)
+- Internationalization: i18next with 5 languages (he/en/ru/ar/hi)
 - Translation: Hybrid Gemini API → Google Translate → original text
+- Mobile: Responsive with RTL drawer, 44px touch targets, react-swipeable
 
 **Architecture:**
 - Real-time updates via WebSocket broadcast on task changes
-- Image uploads with Multer (5MB limit, JPEG/PNG only)
+- Image uploads with Multer (5MB limit, JPEG/PNG/HEIC with auto-conversion)
 - Server-side translation on write (translate once, not on every read)
 - Automatic late task detection with visual indicators
 - History with composite indexes for fast filtering
 - Cron job for automatic data cleanup (2 AM Israel time)
+- WhatsApp client singleton with Socket.IO event bridge (qr/ready/disconnected)
+- Employee task pagination with acknowledgment gating
 
 **Known Limitations (by design):**
 - No authentication - system intentionally open
 - No auto-refresh UI for countdown updates (manual refresh required)
 - History page UI Hebrew-only (data is multilingual)
-- WebSocket disconnect doesn't show user notification
-- One image per task (multiple images deferred to v2)
+- Star filter missing in mobile drawer (integration gap from v2.0)
+- Star button touch target 36x36px on mobile (below 44px spec)
 
 ## Constraints
 
 - **Tech stack**: חייבים להישאר עם React + Node.js + SQLite - אין מעבר לטכנולוגיות אחרות
 - **WhatsApp**: חייבים להשתמש ב-whatsapp-web.js (לא WhatsApp Business API) כי זה מה שכבר עובד
-- **Static hosting**: הדפים האינטראקטיביים חייבים להישאר סטטיים (HTML) כי זה כבר עובד עם Vercel
+- **Deployment**: Railway for server (TEST + PRODUCTION), Vercel for static HTML pages
 - **Hebrew**: כל הממשק בעברית - הודעות, תגובות, UI
 - **No authentication**: המערכת פתוחה - אין צורך באימות משתמשים
+- **Mobile-first**: כל פיצ'ר חדש חייב לעבוד גם במובייל עם touch targets מתאימים
 
 ## Key Decisions
 
@@ -198,6 +205,21 @@
 | Gemini 2.0 Flash Lite | 1.5 models retired, using 2.0 | ✅ Working | v1.0 |
 | Dependency injection for Socket.IO | Fix circular dependency in tasks.js | ✅ Working | v1.0 |
 | Daily recurring tasks start tomorrow | Avoid same-day execution confusion | ✅ Working | v1.0 |
+| SQLite BOOLEAN for is_starred | INTEGER 0/1 with DEFAULT 0, atomic CASE toggle | ✅ Working | v2.0 |
+| Star filter in Sidebar (global) | Available on all pages, not per-page | ✅ Working | v2.0 |
+| re-resizable with --legacy-peer-deps | React 19 peer dependency resolution | ✅ Working | v2.0 |
+| Desktop-only resizable columns | ≥1024px breakpoint, stacked on mobile | ✅ Working | v2.0 |
+| WhatsApp client as server singleton | Simpler than separate gateway process | ✅ Working | v2.0 |
+| QR via Socket.IO data URL | No external API dependency for QR display | ✅ Working | v2.0 |
+| LocalAuth for WhatsApp persistence | clientId 'eden-whatsapp', .wwebjs_auth dir | ✅ Working | v2.0 |
+| 1024px mobile/desktop breakpoint | Tailwind lg, aligns with iPad landscape | ✅ Working | v2.0 |
+| react-swipeable for gestures | Avoids 10+ edge cases (multi-touch, velocity, iOS) | ✅ Working | v2.0 |
+| iOS scroll lock via position: fixed | Safari ignores overflow: hidden | ✅ Working | v2.0 |
+| 44x44px touch targets (Apple HIG) | Exceeds WCAG 2.5.8 24px minimum | ✅ Working | v2.0 |
+| Native select on mobile | OS-native picker UI better than custom | ✅ Working | v2.0 |
+| Three Railway environments | Local/TEST(develop)/PROD(master) with safety guards | ✅ Working | v2.0 |
+| Employee task pagination with "קיבלתי" | Controls task visibility, prevents overwhelm | ✅ Working | v2.0 |
+| v2.0 rescoped at completion | Phases 4-6 deferred to v3.0 | — Pending | v2.0 |
 
 ---
-*Last updated: 2026-01-27 after environment setup (Local, EDEN-TEST, PRODUCTION)*
+*Last updated: 2026-02-05 after v2.0 milestone*
