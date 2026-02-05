@@ -33,11 +33,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Manager toggles to "recurring" and the modal expands to show frequency, days, time, system, and employee fields
   4. Manager creates a one-time task with just a title and date -- no system or employee required -- and it saves immediately
   5. Manager can later edit a task that was created without an employee to assign one and send via WhatsApp
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md -- Build QuickTaskModal with DateChip, wire into App.jsx, visual verification
 
 ### Phase 2: MyDay Cleanup
 **Goal**: MyDay page is visually clean -- the timeline shows 15 days ahead with a refined design, stats cards are compact, and filter code is consolidated into one component.
@@ -60,5 +59,5 @@ Phases execute in numeric order: 1 -> 2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Quick Task Modal | 0/TBD | Not started | - |
+| 1. Quick Task Modal | 0/1 | Planned | - |
 | 2. MyDay Cleanup | 0/TBD | Not started | - |
