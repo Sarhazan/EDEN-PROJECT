@@ -85,7 +85,13 @@
 
 ### Active
 
-(No active requirements — next milestone not yet planned)
+**v3.0 — Quick Task Entry & Clean UI:**
+- [ ] מודל יצירת משימות מינימליסטי בסגנון Todoist — כותרת בלבד + תגית "היום"
+- [ ] Radio toggle: חד-פעמית / חוזרת — חד-פעמית שומרת מיד, חוזרת מרחיבה את המודל
+- [ ] תגית "היום" עם date picker — לחיצה פותחת תאריכון לשינוי תאריך
+- [ ] ברירת מחדל: ללא מערכת, ללא עובד — מנהל מוסיף מאוחר יותר דרך עריכה
+- [ ] דף "היום שלי" נקי — הסרת כרטיסי סטטיסטיקות, גרפים, ציר זמן. שורת סיכום פשוטה במקום
+- [ ] ניקוי קוד כפול בפילטרים (3 העתקים → קומפוננטה אחת)
 
 ### Out of Scope
 
@@ -138,6 +144,16 @@
 | Local | ללא | - | ✅ מופעלים |
 | EDEN-TEST | EDEN DEV | צהוב | ✅ מופעלים |
 | PRODUCTION | PRODUCTION | ירוק | ❌ מושבתים |
+
+## Current Milestone: v3.0 Quick Task Entry & Clean UI
+
+**Goal:** הפיכת יצירת משימות למהירה ואינטואיטיבית כמו Todoist, וניקוי דף "היום שלי" מעומס ויזואלי מיותר.
+
+**Target features:**
+- מודל יצירת משימות מינימליסטי (כותרת + "היום" → שמור)
+- Radio toggle חד-פעמית/חוזרת עם הרחבה דינמית של המודל
+- דף "היום שלי" נקי עם שורת סיכום פשוטה במקום גרפים
+- ניקוי קוד כפול (פילטרים, layouts)
 
 ## Current State
 
@@ -219,7 +235,8 @@
 | Native select on mobile | OS-native picker UI better than custom | ✅ Working | v2.0 |
 | Three Railway environments | Local/TEST(develop)/PROD(master) with safety guards | ✅ Working | v2.0 |
 | Employee task pagination with "קיבלתי" | Controls task visibility, prevents overwhelm | ✅ Working | v2.0 |
-| v2.0 rescoped at completion | Phases 4-6 deferred to v3.0 | — Pending | v2.0 |
+| v2.0 rescoped at completion | Phases 4-6 deferred to future | — Pending | v2.0 |
+| v3.0 focused on UX, not deferred v2.0 features | User wants quick entry + clean UI, not WhatsApp monitoring | — Pending | v3.0 |
 
 ---
-*Last updated: 2026-02-05 after v2.0 milestone*
+*Last updated: 2026-02-05 after v3.0 milestone start*
