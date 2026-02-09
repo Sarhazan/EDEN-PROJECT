@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { format, isBefore, startOfDay, addDays, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { FaCalendarDay, FaPaperPlane } from 'react-icons/fa';
+import { FaCalendarDay, FaPaperPlane, FaDatabase, FaTrash } from 'react-icons/fa';
 import TaskCard from '../components/shared/TaskCard';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -13,7 +13,7 @@ import { Resizable } from 're-resizable';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 export default function MyDayPage() {
-  const { tasks, systems, employees, locations, setIsTaskModalOpen, setEditingTask, updateTaskStatus } = useApp();
+  const { tasks, systems, employees, locations, setIsTaskModalOpen, setEditingTask, updateTaskStatus, seedData, clearData } = useApp();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const today = startOfDay(new Date());
   const [isSendingBulk, setIsSendingBulk] = useState(false);
@@ -523,7 +523,7 @@ export default function MyDayPage() {
       </div>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 lg:grid-cols-5">
         {/* 1. Total tasks for today */}
         <div className="bg-blue-50 border-r-4 border-blue-500 rounded-lg p-4">
           <div className="flex items-center gap-3">
@@ -535,185 +535,175 @@ export default function MyDayPage() {
           </div>
         </div>
 
-        {/* 2. Tasks by priority */}
+        {/* 2. Tasks by priority - Donut Chart */}
         <div className="bg-purple-50 border-r-4 border-purple-500 rounded-lg p-4">
-          <div className="text-lg font-bold text-purple-700 mb-3 text-center">לפי עדיפות</div>
-          <div className="flex items-end justify-between gap-2 h-24">
-            {/* Urgent */}
-            {stats.byPriority.urgent > 0 && (
-              <div className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col justify-end h-16">
-                  <div
-                    className="w-full bg-red-500 rounded-t-lg"
-                    style={{
-                      height: `${(stats.byPriority.urgent / Math.max(stats.byPriority.urgent, stats.byPriority.normal, stats.byPriority.optional, 1)) * 100}%`
-                    }}
-                  />
+          <div className="text-sm font-bold text-purple-700 mb-2 text-center">לפי עדיפות</div>
+          {(() => {
+            const items = [
+              { label: 'דחוף', value: stats.byPriority.urgent, color: '#EF4444' },
+              { label: 'רגיל', value: stats.byPriority.normal, color: '#3B82F6' },
+              { label: 'נמוכה', value: stats.byPriority.optional, color: '#22C55E' },
+            ].filter(i => i.value > 0);
+            const total = items.reduce((s, i) => s + i.value, 0);
+            const R = 40, C = 2 * Math.PI * R;
+            let offset = 0;
+            return (
+              <div className="flex items-center justify-center gap-3">
+                <div className="relative w-[100px] h-[100px]">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {total === 0 ? (
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                    ) : items.map((item, i) => {
+                      const dash = (item.value / total) * C;
+                      const el = <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={item.color} strokeWidth="12" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-offset} strokeLinecap="round" className="transition-all duration-700" />;
+                      offset += dash;
+                      return el;
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-purple-700">{total}</span>
+                  </div>
                 </div>
-                <div className="text-sm font-bold text-purple-700">{stats.byPriority.urgent}</div>
-                <div className="text-xs text-purple-600">דחוף</div>
-              </div>
-            )}
-
-            {/* Normal */}
-            {stats.byPriority.normal > 0 && (
-              <div className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col justify-end h-16">
-                  <div
-                    className="w-full bg-blue-500 rounded-t-lg"
-                    style={{
-                      height: `${(stats.byPriority.normal / Math.max(stats.byPriority.urgent, stats.byPriority.normal, stats.byPriority.optional, 1)) * 100}%`
-                    }}
-                  />
-                </div>
-                <div className="text-sm font-bold text-purple-700">{stats.byPriority.normal}</div>
-                <div className="text-xs text-purple-600">רגיל</div>
-              </div>
-            )}
-
-            {/* Optional */}
-            {stats.byPriority.optional > 0 && (
-              <div className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col justify-end h-16">
-                  <div
-                    className="w-full bg-green-500 rounded-t-lg"
-                    style={{
-                      height: `${(stats.byPriority.optional / Math.max(stats.byPriority.urgent, stats.byPriority.normal, stats.byPriority.optional, 1)) * 100}%`
-                    }}
-                  />
-                </div>
-                <div className="text-sm font-bold text-purple-700">{stats.byPriority.optional}</div>
-                <div className="text-xs text-purple-600">נמוכה</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 3. Tasks by system */}
-        <div className="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4 overflow-hidden">
-          <div className="text-lg font-bold text-orange-700 mb-3 text-center">לפי מערכת</div>
-          <div className="flex items-end justify-between gap-1 h-24 overflow-x-auto">
-            {(() => {
-              // Calculate maxCount once for all bars
-              const maxCount = Math.max(
-                ...systems.map(s => stats.bySystem[s.id] || 0),
-                stats.recurringTasks,
-                stats.oneTimeTasks,
-                1
-              );
-
-              return (
-                <>
-                  {systems.map((system) => {
-                    const count = stats.bySystem[system.id] || 0;
-                    if (count === 0) return null;
-
-                    return (
-                      <div key={system.id} className="flex-1 flex flex-col items-center gap-1 min-w-[40px] sm:min-w-[60px]">
-                        <div className="w-full flex flex-col justify-end h-16">
-                          <div
-                            className="w-full bg-orange-500 rounded-t-lg"
-                            style={{
-                              height: `${(count / maxCount) * 100}%`
-                            }}
-                          />
-                        </div>
-                        <div className="text-xs sm:text-sm font-bold text-orange-700">{count}</div>
-                        <div className="text-[10px] sm:text-xs text-orange-600 text-center truncate w-full" title={system.name}>
-                          {system.name}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {stats.oneTimeTasks > 0 && (
-                    <div className="flex-1 flex flex-col items-center gap-1 min-w-[40px] sm:min-w-[60px]">
-                      <div className="w-full flex flex-col justify-end h-16">
-                        <div
-                          className="w-full bg-blue-400 rounded-t-lg"
-                          style={{
-                            height: `${(stats.oneTimeTasks / maxCount) * 100}%`
-                          }}
-                        />
-                      </div>
-                      <div className="text-xs sm:text-sm font-bold text-blue-700">{stats.oneTimeTasks}</div>
-                      <div className="text-[10px] sm:text-xs text-blue-600 text-center">חד פעמיות</div>
+                <div className="flex flex-col gap-1.5">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600">{item.label}</span>
+                      <span className="font-bold text-gray-800">{item.value}</span>
                     </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
-        {/* 4. Tasks by status */}
+        {/* 3. Tasks by system - Donut Chart */}
+        <div className="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4">
+          <div className="text-sm font-bold text-orange-700 mb-2 text-center">לפי מערכת</div>
+          {(() => {
+            const systemColors = ['#F97316', '#FB923C', '#FDBA74', '#C2410C', '#EA580C', '#FED7AA'];
+            const items = [
+              ...systems.map((s, i) => ({ label: s.name, value: stats.bySystem[s.id] || 0, color: systemColors[i % systemColors.length] })),
+            ].filter(i => i.value > 0);
+            const total = items.reduce((s, i) => s + i.value, 0);
+            const R = 40, C = 2 * Math.PI * R;
+            let offset = 0;
+            return (
+              <div className="flex items-center justify-center gap-3">
+                <div className="relative w-[100px] h-[100px]">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {total === 0 ? (
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                    ) : items.map((item, i) => {
+                      const dash = (item.value / total) * C;
+                      const el = <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={item.color} strokeWidth="12" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-offset} strokeLinecap="round" className="transition-all duration-700" />;
+                      offset += dash;
+                      return el;
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-orange-700">{total}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600 truncate max-w-[60px]" title={item.label}>{item.label}</span>
+                      <span className="font-bold text-gray-800">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* 4. Tasks by status - Donut Chart */}
         <div className="bg-green-50 border-r-4 border-green-500 rounded-lg p-4">
-          <div className="text-lg font-bold text-green-700 mb-3 text-center">לפי סטטוס</div>
-          <div className="flex items-end justify-between gap-2 h-24">
-            {/* New */}
-            {stats.byStatus.new > 0 && (
-              <div className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col justify-end h-16">
-                  <div
-                    className="w-full bg-gray-500 rounded-t-lg"
-                    style={{
-                      height: `${(stats.byStatus.new / Math.max(stats.byStatus.new, stats.byStatus.sent, stats.byStatus.inProgress, stats.byStatus.completed, 1)) * 100}%`
-                    }}
-                  />
+          <div className="text-sm font-bold text-green-700 mb-2 text-center">לפי סטטוס</div>
+          {(() => {
+            const items = [
+              { label: 'חדש', value: stats.byStatus.new, color: '#6B7280' },
+              { label: 'נשלח', value: stats.byStatus.sent, color: '#3B82F6' },
+              { label: 'בביצוע', value: stats.byStatus.inProgress, color: '#EAB308' },
+              { label: 'הושלם', value: stats.byStatus.completed, color: '#22C55E' },
+            ].filter(i => i.value > 0);
+            const total = items.reduce((s, i) => s + i.value, 0);
+            const R = 40, C = 2 * Math.PI * R;
+            let offset = 0;
+            return (
+              <div className="flex items-center justify-center gap-3">
+                <div className="relative w-[100px] h-[100px]">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {total === 0 ? (
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                    ) : items.map((item, i) => {
+                      const dash = (item.value / total) * C;
+                      const el = <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={item.color} strokeWidth="12" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-offset} strokeLinecap="round" className="transition-all duration-700" />;
+                      offset += dash;
+                      return el;
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-green-700">{total}</span>
+                  </div>
                 </div>
-                <div className="text-sm font-bold text-green-700">{stats.byStatus.new}</div>
-                <div className="text-xs text-green-600">חדש</div>
+                <div className="flex flex-col gap-1.5">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600">{item.label}</span>
+                      <span className="font-bold text-gray-800">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+            );
+          })()}
+        </div>
 
-            {/* Sent */}
-            {stats.byStatus.sent > 0 && (
-              <div className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col justify-end h-16">
-                  <div
-                    className="w-full bg-blue-500 rounded-t-lg"
-                    style={{
-                      height: `${(stats.byStatus.sent / Math.max(stats.byStatus.new, stats.byStatus.sent, stats.byStatus.inProgress, stats.byStatus.completed, 1)) * 100}%`
-                    }}
-                  />
+        {/* 5. Recurring vs One-time - Donut Chart */}
+        <div className="bg-teal-50 border-r-4 border-teal-500 rounded-lg p-4">
+          <div className="text-sm font-bold text-teal-700 mb-2 text-center">סוג משימה</div>
+          {(() => {
+            const items = [
+              { label: 'קבועות', value: stats.recurringTasks, color: '#14B8A6' },
+              { label: 'חד פעמיות', value: stats.oneTimeTasks, color: '#60A5FA' },
+            ].filter(i => i.value > 0);
+            const total = items.reduce((s, i) => s + i.value, 0);
+            const R = 40, C = 2 * Math.PI * R;
+            let offset = 0;
+            return (
+              <div className="flex items-center justify-center gap-3">
+                <div className="relative w-[100px] h-[100px]">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {total === 0 ? (
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                    ) : items.map((item, i) => {
+                      const dash = (item.value / total) * C;
+                      const el = <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={item.color} strokeWidth="12" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-offset} strokeLinecap="round" className="transition-all duration-700" />;
+                      offset += dash;
+                      return el;
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-teal-700">{total}</span>
+                  </div>
                 </div>
-                <div className="text-sm font-bold text-green-700">{stats.byStatus.sent}</div>
-                <div className="text-xs text-green-600">נשלח</div>
-              </div>
-            )}
-
-            {/* In Progress */}
-            {stats.byStatus.inProgress > 0 && (
-              <div className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col justify-end h-16">
-                  <div
-                    className="w-full bg-yellow-500 rounded-t-lg"
-                    style={{
-                      height: `${(stats.byStatus.inProgress / Math.max(stats.byStatus.new, stats.byStatus.sent, stats.byStatus.inProgress, stats.byStatus.completed, 1)) * 100}%`
-                    }}
-                  />
+                <div className="flex flex-col gap-1.5">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600">{item.label}</span>
+                      <span className="font-bold text-gray-800">{item.value}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="text-sm font-bold text-green-700">{stats.byStatus.inProgress}</div>
-                <div className="text-xs text-green-600">בביצוע</div>
               </div>
-            )}
-
-            {/* Completed */}
-            {stats.byStatus.completed > 0 && (
-              <div className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col justify-end h-16">
-                  <div
-                    className="w-full bg-green-500 rounded-t-lg"
-                    style={{
-                      height: `${(stats.byStatus.completed / Math.max(stats.byStatus.new, stats.byStatus.sent, stats.byStatus.inProgress, stats.byStatus.completed, 1)) * 100}%`
-                    }}
-                  />
-                </div>
-                <div className="text-sm font-bold text-green-700">{stats.byStatus.completed}</div>
-                <div className="text-xs text-green-600">הושלם</div>
-              </div>
-            )}
-          </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -792,6 +782,42 @@ export default function MyDayPage() {
         <p className="text-center text-2xl font-bold text-green-600 mt-2">
           {stats.completionRate}%
         </p>
+      </div>
+
+      {/* Data management buttons */}
+      <div className="flex gap-2 mb-3">
+        <button
+          onClick={async () => {
+            if (confirm('פעולה זו תמחק את כל הנתונים הקיימים ותטען נתוני דמה. להמשיך?')) {
+              try {
+                await seedData();
+                alert('נתוני דמה נטענו בהצלחה!');
+              } catch (error) {
+                alert('שגיאה: ' + error.message);
+              }
+            }
+          }}
+          className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center gap-1.5"
+        >
+          <FaDatabase size={12} />
+          טען נתוני דמה
+        </button>
+        <button
+          onClick={async () => {
+            if (confirm('אזהרה! פעולה זו תמחק את כל הנתונים. האם אתה בטוח?')) {
+              try {
+                await clearData();
+                alert('כל הנתונים נמחקו בהצלחה');
+              } catch (error) {
+                alert('שגיאה: ' + error.message);
+              }
+            }
+          }}
+          className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center gap-1.5"
+        >
+          <FaTrash size={12} />
+          נקה נתונים
+        </button>
       </div>
 
       {/* Column width reset button - Desktop only */}
@@ -912,7 +938,7 @@ export default function MyDayPage() {
           </div>
 
           {/* Unified task list - all tasks sorted by time */}
-          <div className="space-y-3">
+          <div className="space-y-0 bg-white rounded-lg shadow-sm">
             {[...recurringTasks, ...oneTimeTasks]
               .sort((a, b) => {
                 const timeA = a.start_time || '00:00';
@@ -1083,7 +1109,7 @@ export default function MyDayPage() {
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-0">
                   {recurringTasks.length === 0 ? (
                     <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
                   ) : (
@@ -1100,7 +1126,7 @@ export default function MyDayPage() {
               <div className="bg-white rounded-lg shadow-md p-4">
                 <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
 
-                <div className="space-y-3">
+                <div className="space-y-0">
                   {oneTimeTasks.length === 0 ? (
                     <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
                   ) : (
@@ -1116,11 +1142,9 @@ export default function MyDayPage() {
                     <h3 className="text-lg font-semibold text-red-600 mb-3">
                       משימות באיחור
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-0">
                       {lateTasks.map((task) => (
-                        <div key={task.id} className="border-2 border-red-300 rounded-lg">
-                          <TaskCard task={task} onEdit={handleEdit} />
-                        </div>
+                        <TaskCard key={task.id} task={task} onEdit={handleEdit} />
                       ))}
                     </div>
                   </>
@@ -1234,7 +1258,7 @@ export default function MyDayPage() {
                 )}
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-0">
                 {recurringTasks.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
                 ) : (
@@ -1249,7 +1273,7 @@ export default function MyDayPage() {
             <div className="bg-white rounded-lg shadow-md p-4">
               <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
 
-              <div className="space-y-3">
+              <div className="space-y-0">
                 {oneTimeTasks.length === 0 ? (
                   <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
                 ) : (
@@ -1265,11 +1289,9 @@ export default function MyDayPage() {
                   <h3 className="text-lg font-semibold text-red-600 mb-3">
                     משימות באיחור
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-0">
                     {lateTasks.map((task) => (
-                      <div key={task.id} className="border-2 border-red-300 rounded-lg">
-                        <TaskCard task={task} onEdit={handleEdit} />
-                      </div>
+                      <TaskCard key={task.id} task={task} onEdit={handleEdit} />
                     ))}
                   </div>
                 </>

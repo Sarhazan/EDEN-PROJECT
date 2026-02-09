@@ -11,6 +11,7 @@ import SystemForm from './components/forms/SystemForm';
 import SupplierForm from './components/forms/SupplierForm';
 import EmployeeForm from './components/forms/EmployeeForm';
 import LocationForm from './components/forms/LocationForm';
+import BuildingForm from './components/forms/BuildingForm';
 import LoginPage from './pages/LoginPage';
 import MyDayPage from './pages/MyDayPage';
 import AllTasksPage from './pages/AllTasksPage';
@@ -19,9 +20,10 @@ import SystemsPage from './pages/SystemsPage';
 import SuppliersPage from './pages/SuppliersPage';
 import EmployeesPage from './pages/EmployeesPage';
 import LocationsPage from './pages/LocationsPage';
+import BuildingsPage from './pages/BuildingsPage';
 import SettingsPage from './pages/SettingsPage';
 import TaskConfirmationPage from './pages/TaskConfirmationPage';
-import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaWrench } from 'react-icons/fa';
+import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -35,6 +37,7 @@ function MainContent() {
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isBuildingModalOpen, setIsBuildingModalOpen] = useState(false);
 
   // Mobile drawer state and breakpoint detection
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -50,6 +53,7 @@ function MainContent() {
     { path: '/suppliers', icon: FaTruck, label: 'ספקים' },
     { path: '/employees', icon: FaUsers, label: 'עובדים' },
     { path: '/locations', icon: FaMapMarkerAlt, label: 'מיקומים' },
+    { path: '/buildings', icon: FaBuilding, label: 'מבנים' },
     { path: '/settings', icon: FaWrench, label: 'הגדרות' }
   ];
 
@@ -79,6 +83,10 @@ function MainContent() {
     setIsLocationModalOpen(false);
   };
 
+  const handleCloseBuildingModal = () => {
+    setIsBuildingModalOpen(false);
+  };
+
   // Check if we're on the confirmation page (public route)
   const isPublicRoute = location.pathname.startsWith('/confirm/');
 
@@ -97,6 +105,7 @@ function MainContent() {
           onAddSupplier={() => setIsSupplierModalOpen(true)}
           onAddEmployee={() => setIsEmployeeModalOpen(true)}
           onAddLocation={() => setIsLocationModalOpen(true)}
+          onAddBuilding={() => setIsBuildingModalOpen(true)}
         />
       )}
 
@@ -126,6 +135,7 @@ function MainContent() {
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/locations" element={<LocationsPage />} />
+          <Route path="/buildings" element={<BuildingsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/confirm/:token" element={<TaskConfirmationPage />} />
         </Routes>
@@ -181,6 +191,15 @@ function MainContent() {
         title="מיקום חדש"
       >
         <LocationForm onClose={handleCloseLocationModal} />
+      </Modal>
+
+      {/* Building Modal */}
+      <Modal
+        isOpen={isBuildingModalOpen}
+        onClose={handleCloseBuildingModal}
+        title="מבנה חדש"
+      >
+        <BuildingForm building={null} onClose={handleCloseBuildingModal} />
       </Modal>
 
       {/* Toast Container */}

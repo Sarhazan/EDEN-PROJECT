@@ -302,6 +302,25 @@ function initializeDatabase() {
     }
   }
 
+  // Buildings table (maintenance buildings/structures)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS buildings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Add building_id column to tasks table (optional building linking)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN building_id INTEGER REFERENCES buildings(id)`);
+    console.log('Added building_id column to tasks table');
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
   // Settings table for external service configurations (API keys, etc.)
   db.exec(`
     CREATE TABLE IF NOT EXISTS settings (

@@ -150,6 +150,30 @@ html {
   }
 }
 
+/* Compact task card styles */
+.task-compact-row .task-hover-actions {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-in-out;
+}
+
+.task-compact-row:hover .task-hover-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Circular priority checkbox checkmark */
+.task-compact-row input[type="checkbox"]:checked::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 /* Pending approval tasks - strikethrough styling */
 .task-pending-approval {
   position: relative;
@@ -158,7 +182,7 @@ html {
 .task-pending-approval .task-title,
 .task-pending-approval .task-description {
   text-decoration: line-through;
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: 1.5px;
   text-decoration-color: #9CA3AF;
   opacity: 0.7;
 }

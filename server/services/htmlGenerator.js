@@ -98,7 +98,7 @@ class HtmlGeneratorService {
       console.log('Template loaded successfully');
 
       // Prepare API URL - use PUBLIC_API_URL for external access, fallback to API_URL
-      const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://192.168.1.35:3002';
+      const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://192.168.1.41:3002';
 
       // Translate all UI strings
       const translations = {
@@ -167,8 +167,10 @@ class HtmlGeneratorService {
 
       // Return React app URL instead of static HTML file
       // The React app at /confirm/{token} has full camera upload support
-      // apiUrl is already defined above (line 101)
-      const publicUrl = `${apiUrl}/confirm/${data.token}`;
+      // In dev: CLIENT_URL points to the Vite dev server (e.g. http://192.168.1.41:5180)
+      // In prod: CLIENT_URL is not set, so apiUrl is used (server serves both API and React app)
+      const clientUrl = process.env.CLIENT_URL || apiUrl;
+      const publicUrl = `${clientUrl}/confirm/${data.token}`;
       console.log('Generated URL (React app):', publicUrl);
       return publicUrl;
     } catch (error) {
@@ -255,7 +257,7 @@ class HtmlGeneratorService {
       console.log('Template loaded successfully');
 
       // Prepare API URL - use PUBLIC_API_URL for external access, fallback to API_URL
-      const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://192.168.1.35:3002';
+      const apiUrl = process.env.PUBLIC_API_URL || process.env.API_URL || 'http://192.168.1.41:3002';
 
       // Translate all UI strings
       const translations = {

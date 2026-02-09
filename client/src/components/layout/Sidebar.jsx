@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus } from 'react-icons/fa';
+import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
-export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation }) {
+export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation, onAddBuilding }) {
   const { connectionStatus, logout } = useApp();
   const location = useLocation();
   const [starFilter, setStarFilter] = useState(false);
@@ -26,6 +26,9 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
     }
     if (path === '/locations') {
       return { show: true, label: 'מיקום חדש', onClick: onAddLocation };
+    }
+    if (path === '/buildings') {
+      return { show: true, label: 'מבנה חדש', onClick: onAddBuilding };
     }
     return { show: false };
   };
@@ -55,6 +58,7 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
     { path: '/suppliers', icon: FaTruck, label: 'ספקים' },
     { path: '/employees', icon: FaUsers, label: 'עובדים' },
     { path: '/locations', icon: FaMapMarkerAlt, label: 'מיקומים' },
+    { path: '/buildings', icon: FaBuilding, label: 'מבנים' },
     { path: '/settings', icon: FaWrench, label: 'הגדרות' }
   ];
 
@@ -151,9 +155,11 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
           <span className={`text-xs px-2 py-1 rounded ${
             import.meta.env.VITE_ENV === 'test'
               ? 'bg-yellow-500/20 text-yellow-400'
+              : import.meta.env.VITE_ENV === 'local'
+              ? 'bg-blue-500/20 text-blue-400'
               : 'bg-green-500/20 text-green-400'
           }`}>
-            {import.meta.env.VITE_ENV === 'test' ? 'EDEN DEV' : 'PRODUCTION'}
+            {import.meta.env.VITE_ENV === 'test' ? 'EDEN DEV' : import.meta.env.VITE_ENV === 'local' ? 'LOCAL DEV' : 'PRODUCTION'}
           </span>
         </div>
       </div>

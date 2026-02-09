@@ -21,7 +21,7 @@ const priorityOptions = [
 ];
 
 export default function TaskForm({ task, onClose }) {
-  const { addTask, updateTask, systems, employees, locations } = useApp();
+  const { addTask, updateTask, systems, employees, locations, buildings } = useApp();
   const isEditing = !!task;
 
   const [formData, setFormData] = useState({
@@ -30,6 +30,7 @@ export default function TaskForm({ task, onClose }) {
     system_id: '',
     employee_id: '',
     location_id: '',
+    building_id: '',
     frequency: 'one-time',
     start_date: '',
     start_time: '',
@@ -61,6 +62,7 @@ export default function TaskForm({ task, onClose }) {
         system_id: task.system_id || '',
         employee_id: task.employee_id || '',
         location_id: task.location_id || '',
+        building_id: task.building_id || '',
         frequency: task.frequency || 'one-time',
         start_date: convertISOToDisplay(task.start_date) || '',
         start_time: task.start_time || '',
@@ -233,16 +235,144 @@ export default function TaskForm({ task, onClose }) {
 
       <div>
         <label className="block text-sm font-medium mb-1">תיאור</label>
-        <textarea
+        <input
+          type="text"
           name="description"
           value={formData.description}
           onChange={handleChange}
-          rows="3"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[88px]"
+          placeholder="תיאור המשימה (אופציונלי)"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Frequency + Time */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">תדירות</label>
+          <select
+            name="frequency"
+            value={formData.frequency}
+            onChange={handleFrequencyChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+          >
+            {frequencyOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            שעת התחלה <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="start_time"
+            value={formData.start_time}
+            onChange={handleChange}
+            placeholder="HH:MM (לדוגמא: 14:30)"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+            required
+          />
+        </div>
+      </div>
+
+      {/* Weekly Days Selection - Only for Daily frequency */}
+      {formData.frequency === 'daily' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <label className="block text-xs font-medium mb-2">בחר ימים בשבוע:</label>
+          <div className="flex gap-1.5 justify-center">
+            {[
+              { value: 0, label: 'א' },
+              { value: 1, label: 'ב' },
+              { value: 2, label: 'ג' },
+              { value: 3, label: 'ד' },
+              { value: 4, label: 'ה' },
+              { value: 5, label: 'ו' },
+              { value: 6, label: 'ש' }
+            ].map((day) => (
+              <button
+                key={day.value}
+                type="button"
+                onClick={() => handleDayToggle(day.value)}
+                className={`w-9 h-9 rounded-full text-sm font-medium transition-all ${
+                  formData.weekly_days.includes(day.value)
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-white text-gray-600 border border-gray-300 hover:border-blue-400'
+                }`}
+              >
+                {day.label}
+              </button>
+            ))}
+          </div>
+          {formData.weekly_days.length === 0 && (
+            <p className="text-xs text-blue-600 mt-2 text-center">
+              * אם לא תבחר ימים, המשימה תופיע בכל יום
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Date (non-daily) + Duration */}
+      {formData.frequency !== 'daily' ? (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              תאריך התחלה <span className="text-red-500">*</span>
+            </label>
+            <DatePicker
+              selected={selectedDate}
+              onChange={handleDateChange}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="בחר תאריך"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+              minDate={new Date()}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              משך (דקות) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="estimated_duration_minutes"
+              value={formData.estimated_duration_minutes}
+              onChange={handleChange}
+              min="5"
+              step="5"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            משך (דקות) <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            name="estimated_duration_minutes"
+            value={formData.estimated_duration_minutes}
+            onChange={handleChange}
+            min="5"
+            step="5"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+            required
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
+          </p>
+        </div>
+      )}
+
+      {/* System + Employee */}
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium mb-1">מערכת</label>
           <select
@@ -259,7 +389,6 @@ export default function TaskForm({ task, onClose }) {
             ))}
           </select>
         </div>
-
         <div>
           <label className="block text-sm font-medium mb-1">עובד אחראי</label>
           <select
@@ -276,9 +405,12 @@ export default function TaskForm({ task, onClose }) {
             ))}
           </select>
         </div>
+      </div>
 
+      {/* Location + Building */}
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium mb-1">מיקום (אופציונלי)</label>
+          <label className="block text-sm font-medium mb-1">מיקום</label>
           <select
             name="location_id"
             value={formData.location_id}
@@ -293,107 +425,25 @@ export default function TaskForm({ task, onClose }) {
             ))}
           </select>
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">תדירות</label>
-        <select
-          name="frequency"
-          value={formData.frequency}
-          onChange={handleFrequencyChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-        >
-          {frequencyOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Weekly Days Selection - Only for Daily frequency */}
-      {formData.frequency === 'daily' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <label className="block text-sm font-medium mb-3">בחר ימים בשבוע:</label>
-          <div className="space-y-2">
-            {[
-              { value: 0, label: 'יום ראשון' },
-              { value: 1, label: 'יום שני' },
-              { value: 2, label: 'יום שלישי' },
-              { value: 3, label: 'יום רביעי' },
-              { value: 4, label: 'יום חמישי' },
-              { value: 5, label: 'יום שישי' },
-              { value: 6, label: 'יום שבת' }
-            ].map((day) => (
-              <label key={day.value} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.weekly_days.includes(day.value)}
-                  onChange={() => handleDayToggle(day.value)}
-                  className="w-4 h-4 cursor-pointer"
-                />
-                <span>{day.label}</span>
-              </label>
-            ))}
-          </div>
-          {formData.weekly_days.length === 0 && (
-            <p className="text-xs text-blue-600 mt-2">
-              * אם לא תבחר ימים, המשימה תופיע בכל יום
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Date and Time - Hide date for daily tasks */}
-      {formData.frequency === 'daily' ? (
         <div>
-          <label className="block text-sm font-medium mb-1">
-            שעת ביצוע <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="start_time"
-            value={formData.start_time}
+          <label className="block text-sm font-medium mb-1">מבנה</label>
+          <select
+            name="building_id"
+            value={formData.building_id}
             onChange={handleChange}
-            placeholder="HH:MM (לדוגמא: 14:30)"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-            required
-          />
+          >
+            <option value="">ללא מבנה</option>
+            {buildings && buildings.map((building) => (
+              <option key={building.id} value={building.id}>
+                {building.name}
+              </option>
+            ))}
+          </select>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              תאריך התחלה <span className="text-red-500">*</span>
-            </label>
-            <DatePicker
-              selected={selectedDate}
-              onChange={handleDateChange}
-              dateFormat="dd/MM/yyyy"
-              placeholderText="בחר תאריך"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-              minDate={new Date()}
-              required
-            />
-          </div>
+      </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              שעת התחלה <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="start_time"
-              value={formData.start_time}
-              onChange={handleChange}
-              placeholder="HH:MM (לדוגמא: 14:30)"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
-              required
-            />
-          </div>
-        </div>
-      )}
-
+      {/* Priority */}
       <div>
         <label className="block text-sm font-medium mb-1">עדיפות</label>
         <select
@@ -408,25 +458,6 @@ export default function TaskForm({ task, onClose }) {
             </option>
           ))}
         </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          משך המשימה (דקות) <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="number"
-          name="estimated_duration_minutes"
-          value={formData.estimated_duration_minutes}
-          onChange={handleChange}
-          min="5"
-          step="5"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-          required
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
-        </p>
       </div>
 
       <div className="flex gap-3 pt-4">

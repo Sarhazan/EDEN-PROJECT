@@ -39,7 +39,16 @@ function enrichTaskWithTiming(task) {
   }
 
   const now = new Date();
-  const estimatedEnd = calculateEstimatedEnd(task);
+  // One-time tasks: estimated end is same date at workday_end_time setting (default 18:00)
+  const isOneTime = task.is_recurring !== 1 || task.frequency === 'one-time';
+  let estimatedEnd;
+  if (isOneTime) {
+    const endTimeSetting = db.prepare(`SELECT value FROM settings WHERE key = 'workday_end_time'`).get();
+    const workdayEnd = endTimeSetting?.value || '18:00';
+    estimatedEnd = new Date(`${task.start_date}T${workdayEnd}:00`);
+  } else {
+    estimatedEnd = calculateEstimatedEnd(task);
+  }
   const minutesRemaining = differenceInMinutes(estimatedEnd, now);
 
   const isLate = minutesRemaining < 0;
@@ -120,11 +129,12 @@ function calculateTimeDelta(task) {
 router.get('/', (req, res) => {
   try {
     const tasks = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       ORDER BY t.start_date DESC, t.start_time DESC
     `).all();
 
@@ -159,11 +169,12 @@ router.get('/today', (req, res) => {
     const today = format(new Date(), 'yyyy-MM-dd');
 
     const tasks = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       WHERE (t.start_date = ? OR t.status = 'pending_approval') AND t.status != 'completed'
       ORDER BY t.priority DESC, t.start_time ASC
     `).all(today);
@@ -289,11 +300,12 @@ router.post('/:id/approve', (req, res) => {
 
     // Get updated task with JOINs
     const updatedTask = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       WHERE t.id = ?
     `).get(id);
 
@@ -321,11 +333,12 @@ router.get('/overdue', (req, res) => {
     const today = format(new Date(), 'yyyy-MM-dd');
 
     const tasks = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       WHERE t.start_date < ? AND t.status != 'completed' AND t.is_recurring = 0
       ORDER BY t.start_date ASC, t.start_time ASC
     `).all(today);
@@ -340,11 +353,12 @@ router.get('/overdue', (req, res) => {
 router.get('/:id', (req, res) => {
   try {
     const task = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       WHERE t.id = ?
     `).get(req.params.id);
 
@@ -381,7 +395,7 @@ router.get('/:id/attachments', (req, res) => {
 // Create task
 router.post('/', (req, res) => {
   try {
-    const { title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id } = req.body;
+    const { title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id } = req.body;
 
     if (!title || !start_date || !start_time) {
       return res.status(400).json({ error: 'שדות חובה חסרים' });
@@ -404,9 +418,9 @@ router.post('/', (req, res) => {
             const dateStr = format(checkDate, 'yyyy-MM-dd');
 
             const result = db.prepare(`
-              INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null);
+              INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
             createdTaskIds.push(result.lastInsertRowid);
           }
@@ -418,9 +432,9 @@ router.post('/', (req, res) => {
           const dateStr = format(checkDate, 'yyyy-MM-dd');
 
           const result = db.prepare(`
-            INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null);
+            INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
           createdTaskIds.push(result.lastInsertRowid);
         }
@@ -477,9 +491,9 @@ router.post('/', (req, res) => {
           const dateStr = format(instanceDate, 'yyyy-MM-dd');
 
           const result = db.prepare(`
-            INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null);
+            INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
           createdTaskIds.push(result.lastInsertRowid);
         }
@@ -488,10 +502,12 @@ router.post('/', (req, res) => {
       // Return the first created task
       if (createdTaskIds.length > 0) {
         const firstTask = db.prepare(`
-          SELECT t.*, s.name as system_name, e.name as employee_name
+          SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
           FROM tasks t
           LEFT JOIN systems s ON t.system_id = s.id
           LEFT JOIN employees e ON t.employee_id = e.id
+          LEFT JOIN locations l ON t.location_id = l.id
+          LEFT JOIN buildings b ON t.building_id = b.id
           WHERE t.id = ?
         `).get(createdTaskIds[0]);
 
@@ -510,16 +526,17 @@ router.post('/', (req, res) => {
 
     // For non-recurring tasks, create single instance
     const result = db.prepare(`
-      INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(title, description, system_id || null, employee_id || null, frequency || 'one-time', start_date, start_time, priority || 'normal', status || 'draft', 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null);
+      INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(title, description, system_id || null, employee_id || null, frequency || 'one-time', start_date, start_time, priority || 'normal', status || 'draft', 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
     const newTask = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       WHERE t.id = ?
     `).get(result.lastInsertRowid);
 
@@ -539,7 +556,7 @@ router.post('/', (req, res) => {
 // Update task
 router.put('/:id', (req, res) => {
   try {
-    const { title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id } = req.body;
+    const { title, description, system_id, employee_id, frequency, start_date, start_time, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id } = req.body;
 
     const weeklyDaysJson = weekly_days && weekly_days.length > 0 ? JSON.stringify(weekly_days) : null;
 
@@ -552,15 +569,15 @@ router.put('/:id', (req, res) => {
       const timestamp = getCurrentTimestampIsrael();
       result = db.prepare(`
         UPDATE tasks
-        SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, sent_at = ?, updated_at = ?
+        SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, building_id = ?, sent_at = ?, updated_at = ?
         WHERE id = ?
-      `).run(title, description, system_id || null, employee_id || null, frequency, start_date, start_time, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, timestamp, timestamp, req.params.id);
+      `).run(title, description, system_id || null, employee_id || null, frequency, start_date, start_time, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null, timestamp, timestamp, req.params.id);
     } else {
       result = db.prepare(`
         UPDATE tasks
-        SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, updated_at = CURRENT_TIMESTAMP
+        SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, building_id = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(title, description, system_id || null, employee_id || null, frequency, start_date, start_time, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, req.params.id);
+      `).run(title, description, system_id || null, employee_id || null, frequency, start_date, start_time, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null, req.params.id);
     }
 
     if (result.changes === 0) {
@@ -568,11 +585,12 @@ router.put('/:id', (req, res) => {
     }
 
     const updatedTask = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       WHERE t.id = ?
     `).get(req.params.id);
 
@@ -698,11 +716,12 @@ router.put('/:id/status', (req, res) => {
     }
 
     const updatedTask = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       WHERE t.id = ?
     `).get(req.params.id);
 
@@ -726,11 +745,12 @@ router.delete('/:id', (req, res) => {
 
     // Get task before deleting (for broadcasting)
     const task = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       WHERE t.id = ?
     `).get(taskId);
 
@@ -774,11 +794,12 @@ router.put('/:id/star', (req, res) => {
 
     // Get updated task with JOINs
     const updatedTask = db.prepare(`
-      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name
+      SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
+      LEFT JOIN buildings b ON t.building_id = b.id
       WHERE t.id = ?
     `).get(taskId);
 

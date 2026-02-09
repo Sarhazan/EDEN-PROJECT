@@ -92,9 +92,11 @@ export default function MobileDrawer({ isOpen, onClose, navItems }) {
             <span className={`text-xs px-2 py-1 rounded ${
               import.meta.env.VITE_ENV === 'test'
                 ? 'bg-yellow-500/20 text-yellow-400'
+                : import.meta.env.VITE_ENV === 'local'
+                ? 'bg-blue-500/20 text-blue-400'
                 : 'bg-green-500/20 text-green-400'
             }`}>
-              {import.meta.env.VITE_ENV === 'test' ? 'EDEN DEV' : 'PRODUCTION'}
+              {import.meta.env.VITE_ENV === 'test' ? 'EDEN DEV' : import.meta.env.VITE_ENV === 'local' ? 'LOCAL DEV' : 'PRODUCTION'}
             </span>
           </div>
         </nav>

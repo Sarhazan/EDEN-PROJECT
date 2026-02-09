@@ -18,6 +18,7 @@ export function AppProvider({ children }) {
   const [employees, setEmployees] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [buildings, setBuildings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -114,7 +115,8 @@ export function AppProvider({ children }) {
         fetchSystems(),
         fetchEmployees(),
         fetchSuppliers(),
-        fetchLocations()
+        fetchLocations(),
+        fetchBuildings()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -348,6 +350,41 @@ export function AppProvider({ children }) {
     await fetchLocations();
   };
 
+  // Buildings
+  const fetchBuildings = async () => {
+    const response = await fetch(`${API_URL}/buildings`);
+    const data = await response.json();
+    setBuildings(data);
+  };
+
+  const addBuilding = async (building) => {
+    const response = await fetch(`${API_URL}/buildings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(building)
+    });
+    if (!response.ok) throw new Error('שגיאה ביצירת מבנה');
+    await fetchBuildings();
+  };
+
+  const updateBuilding = async (id, building) => {
+    const response = await fetch(`${API_URL}/buildings/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(building)
+    });
+    if (!response.ok) throw new Error('שגיאה בעדכון מבנה');
+    await fetchBuildings();
+  };
+
+  const deleteBuilding = async (id) => {
+    const response = await fetch(`${API_URL}/buildings/${id}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error('שגיאה במחיקת מבנה');
+    await fetchBuildings();
+  };
+
   // Data management
   const seedData = async () => {
     const response = await fetch(`${API_URL}/data/seed`, {
@@ -394,6 +431,7 @@ export function AppProvider({ children }) {
     employees,
     suppliers,
     locations,
+    buildings,
     loading,
     // Task modal state
     isTaskModalOpen,
@@ -423,6 +461,10 @@ export function AppProvider({ children }) {
     addLocation,
     updateLocation,
     deleteLocation,
+    // Building methods
+    addBuilding,
+    updateBuilding,
+    deleteBuilding,
     // Data management
     seedData,
     clearData,

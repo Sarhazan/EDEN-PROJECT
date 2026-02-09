@@ -73,6 +73,7 @@ app.use('/api/systems', require('./routes/systems'));
 app.use('/api/suppliers', require('./routes/suppliers'));
 app.use('/api/employees', require('./routes/employees'));
 app.use('/api/locations', require('./routes/locations'));
+app.use('/api/buildings', require('./routes/buildings'));
 app.use('/api/data', require('./routes/data'));
 app.use('/api/whatsapp', require('./routes/whatsapp'));
 const taskConfirmationRouter = require('./routes/taskConfirmation');
@@ -193,7 +194,7 @@ app.use((err, req, res, next) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`Local: http://localhost:${PORT}`);
-  console.log(`Network: http://192.168.1.35:${PORT}`);
+  console.log(`Network: http://192.168.1.41:${PORT}`);
   console.log(`WhatsApp: Integrated directly - no separate gateway needed`);
 });
 

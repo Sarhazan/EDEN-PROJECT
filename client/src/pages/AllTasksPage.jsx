@@ -142,9 +142,9 @@ export default function AllTasksPage() {
       </div>
 
       {/* Tasks List */}
-      <div className="space-y-3">
+      <div className="space-y-0 bg-white rounded-lg shadow-sm overflow-hidden">
         {filteredTasks.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500">
             לא נמצאו משימות
           </div>
         ) : (

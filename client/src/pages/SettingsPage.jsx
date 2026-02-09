@@ -36,6 +36,11 @@ export default function SettingsPage() {
   const [tasksPerPageSaving, setTasksPerPageSaving] = useState(false);
   const [tasksPerPageSaved, setTasksPerPageSaved] = useState(false);
 
+  // Workday end time setting
+  const [workdayEndTime, setWorkdayEndTime] = useState('18:00');
+  const [workdayEndTimeSaving, setWorkdayEndTimeSaving] = useState(false);
+  const [workdayEndTimeSaved, setWorkdayEndTimeSaved] = useState(false);
+
   // Set up Socket.IO connection for real-time WhatsApp updates
   useEffect(() => {
     const newSocket = io(SOCKET_URL);
@@ -193,6 +198,39 @@ export default function SettingsPage() {
     };
     fetchTasksPerPage();
   }, []);
+
+  // Fetch workday end time setting on mount
+  useEffect(() => {
+    const fetchWorkdayEndTime = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/accounts/settings/workday_end_time`);
+        if (response.data.value) {
+          setWorkdayEndTime(response.data.value);
+        }
+      } catch (err) {
+        console.error('Error fetching workday end time:', err);
+      }
+    };
+    fetchWorkdayEndTime();
+  }, []);
+
+  const handleWorkdayEndTimeChange = async (newValue) => {
+    setWorkdayEndTime(newValue);
+    setWorkdayEndTimeSaving(true);
+    setWorkdayEndTimeSaved(false);
+
+    try {
+      await axios.put(`${API_URL}/accounts/settings/workday_end_time`, {
+        value: newValue
+      });
+      setWorkdayEndTimeSaved(true);
+      setTimeout(() => setWorkdayEndTimeSaved(false), 2000);
+    } catch (err) {
+      console.error('Error saving workday end time:', err);
+    } finally {
+      setWorkdayEndTimeSaving(false);
+    }
+  };
 
   const handleTasksPerPageChange = async (newValue) => {
     const value = parseInt(newValue, 10);
@@ -600,6 +638,45 @@ export default function SettingsPage() {
             <li>כאשר משימה הושלמה, המשימה הבאה בתור מופיעה</li>
             <li>מערכת תור דינמית - תמיד יש עד {tasksPerPage} משימות פעילות</li>
           </ul>
+        </div>
+      </div>
+
+      {/* Workday End Time Section */}
+      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <FaCog className="text-gray-500 text-3xl" />
+          <h2 className="text-2xl font-semibold">הגדרות יום עבודה</h2>
+        </div>
+
+        <p className="text-gray-600 mb-4">
+          שעת סיום יום העבודה. משימות חד-פעמיות שנוצרות ליום מסוים ייחשבו באיחור רק אחרי שעה זו.
+        </p>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            שעת סיום יום
+          </label>
+          <div className="flex items-center gap-4">
+            <input
+              type="time"
+              value={workdayEndTime}
+              onChange={(e) => handleWorkdayEndTimeChange(e.target.value)}
+              className="w-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg"
+            />
+            {workdayEndTimeSaving && (
+              <span className="text-blue-500 flex items-center gap-1">
+                <FaSpinner className="animate-spin" /> שומר...
+              </span>
+            )}
+            {workdayEndTimeSaved && (
+              <span className="text-green-500 flex items-center gap-1">
+                <FaCheck /> נשמר!
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            ברירת מחדל: 18:00
+          </p>
         </div>
       </div>
 

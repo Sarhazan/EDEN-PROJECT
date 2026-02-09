@@ -21,19 +21,24 @@ const priorityOptions = [
 ];
 
 export default function QuickTaskModal({ isOpen, onClose }) {
-  const { addTask, systems, employees } = useApp();
+  const { addTask, systems, employees, buildings } = useApp();
   const [taskMode, setTaskMode] = useState('one-time');
   const [title, setTitle] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSaving, setIsSaving] = useState(false);
   const [titleError, setTitleError] = useState(false);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const [formData, setFormData] = useState({
+    description: '',
     frequency: 'daily',
     weekly_days: [],
+    start_date: todayStr,
     start_time: '',
     system_id: '',
     employee_id: '',
+    building_id: '',
     priority: 'normal',
     estimated_duration_minutes: 30
   });
@@ -166,21 +171,17 @@ export default function QuickTaskModal({ isOpen, onClose }) {
     setIsSaving(true);
 
     try {
-      // Format date as YYYY-MM-DD
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
-
       const taskData = {
         title: title.trim(),
-        start_date: formattedDate,
+        description: formData.description.trim() || null,
+        start_date: formData.start_date,
         start_time: formData.start_time,
         frequency: formData.frequency,
         is_recurring: formData.frequency !== 'one-time',
         weekly_days: formData.weekly_days,
         system_id: formData.system_id || null,
         employee_id: formData.employee_id || null,
+        building_id: formData.building_id || null,
         priority: formData.priority,
         estimated_duration_minutes: formData.estimated_duration_minutes,
         status: 'draft'
@@ -199,11 +200,14 @@ export default function QuickTaskModal({ isOpen, onClose }) {
       setSelectedDate(new Date());
       setTaskMode('one-time');
       setFormData({
+        description: '',
         frequency: 'daily',
         weekly_days: [],
+        start_date: new Date().toISOString().split('T')[0],
         start_time: '',
         system_id: '',
         employee_id: '',
+        building_id: '',
         priority: 'normal',
         estimated_duration_minutes: 30
       });
@@ -230,7 +234,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
       />
 
       {/* Modal */}
-      <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
+      <div className="relative bg-white w-full max-w-md max-h-[90vh] rounded-2xl shadow-2xl overflow-y-auto animate-scale-in">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900 font-alef">
@@ -304,73 +308,125 @@ export default function QuickTaskModal({ isOpen, onClose }) {
           >
             <div className="min-h-0">
               <div className="space-y-4 pt-2">
-                {/* Frequency */}
+                {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">תדירות</label>
-                  <select
-                    name="frequency"
-                    value={formData.frequency}
+                  <label className="block text-sm font-medium mb-1">תיאור</label>
+                  <input
+                    type="text"
+                    name="description"
+                    value={formData.description}
                     onChange={handleChange}
+                    placeholder="תיאור המשימה (אופציונלי)"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                  >
-                    {frequencyOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                </div>
+
+                {/* Frequency + Time */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">תדירות</label>
+                    <select
+                      name="frequency"
+                      value={formData.frequency}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    >
+                      {frequencyOptions.filter(o => o.value !== 'one-time').map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      שעת התחלה <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="start_time"
+                      value={formData.start_time}
+                      onChange={handleChange}
+                      placeholder="HH:MM (לדוגמא: 14:30)"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    />
+                  </div>
                 </div>
 
                 {/* Weekly Days Selection - Only for Daily frequency */}
                 {formData.frequency === 'daily' && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <label className="block text-sm font-medium mb-3">בחר ימים בשבוע:</label>
-                    <div className="space-y-2">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <label className="block text-xs font-medium mb-2">בחר ימים בשבוע:</label>
+                    <div className="flex gap-1.5 justify-center">
                       {[
-                        { value: 0, label: 'יום ראשון' },
-                        { value: 1, label: 'יום שני' },
-                        { value: 2, label: 'יום שלישי' },
-                        { value: 3, label: 'יום רביעי' },
-                        { value: 4, label: 'יום חמישי' },
-                        { value: 5, label: 'יום שישי' },
-                        { value: 6, label: 'יום שבת' }
+                        { value: 0, label: 'א' },
+                        { value: 1, label: 'ב' },
+                        { value: 2, label: 'ג' },
+                        { value: 3, label: 'ד' },
+                        { value: 4, label: 'ה' },
+                        { value: 5, label: 'ו' },
+                        { value: 6, label: 'ש' }
                       ].map((day) => (
-                        <label key={day.value} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={formData.weekly_days.includes(day.value)}
-                            onChange={() => handleDayToggle(day.value)}
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                          <span>{day.label}</span>
-                        </label>
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => handleDayToggle(day.value)}
+                          className={`w-9 h-9 rounded-full text-sm font-medium transition-all ${
+                            formData.weekly_days.includes(day.value)
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : 'bg-white text-gray-600 border border-gray-300 hover:border-blue-400'
+                          }`}
+                        >
+                          {day.label}
+                        </button>
                       ))}
                     </div>
                     {formData.weekly_days.length === 0 && (
-                      <p className="text-xs text-blue-600 mt-2">
+                      <p className="text-xs text-blue-600 mt-2 text-center">
                         * אם לא תבחר ימים, המשימה תופיע בכל יום
                       </p>
                     )}
                   </div>
                 )}
 
-                {/* Start time */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    שעת התחלה <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="start_time"
-                    value={formData.start_time}
-                    onChange={handleChange}
-                    placeholder="HH:MM (לדוגמא: 14:30)"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                  />
+                {/* Start date + Duration */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      החל מתאריך <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="start_date"
+                      value={formData.start_date}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      המופע הראשון של המשימה יופיע בתאריך זה
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      משך (דקות) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="estimated_duration_minutes"
+                      value={formData.estimated_duration_minutes}
+                      onChange={handleChange}
+                      min="5"
+                      step="5"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
+                    </p>
+                  </div>
                 </div>
 
                 {/* System and Employee */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium mb-1">מערכת</label>
                     <select
@@ -387,7 +443,6 @@ export default function QuickTaskModal({ isOpen, onClose }) {
                       ))}
                     </select>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium mb-1">עובד אחראי</label>
                     <select
@@ -406,40 +461,39 @@ export default function QuickTaskModal({ isOpen, onClose }) {
                   </div>
                 </div>
 
-                {/* Priority */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">עדיפות</label>
-                  <select
-                    name="priority"
-                    value={formData.priority}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                  >
-                    {priorityOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Duration */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    משך המשימה (דקות) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="estimated_duration_minutes"
-                    value={formData.estimated_duration_minutes}
-                    onChange={handleChange}
-                    min="5"
-                    step="5"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
-                  </p>
+                {/* Building + Priority */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">מבנה</label>
+                    <select
+                      name="building_id"
+                      value={formData.building_id}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    >
+                      <option value="">ללא מבנה</option>
+                      {buildings.map((building) => (
+                        <option key={building.id} value={building.id}>
+                          {building.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">עדיפות</label>
+                    <select
+                      name="priority"
+                      value={formData.priority}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    >
+                      {priorityOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>

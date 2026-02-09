@@ -50,8 +50,7 @@ class WhatsAppService {
         '--disable-dev-shm-usage',
         '--disable-gpu',
         '--disable-extensions',
-        '--disable-software-rasterizer',
-        '--single-process'
+        '--disable-software-rasterizer'
       ]
     };
 
