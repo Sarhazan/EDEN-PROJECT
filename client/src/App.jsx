@@ -23,7 +23,7 @@ import LocationsPage from './pages/LocationsPage';
 import BuildingsPage from './pages/BuildingsPage';
 import SettingsPage from './pages/SettingsPage';
 import TaskConfirmationPage from './pages/TaskConfirmationPage';
-import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench } from 'react-icons/fa';
+import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -124,6 +124,17 @@ function MainContent() {
           onClose={() => setDrawerOpen(false)}
           navItems={navItems}
         />
+      )}
+
+      {/* Mobile FAB - Add Task */}
+      {!isPublicRoute && isMobile && (
+        <button
+          onClick={() => setIsTaskModalOpen(true)}
+          className="fixed bottom-6 left-6 z-30 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/40 flex items-center justify-center active:scale-95 transition-transform duration-150 lg:hidden"
+          aria-label="משימה חדשה"
+        >
+          <FaPlus className="text-xl" />
+        </button>
       )}
 
       <main className={isPublicRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1 w-full overflow-x-hidden')}>
