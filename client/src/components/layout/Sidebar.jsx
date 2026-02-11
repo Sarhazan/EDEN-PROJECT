@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding } from 'react-icons/fa';
+import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding, FaEnvelope } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
 export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation, onAddBuilding }) {
-  const { connectionStatus, logout } = useApp();
+  const { connectionStatus, logout, tasks } = useApp();
   const location = useLocation();
   const [starFilter, setStarFilter] = useState(false);
 
@@ -49,6 +49,8 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
     // Dispatch custom event to notify same-tab components
     window.dispatchEvent(new CustomEvent('starFilterChanged', { detail: { value: newValue } }));
   };
+
+  const incomingTasksCount = (tasks || []).filter((task) => task.status === 'sent').length;
 
   const navItems = [
     { path: '/', icon: FaHome, label: 'היום שלי' },
@@ -104,6 +106,13 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
           >
             <item.icon className="text-xl" />
             <span className="text-base font-medium">{item.label}</span>
+
+            {item.path === '/tasks' && incomingTasksCount > 0 && (
+              <span className="mr-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+                <FaEnvelope className="text-[10px]" />
+                {incomingTasksCount}
+              </span>
+            )}
           </NavLink>
         ))}
 

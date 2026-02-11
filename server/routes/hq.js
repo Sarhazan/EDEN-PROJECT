@@ -64,9 +64,9 @@ router.post('/dispatch', (req, res) => {
     const insertTask = db.prepare(`
       INSERT INTO tasks (
         title, description, employee_id, start_date, start_time,
-        priority, status, is_recurring, estimated_duration_minutes
+        priority, status, sent_at, is_recurring, estimated_duration_minutes
       )
-      VALUES (?, ?, ?, ?, ?, ?, 'draft', 0, 30)
+      VALUES (?, ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP, 0, 30)
     `);
 
     const transaction = db.transaction(() => {
