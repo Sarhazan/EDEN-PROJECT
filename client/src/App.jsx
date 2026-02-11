@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import Sidebar from './components/layout/Sidebar';
+import HQSidebar from './components/layout/HQSidebar';
 import MobileDrawer from './components/layout/MobileDrawer';
 import HamburgerButton from './components/layout/HamburgerButton';
 import Modal from './components/shared/Modal';
@@ -25,6 +26,7 @@ import SettingsPage from './pages/SettingsPage';
 import TaskConfirmationPage from './pages/TaskConfirmationPage';
 import HQDashboardPage from './pages/HQDashboardPage';
 import HQLoginPage from './pages/HQLoginPage';
+import HQPlaceholderPage from './pages/HQPlaceholderPage';
 import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { ToastContainer } from 'react-toastify';
@@ -130,6 +132,8 @@ function MainContent() {
         />
       )}
 
+      {!isPublicRoute && isHQRoute && isDesktop && <HQSidebar />}
+
       {/* Mobile Hamburger Button */}
       {!isPublicRoute && !isHQRoute && isMobile && (
         <HamburgerButton
@@ -158,7 +162,7 @@ function MainContent() {
         </button>
       )}
 
-      <main className={isPublicRoute || isHQRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1 w-full overflow-x-hidden')}>
+      <main className={isPublicRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1 w-full overflow-x-hidden')}>
         <Routes>
           <Route path="/" element={<MyDayPage />} />
           <Route path="/tasks" element={<AllTasksPage />} />
@@ -173,6 +177,11 @@ function MainContent() {
 
           {/* HQ portal routes */}
           <Route path="/hq/dashboard" element={<HQDashboardPage />} />
+          <Route path="/hq/managers" element={<HQPlaceholderPage title="מנהלי אזור/מתחמים" />} />
+          <Route path="/hq/dispatch" element={<HQPlaceholderPage title="שיגור משימות" />} />
+          <Route path="/hq/lists" element={<HQPlaceholderPage title="רשימות תפוצה" />} />
+          <Route path="/hq/reports" element={<HQPlaceholderPage title="דוחות" />} />
+          <Route path="/hq/settings" element={<HQPlaceholderPage title="הגדרות HQ" />} />
           <Route path="/hq/login" element={<HQLoginPage onLogin={login} />} />
           <Route path="/hq/*" element={<Navigate to="/hq/dashboard" replace />} />
         </Routes>
