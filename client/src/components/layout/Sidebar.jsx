@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding, FaChartLine } from 'react-icons/fa';
+import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
 export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation, onAddBuilding }) {
@@ -51,7 +51,6 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
   };
 
   const navItems = [
-    { path: '/hq-dashboard', icon: FaChartLine, label: 'דשבורד HQ' },
     { path: '/', icon: FaHome, label: 'היום שלי' },
     { path: '/tasks', icon: FaTasks, label: 'משימות' },
     { path: '/history', icon: FaHistory, label: 'היסטוריה' },

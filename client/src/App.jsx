@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import Sidebar from './components/layout/Sidebar';
@@ -24,13 +24,14 @@ import BuildingsPage from './pages/BuildingsPage';
 import SettingsPage from './pages/SettingsPage';
 import TaskConfirmationPage from './pages/TaskConfirmationPage';
 import HQDashboardPage from './pages/HQDashboardPage';
-import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus, FaChartLine } from 'react-icons/fa';
+import HQLoginPage from './pages/HQLoginPage';
+import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function MainContent() {
-  const { isTaskModalOpen, setIsTaskModalOpen, editingTask, setEditingTask, isAuthenticated, login } = useApp();
+  const { isTaskModalOpen, setIsTaskModalOpen, editingTask, setEditingTask, isAuthenticated, authRole, login } = useApp();
   const location = useLocation();
 
   // State for entity modals
@@ -47,7 +48,6 @@ function MainContent() {
 
   // Navigation items for mobile drawer
   const navItems = [
-    { path: '/hq-dashboard', icon: FaChartLine, label: 'דשבורד HQ' },
     { path: '/', icon: FaHome, label: 'היום שלי' },
     { path: '/tasks', icon: FaTasks, label: 'משימות' },
     { path: '/history', icon: FaHistory, label: 'היסטוריה' },
@@ -89,17 +89,36 @@ function MainContent() {
     setIsBuildingModalOpen(false);
   };
 
-  // Check if we're on the confirmation page (public route)
+  // Route modes
   const isPublicRoute = location.pathname.startsWith('/confirm/');
+  const isHQRoute = location.pathname.startsWith('/hq');
 
-  // Show login page if not authenticated and not on public route
-  if (!isAuthenticated && !isPublicRoute) {
+  // HQ portal auth gate (separate login/session role)
+  if (isHQRoute) {
+    if (location.pathname === '/hq/login') {
+      return authRole === 'hq'
+        ? <Navigate to="/hq/dashboard" replace />
+        : <HQLoginPage onLogin={login} />;
+    }
+
+    if (!isAuthenticated || authRole !== 'hq') {
+      return <Navigate to="/hq/login" replace />;
+    }
+  }
+
+  // Main portal auth gate
+  if (!isHQRoute && !isAuthenticated && !isPublicRoute) {
     return <LoginPage onLogin={login} />;
+  }
+
+  // If HQ user lands on main portal, redirect to HQ
+  if (!isHQRoute && authRole === 'hq' && !isPublicRoute) {
+    return <Navigate to="/hq/dashboard" replace />;
   }
 
   return (
     <div className="flex min-h-screen bg-background">
-      {!isPublicRoute && isDesktop && (
+      {!isPublicRoute && !isHQRoute && isDesktop && (
         <Sidebar
           className="hidden lg:block"
           onAddTask={() => setIsTaskModalOpen(true)}
@@ -112,7 +131,7 @@ function MainContent() {
       )}
 
       {/* Mobile Hamburger Button */}
-      {!isPublicRoute && isMobile && (
+      {!isPublicRoute && !isHQRoute && isMobile && (
         <HamburgerButton
           onClick={() => setDrawerOpen(true)}
           className="fixed top-4 right-4 z-30 lg:hidden"
@@ -120,7 +139,7 @@ function MainContent() {
       )}
 
       {/* Mobile Drawer */}
-      {!isPublicRoute && (
+      {!isPublicRoute && !isHQRoute && (
         <MobileDrawer
           isOpen={drawerOpen && isMobile}
           onClose={() => setDrawerOpen(false)}
@@ -129,7 +148,7 @@ function MainContent() {
       )}
 
       {/* Mobile FAB - Add Task */}
-      {!isPublicRoute && isMobile && (
+      {!isPublicRoute && !isHQRoute && isMobile && (
         <button
           onClick={() => setIsTaskModalOpen(true)}
           className="fixed bottom-6 left-6 z-30 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/40 flex items-center justify-center active:scale-95 transition-transform duration-150 lg:hidden"
@@ -139,12 +158,11 @@ function MainContent() {
         </button>
       )}
 
-      <main className={isPublicRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1 w-full overflow-x-hidden')}>
+      <main className={isPublicRoute || isHQRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1 w-full overflow-x-hidden')}>
         <Routes>
           <Route path="/" element={<MyDayPage />} />
           <Route path="/tasks" element={<AllTasksPage />} />
           <Route path="/history" element={<HistoryPage />} />
-          <Route path="/hq-dashboard" element={<HQDashboardPage />} />
           <Route path="/systems" element={<SystemsPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
@@ -152,6 +170,11 @@ function MainContent() {
           <Route path="/buildings" element={<BuildingsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/confirm/:token" element={<TaskConfirmationPage />} />
+
+          {/* HQ portal routes */}
+          <Route path="/hq/dashboard" element={<HQDashboardPage />} />
+          <Route path="/hq/login" element={<HQLoginPage onLogin={login} />} />
+          <Route path="/hq/*" element={<Navigate to="/hq/dashboard" replace />} />
         </Routes>
       </main>
 
