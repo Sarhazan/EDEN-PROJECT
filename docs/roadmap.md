@@ -30,15 +30,17 @@ _Last updated: 2026-02-12_
 - Depends on: Feature #1 baseline dashboard
 - Gate A required before final rollout.
 
-### Feature #3 — (TBD)
-- Status: **Planned**
-- Depends on: Feature #2 scope confirmation
+### Feature #3 — Multi-site parallel environment (deferred)
+- Status: **Planned (Deferred)**
+- Goal: run additional site-manager instance on separate frontend/backend ports with isolated demo data.
+- Note: explicitly postponed; current focus stays on HQ manager interface.
+- Depends on: HQ interface milestones
 
 ---
 
 ## Immediate Next Actions (Execution)
 1. Validate Feature #1 on seeded/demo data (KPI semantics and drilldown correctness).
-2. Continue Feature #2: harden HQ auth flow and add role persistence checks.
+2. Continue HQ interface focus: distribution lists + bulk dispatch UX.
 3. Add acceptance checks for portal split (HQ vs site-manager).
 4. Run Gate B/C review with user; capture approvals in this file.
 

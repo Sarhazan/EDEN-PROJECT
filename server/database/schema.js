@@ -339,6 +339,27 @@ function initializeDatabase() {
     }
   }
 
+  // HQ distribution lists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS distribution_lists (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS distribution_list_members (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      list_id INTEGER NOT NULL,
+      employee_id INTEGER NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (list_id) REFERENCES distribution_lists(id) ON DELETE CASCADE,
+      FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+      UNIQUE(list_id, employee_id)
+    )
+  `);
+
   // Settings table for external service configurations (API keys, etc.)
   db.exec(`
     CREATE TABLE IF NOT EXISTS settings (
@@ -363,6 +384,8 @@ function initializeDatabase() {
   // Join/filter helpers
   createIndexIfNotExists('idx_systems_location_id', 'systems', 'location_id');
   createIndexIfNotExists('idx_employees_manager_id', 'employees', 'manager_id');
+  createIndexIfNotExists('idx_distribution_list_members_list_id', 'distribution_list_members', 'list_id');
+  createIndexIfNotExists('idx_distribution_list_members_employee_id', 'distribution_list_members', 'employee_id');
 
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');

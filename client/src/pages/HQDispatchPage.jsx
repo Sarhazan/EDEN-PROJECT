@@ -6,6 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL
 
 export default function HQDispatchPage() {
   const [employees, setEmployees] = useState([]);
+  const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
@@ -21,7 +22,8 @@ export default function HQDispatchPage() {
     start_time: '09:00',
     priority: 'normal',
     targetMode: 'all',
-    managerIds: []
+    managerIds: [],
+    listId: ''
   });
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export default function HQDispatchPage() {
         if (!response.ok) throw new Error('לא ניתן לטעון רשימת מנהלים');
         const data = await response.json();
         setEmployees(data.employees || []);
+        setLists(data.lists || []);
       } catch (err) {
         setError(err.message || 'שגיאה בטעינת יעדים');
       } finally {
@@ -66,6 +69,11 @@ export default function HQDispatchPage() {
 
     if (form.targetMode === 'specific' && form.managerIds.length === 0) {
       setError('נא לבחור לפחות מנהל אחד');
+      return;
+    }
+
+    if (form.targetMode === 'list' && !form.listId) {
+      setError('נא לבחור רשימת תפוצה');
       return;
     }
 
@@ -167,9 +175,26 @@ export default function HQDispatchPage() {
             >
               <option value="all">שלח לכולם</option>
               <option value="specific">שלח לפי בחירה</option>
+              <option value="list">שלח לפי רשימה</option>
             </select>
           </label>
         </div>
+
+        {form.targetMode === 'list' && (
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">בחר רשימת תפוצה</p>
+            <select
+              className="w-full md:w-80 border border-gray-200 rounded-lg px-3 py-2 bg-white"
+              value={form.listId}
+              onChange={(e) => setForm((prev) => ({ ...prev, listId: e.target.value }))}
+            >
+              <option value="">בחר רשימה</option>
+              {lists.map((list) => (
+                <option key={list.id} value={list.id}>{list.name} ({list.members_count || 0})</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {form.targetMode === 'specific' && (
           <div>

@@ -28,6 +28,7 @@ import HQDashboardPage from './pages/HQDashboardPage';
 import HQLoginPage from './pages/HQLoginPage';
 import HQPlaceholderPage from './pages/HQPlaceholderPage';
 import HQDispatchPage from './pages/HQDispatchPage';
+import HQListsPage from './pages/HQListsPage';
 import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { ToastContainer } from 'react-toastify';
@@ -180,7 +181,7 @@ function MainContent() {
           <Route path="/hq/dashboard" element={<HQDashboardPage />} />
           <Route path="/hq/managers" element={<HQPlaceholderPage title="מנהלי אזור/מתחמים" />} />
           <Route path="/hq/dispatch" element={<HQDispatchPage />} />
-          <Route path="/hq/lists" element={<HQPlaceholderPage title="רשימות תפוצה" />} />
+          <Route path="/hq/lists" element={<HQListsPage />} />
           <Route path="/hq/reports" element={<HQPlaceholderPage title="דוחות" />} />
           <Route path="/hq/settings" element={<HQPlaceholderPage title="הגדרות HQ" />} />
           <Route path="/hq/login" element={<HQLoginPage onLogin={login} />} />
