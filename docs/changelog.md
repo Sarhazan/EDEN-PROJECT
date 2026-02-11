@@ -10,6 +10,9 @@
 - Added dedicated HQ portal split (MVP): `/hq/login` + `/hq/dashboard` route separation with role-based guard.
 - Removed HQ dashboard entry from the site-manager sidebar/menu.
 - Updated `docs/roadmap.md` Feature #2 to “HQ Portal Separation”.
+- Added planned Feature #3 “Forms Hub (HQ + Site Manager)” with role-based scope:
+  - HQ: per-site logo/contracts management.
+  - Site manager: interactive forms to suppliers/tenants (signature, card details, debt payment, message).
 
 Open:
 - React + `re-resizable` compatibility verification.
