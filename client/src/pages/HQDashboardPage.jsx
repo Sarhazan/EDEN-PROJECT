@@ -10,14 +10,39 @@ function formatDateInput(value) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toISOString().slice(0, 10);
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function parseDateInput(value) {
+  if (!value) return '';
+
+  // DD/MM/YYYY
+  const ddmmyyyy = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (ddmmyyyy) {
+    const [, dd, mm, yyyy] = ddmmyyyy;
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // already YYYY-MM-DD
+  const yyyymmdd = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (yyyymmdd) return value;
+
+  return '';
 }
 
 function formatDateDisplay(value) {
   if (!value) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleDateString('he-IL');
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 function formatPercent(value) {
@@ -52,6 +77,8 @@ export default function HQDashboardPage() {
     buildingId: '',
     managerId: ''
   });
+  const [startDateInput, setStartDateInput] = useState(formatDateInput(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)));
+  const [endDateInput, setEndDateInput] = useState(formatDateInput(now.toISOString().slice(0, 10)));
 
   const [dashboardData, setDashboardData] = useState({
     kpis: {
@@ -67,6 +94,14 @@ export default function HQDashboardPage() {
   const [selectedManagerId, setSelectedManagerId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setStartDateInput(formatDateInput(filters.startDate));
+  }, [filters.startDate]);
+
+  useEffect(() => {
+    setEndDateInput(formatDateInput(filters.endDate));
+  }, [filters.endDate]);
 
   const managerOptions = useMemo(() => {
     const fromApi = dashboardData.managers
@@ -187,20 +222,40 @@ export default function HQDashboardPage() {
           <label className="text-sm text-gray-700">
             תאריך התחלה
             <input
-              type="date"
+              type="text"
+              inputMode="numeric"
+              placeholder="DD/MM/YYYY"
               className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-              value={formatDateInput(filters.startDate)}
-              onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+              value={startDateInput}
+              onChange={(e) => setStartDateInput(e.target.value)}
+              onBlur={() => {
+                const parsed = parseDateInput(startDateInput);
+                if (parsed) {
+                  setFilters((prev) => ({ ...prev, startDate: parsed }));
+                } else {
+                  setStartDateInput(formatDateInput(filters.startDate));
+                }
+              }}
             />
           </label>
 
           <label className="text-sm text-gray-700">
             תאריך סיום
             <input
-              type="date"
+              type="text"
+              inputMode="numeric"
+              placeholder="DD/MM/YYYY"
               className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-              value={formatDateInput(filters.endDate)}
-              onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+              value={endDateInput}
+              onChange={(e) => setEndDateInput(e.target.value)}
+              onBlur={() => {
+                const parsed = parseDateInput(endDateInput);
+                if (parsed) {
+                  setFilters((prev) => ({ ...prev, endDate: parsed }));
+                } else {
+                  setEndDateInput(formatDateInput(filters.endDate));
+                }
+              }}
             />
           </label>
 
