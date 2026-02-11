@@ -14,6 +14,12 @@
   - HQ: per-site logo/contracts management.
   - Site manager: interactive forms to suppliers/tenants (signature, card details, debt payment, message).
 
+- Added Forms Hub V1 foundation:
+  - HQ Forms page (`/hq/forms`) for per-building logo + contracts management.
+  - Site Manager Forms page (`/forms`) for sending interactive form templates to tenants/suppliers.
+  - Backend `/api/forms/*` endpoints and DB tables for branding/contracts/form dispatches.
+
 Open:
 - React + `re-resizable` compatibility verification.
 - Replace MVP hardcoded credentials with managed accounts/secure auth flow.
+- Harden payment-card flow for PCI compliance before production use.

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding, FaEnvelope } from 'react-icons/fa';
+import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding, FaEnvelope, FaFileAlt } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
 export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation, onAddBuilding }) {
@@ -61,6 +61,7 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
     { path: '/employees', icon: FaUsers, label: 'עובדים' },
     { path: '/locations', icon: FaMapMarkerAlt, label: 'מיקומים' },
     { path: '/buildings', icon: FaBuilding, label: 'מבנים' },
+    { path: '/forms', icon: FaFileAlt, label: 'טפסים' },
     { path: '/settings', icon: FaWrench, label: 'הגדרות' }
   ];
 

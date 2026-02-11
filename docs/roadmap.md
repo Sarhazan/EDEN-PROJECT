@@ -31,7 +31,7 @@ _Last updated: 2026-02-12_
 - Gate A required before final rollout.
 
 ### Feature #3 — Forms Hub (HQ + Site Manager)
-- Status: **Planned**
+- Status: **In progress**
 - Goal: add a dedicated "טפסים" button/menu for both roles with role-specific capabilities.
 - Scope:
   - **HQ (מנהל אזור):** select site/compound, manage branding and legal assets per site:

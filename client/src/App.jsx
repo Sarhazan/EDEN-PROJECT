@@ -30,7 +30,9 @@ import HQPlaceholderPage from './pages/HQPlaceholderPage';
 import HQDispatchPage from './pages/HQDispatchPage';
 import HQListsPage from './pages/HQListsPage';
 import HQReportsPage from './pages/HQReportsPage';
-import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus } from 'react-icons/fa';
+import HQFormsPage from './pages/HQFormsPage';
+import SiteFormsPage from './pages/SiteFormsPage';
+import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus, FaFileAlt } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -61,6 +63,7 @@ function MainContent() {
     { path: '/employees', icon: FaUsers, label: 'עובדים' },
     { path: '/locations', icon: FaMapMarkerAlt, label: 'מיקומים' },
     { path: '/buildings', icon: FaBuilding, label: 'מבנים' },
+    { path: '/forms', icon: FaFileAlt, label: 'טפסים' },
     { path: '/settings', icon: FaWrench, label: 'הגדרות' }
   ];
 
@@ -175,6 +178,7 @@ function MainContent() {
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/locations" element={<LocationsPage />} />
           <Route path="/buildings" element={<BuildingsPage />} />
+          <Route path="/forms" element={<SiteFormsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/confirm/:token" element={<TaskConfirmationPage />} />
 
@@ -184,6 +188,7 @@ function MainContent() {
           <Route path="/hq/dispatch" element={<HQDispatchPage />} />
           <Route path="/hq/lists" element={<HQListsPage />} />
           <Route path="/hq/reports" element={<HQReportsPage />} />
+          <Route path="/hq/forms" element={<HQFormsPage />} />
           <Route path="/hq/settings" element={<HQPlaceholderPage title="הגדרות HQ" />} />
           <Route path="/hq/login" element={<HQLoginPage onLogin={login} />} />
           <Route path="/hq/*" element={<Navigate to="/hq/dashboard" replace />} />

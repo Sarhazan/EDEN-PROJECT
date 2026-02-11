@@ -11,6 +11,7 @@ export default function HQSidebar() {
     { path: '/hq/dispatch', icon: FaBullhorn, label: 'שיגור משימות' },
     { path: '/hq/lists', icon: FaListAlt, label: 'רשימות תפוצה' },
     { path: '/hq/reports', icon: FaFileAlt, label: 'דוחות' },
+    { path: '/hq/forms', icon: FaFileAlt, label: 'טפסים' },
     { path: '/hq/settings', icon: FaWrench, label: 'הגדרות HQ' }
   ];
 

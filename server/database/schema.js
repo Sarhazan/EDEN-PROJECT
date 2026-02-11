@@ -360,6 +360,41 @@ function initializeDatabase() {
     )
   `);
 
+  // Forms hub: building branding/contracts + site interactive form dispatches
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS building_branding (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      building_id INTEGER NOT NULL UNIQUE,
+      logo_path TEXT,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS building_contracts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      building_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS form_dispatches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      template_key TEXT NOT NULL,
+      recipient_type TEXT NOT NULL,
+      recipient_name TEXT NOT NULL,
+      recipient_contact TEXT,
+      payload_json TEXT,
+      status TEXT DEFAULT 'sent',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Settings table for external service configurations (API keys, etc.)
   db.exec(`
     CREATE TABLE IF NOT EXISTS settings (
@@ -386,6 +421,8 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_employees_manager_id', 'employees', 'manager_id');
   createIndexIfNotExists('idx_distribution_list_members_list_id', 'distribution_list_members', 'list_id');
   createIndexIfNotExists('idx_distribution_list_members_employee_id', 'distribution_list_members', 'employee_id');
+  createIndexIfNotExists('idx_building_contracts_building_id', 'building_contracts', 'building_id');
+  createIndexIfNotExists('idx_form_dispatches_created_at', 'form_dispatches', 'created_at DESC');
 
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');

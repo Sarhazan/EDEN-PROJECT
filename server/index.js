@@ -82,6 +82,7 @@ const historyRouter = require('./routes/history');
 app.use('/api/history', historyRouter);
 app.use('/api/accounts', require('./routes/accounts'));
 app.use('/api/hq', require('./routes/hq'));
+app.use('/api/forms', require('./routes/forms'));
 
 // Set io instance in routes after all routes are loaded
 tasksRouter.setIo(io);
