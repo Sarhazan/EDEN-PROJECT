@@ -134,9 +134,17 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
       </nav>
 
 
-      {/* Connection Status Indicator */}
-      <div className="px-4 py-3 border-t border-gray-700/50">
-        <div className="flex items-center gap-2 text-sm mb-3">
+      {/* Site Info + Connection */}
+      <div className="px-4 py-3 border-t border-gray-700/50 space-y-3">
+        <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3">
+          <div className="text-[11px] text-slate-400 mb-1">מתחם</div>
+          <div className="text-sm font-semibold text-white">NXT בת ים</div>
+
+          <div className="text-[11px] text-slate-400 mt-3 mb-1">מנהל אחזקה</div>
+          <div className="text-sm font-semibold text-white">עדן קנדי</div>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm">
           <div className={`w-2 h-2 rounded-full ${getStatusColor()} ${connectionStatus === 'connected' ? 'animate-pulse' : ''}`}></div>
           <span className="text-gray-300">{getStatusText()}</span>
         </div>
@@ -151,7 +159,7 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
         </button>
 
         {/* Environment Indicator */}
-        <div className="mt-3 text-center">
+        <div className="text-center">
           <span className={`text-xs px-2 py-1 rounded ${
             import.meta.env.VITE_ENV === 'test'
               ? 'bg-yellow-500/20 text-yellow-400'
