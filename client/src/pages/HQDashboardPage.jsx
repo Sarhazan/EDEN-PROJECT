@@ -94,7 +94,7 @@ export default function HQDashboardPage() {
         if (filters.buildingId) params.set('buildingId', filters.buildingId);
         if (filters.managerId) params.set('managerId', filters.managerId);
 
-        const response = await fetch(`${API_URL}/history/hq-dashboard?${params.toString()}`, {
+        const response = await fetch(`${API_URL}/history/hq-summary?${params.toString()}`, {
           signal: controller.signal
         });
 
@@ -104,37 +104,39 @@ export default function HQDashboardPage() {
 
         const payload = await response.json();
 
-        const normalizedManagers = Array.isArray(payload.managers)
-          ? payload.managers.map((item) => ({
-              managerId: item.managerId ?? item.employee_id ?? item.employeeId ?? item.id,
-              managerName: item.managerName ?? item.employee_name ?? item.employeeName ?? item.name ?? 'ללא שם',
-              buildingName: item.buildingName ?? item.building_name ?? item.building ?? '-',
-              totalTasks: Number(item.totalTasks ?? item.total_tasks ?? 0),
-              completedTasks: Number(item.completedTasks ?? item.completed_tasks ?? 0),
-              lateTasks: Number(item.lateTasks ?? item.late_tasks ?? 0),
-              onTimeRate: Number(item.onTimeRate ?? item.on_time_rate ?? item.on_time_percentage ?? 0)
-            }))
-          : [];
+        const managerRows = Array.isArray(payload.manager_table)
+          ? payload.manager_table
+          : (Array.isArray(payload.managers) ? payload.managers : []);
 
-        const managerIdForDrilldown = filters.managerId;
-        let drilldown = [];
-        if (Array.isArray(payload.drilldown)) {
-          drilldown = payload.drilldown;
-        } else if (payload.drilldownByManager && managerIdForDrilldown) {
-          drilldown = payload.drilldownByManager[managerIdForDrilldown] || [];
-        }
+        const normalizedManagers = managerRows.map((item) => ({
+          managerId: item.managerId ?? item.employee_id ?? item.employeeId ?? item.id,
+          managerName: item.managerName ?? item.manager_name ?? item.employee_name ?? item.employeeName ?? item.name ?? 'ללא שם',
+          buildingName: item.buildingName ?? item.building_name ?? item.building ?? '-',
+          totalTasks: Number(item.totalTasks ?? item.total_tasks ?? 0),
+          completedTasks: Number(item.completedTasks ?? item.completed_tasks ?? 0),
+          lateTasks: Number(item.lateTasks ?? item.late_tasks ?? item.overdue_tasks ?? 0),
+          onTimeRate: Number(item.onTimeRate ?? item.on_time_rate ?? item.on_time_percentage ?? 0)
+        }));
+
+        const drilldownItems = Array.isArray(payload.drilldown?.items)
+          ? payload.drilldown.items
+          : (Array.isArray(payload.drilldown) ? payload.drilldown : []);
 
         const nextData = {
           kpis: {
-            totalTasks: Number(payload.kpis?.totalTasks ?? payload.kpis?.total_tasks ?? 0),
+            totalTasks: Number(payload.kpis?.totalTasks ?? payload.kpis?.total_tasks ?? payload.kpis?.total_active_tasks ?? 0),
             completedTasks: Number(payload.kpis?.completedTasks ?? payload.kpis?.completed_tasks ?? 0),
-            lateTasks: Number(payload.kpis?.lateTasks ?? payload.kpis?.late_tasks ?? 0),
+            lateTasks: Number(payload.kpis?.lateTasks ?? payload.kpis?.late_tasks ?? payload.kpis?.overdue_tasks ?? 0),
             onTimeRate: Number(payload.kpis?.onTimeRate ?? payload.kpis?.on_time_rate ?? payload.kpis?.on_time_percentage ?? 0),
             activeManagers: Number(payload.kpis?.activeManagers ?? payload.kpis?.active_managers ?? normalizedManagers.length)
           },
           managers: normalizedManagers,
-          drilldown: Array.isArray(drilldown) ? drilldown : []
+          drilldown: drilldownItems
         };
+
+        if (!nextData.kpis.completedTasks && normalizedManagers.length > 0) {
+          nextData.kpis.completedTasks = normalizedManagers.reduce((sum, m) => sum + Number(m.completedTasks || 0), 0);
+        }
 
         setDashboardData(nextData);
 

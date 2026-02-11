@@ -47,10 +47,10 @@ function MainContent() {
 
   // Navigation items for mobile drawer
   const navItems = [
+    { path: '/hq-dashboard', icon: FaChartLine, label: 'דשבורד HQ' },
     { path: '/', icon: FaHome, label: 'היום שלי' },
     { path: '/tasks', icon: FaTasks, label: 'משימות' },
     { path: '/history', icon: FaHistory, label: 'היסטוריה' },
-    { path: '/hq-dashboard', icon: FaChartLine, label: 'דשבורד HQ' },
     { path: '/systems', icon: FaCog, label: 'מערכות' },
     { path: '/suppliers', icon: FaTruck, label: 'ספקים' },
     { path: '/employees', icon: FaUsers, label: 'עובדים' },
