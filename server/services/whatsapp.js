@@ -16,6 +16,7 @@ class WhatsAppService {
     this.io = null;
     this.initializationTimeout = null;
     this.readyPollingInterval = null;
+    this.knownContactChatIds = new Map(); // normalizedDigits -> chatId
   }
 
   /**
@@ -193,6 +194,24 @@ class WhatsAppService {
       console.log(`🔄 WhatsApp state changed: ${state}`);
     });
 
+    // Cache incoming chat IDs so we can send back without LID lookup issues
+    this.client.on('message', (msg) => {
+      try {
+        const from = String(msg?.from || '');
+        if (!from.endsWith('@c.us') && !from.endsWith('@lid')) return;
+
+        const digits = from.replace(/\D/g, '');
+        if (!digits) return;
+
+        // Keep last 9+ digits mapping (Israeli local + intl forms)
+        const local = digits.replace(/^972/, '');
+        if (local) this.knownContactChatIds.set(local, from);
+        this.knownContactChatIds.set(digits, from);
+      } catch (e) {
+        // ignore cache errors
+      }
+    });
+
     // Initialize client
     console.log('⏳ Starting WhatsApp client initialization...');
     console.log('   webVersionCache: disabled (type: none)');
@@ -321,15 +340,20 @@ class WhatsAppService {
         formattedNumber = '972' + formattedNumber.replace(/^0+/, '');
       }
 
-      let chatId = `${formattedNumber}@c.us`;
+      const localDigits = formattedNumber.replace(/^972/, '');
+      let chatId = this.knownContactChatIds.get(localDigits)
+        || this.knownContactChatIds.get(formattedNumber)
+        || `${formattedNumber}@c.us`;
 
       console.log(`📤 Sending message to ${chatId}...`);
 
       // Verify number using multiple strategies (some WA sessions return false negatives on isRegisteredUser)
       console.log('Checking if number is registered on WhatsApp...');
-      let isRegistered = false;
+      let isRegistered = chatId.endsWith('@lid');
       try {
-        isRegistered = await this.client.isRegisteredUser(chatId);
+        if (!isRegistered) {
+          isRegistered = await this.client.isRegisteredUser(chatId);
+        }
       } catch (checkError) {
         console.warn('isRegisteredUser check failed, continuing with fallback:', checkError.message);
       }
