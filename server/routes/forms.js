@@ -280,12 +280,17 @@ router.post('/site/send', (req, res) => {
       amount: amount || null
     });
 
+    const deliveryChannel = 'whatsapp';
+    const deliveryMode = 'manual'; // infrastructure ready; no external send yet
+    const deliveryStatus = 'queued';
+
     const result = db.prepare(`
       INSERT INTO form_dispatches (
         template_key, recipient_type, recipient_name, recipient_contact,
-        building_id, tenant_id, supplier_id, payload_json, status
+        building_id, tenant_id, supplier_id, payload_json, status,
+        delivery_channel, delivery_mode, delivery_status
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'sent')
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?)
     `).run(
       templateKey,
       recipientType,
@@ -294,15 +299,35 @@ router.post('/site/send', (req, res) => {
       resolvedBuildingId,
       resolvedTenantId,
       resolvedSupplierId,
-      payload
+      payload,
+      deliveryChannel,
+      deliveryMode,
+      deliveryStatus
     );
 
     const id = result.lastInsertRowid;
+    const formUrl = `/forms/fill/${id}`;
+
+    const templateLabel = TEMPLATE_DEFS[templateKey]?.label || templateKey;
+    const previewMessage = [
+      `שלום ${resolvedName},`,
+      `נשלח אליך ${templateLabel}.`,
+      title ? `נושא: ${title}` : null,
+      message ? `הודעה: ${message}` : null,
+      amount ? `סכום: ${amount}` : null,
+      `קישור לטופס: ${formUrl}`
+    ].filter(Boolean).join('\n');
 
     res.status(201).json({
       success: true,
       dispatchId: id,
-      formUrl: `/forms/fill/${id}`
+      formUrl,
+      delivery: {
+        channel: deliveryChannel,
+        mode: deliveryMode,
+        status: deliveryStatus,
+        previewMessage
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -315,6 +340,7 @@ router.get('/site/dispatches', (req, res) => {
     const rows = db.prepare(`
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
+             fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
              fd.building_id, b.name AS building_name,
              fd.tenant_id, fd.supplier_id
       FROM form_dispatches fd
@@ -338,6 +364,7 @@ router.get('/site/dispatches/:id', (req, res) => {
     const dispatch = db.prepare(`
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
+             fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
              fd.payload_json, b.name AS building_name
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
@@ -451,6 +478,7 @@ router.get('/hq/dispatches', (req, res) => {
     const rows = db.prepare(`
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
+             fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
              fd.building_id, b.name AS building_name,
              CASE WHEN fs.id IS NULL THEN 0 ELSE 1 END AS has_submission
       FROM form_dispatches fd
@@ -475,6 +503,7 @@ router.get('/hq/dispatches/:id', (req, res) => {
     const dispatch = db.prepare(`
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
+             fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
              fd.payload_json, b.name AS building_name
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
@@ -499,6 +528,47 @@ router.get('/hq/dispatches/:id', (req, res) => {
               answers: submission.answers_json ? JSON.parse(submission.answers_json) : {}
             }
           : null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// HQ: delivery preview (no external send)
+router.get('/hq/dispatches/:id/delivery-preview', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'id לא תקין' });
+
+    const dispatch = db.prepare(`
+      SELECT id, template_key, recipient_name, recipient_contact, payload_json
+      FROM form_dispatches
+      WHERE id = ?
+    `).get(id);
+
+    if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
+
+    const payload = dispatch.payload_json ? JSON.parse(dispatch.payload_json) : {};
+    const templateLabel = TEMPLATE_DEFS[dispatch.template_key]?.label || dispatch.template_key;
+    const formUrl = `/forms/fill/${dispatch.id}`;
+
+    const previewMessage = [
+      `שלום ${dispatch.recipient_name},`,
+      `נשלח אליך ${templateLabel}.`,
+      payload.title ? `נושא: ${payload.title}` : null,
+      payload.message ? `הודעה: ${payload.message}` : null,
+      payload.amount ? `סכום: ${payload.amount}` : null,
+      `קישור לטופס: ${formUrl}`
+    ].filter(Boolean).join('\n');
+
+    res.json({
+      item: {
+        dispatchId: dispatch.id,
+        recipientName: dispatch.recipient_name,
+        recipientContact: dispatch.recipient_contact,
+        formUrl,
+        previewMessage
       }
     });
   } catch (error) {

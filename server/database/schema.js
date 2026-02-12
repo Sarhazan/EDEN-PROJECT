@@ -410,6 +410,11 @@ function initializeDatabase() {
       supplier_id INTEGER,
       payload_json TEXT,
       status TEXT DEFAULT 'sent',
+      delivery_channel TEXT DEFAULT 'whatsapp',
+      delivery_mode TEXT DEFAULT 'manual',
+      delivery_status TEXT DEFAULT 'queued',
+      external_message_id TEXT,
+      delivery_error TEXT,
       opened_at TIMESTAMP,
       submitted_at TIMESTAMP,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -473,6 +478,46 @@ function initializeDatabase() {
     }
   }
 
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN delivery_channel TEXT DEFAULT 'whatsapp'`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN delivery_mode TEXT DEFAULT 'manual'`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN delivery_status TEXT DEFAULT 'queued'`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN external_message_id TEXT`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN delivery_error TEXT`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
   // Settings table for external service configurations (API keys, etc.)
   db.exec(`
     CREATE TABLE IF NOT EXISTS settings (
@@ -507,6 +552,7 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_form_dispatches_tenant_id', 'form_dispatches', 'tenant_id');
   createIndexIfNotExists('idx_form_dispatches_supplier_id', 'form_dispatches', 'supplier_id');
   createIndexIfNotExists('idx_form_dispatches_status_created_at', 'form_dispatches', 'status, created_at DESC');
+  createIndexIfNotExists('idx_form_dispatches_delivery_status_created_at', 'form_dispatches', 'delivery_status, created_at DESC');
   createIndexIfNotExists('idx_form_submissions_dispatch_id', 'form_submissions', 'dispatch_id');
 
   // Enable WAL mode for better concurrency (reads during writes)

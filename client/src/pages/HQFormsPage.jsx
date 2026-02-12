@@ -11,6 +11,7 @@ export default function HQFormsPage() {
   const [contractTitle, setContractTitle] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedDispatch, setSelectedDispatch] = useState(null);
+  const [deliveryPreview, setDeliveryPreview] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -106,8 +107,20 @@ export default function HQFormsPage() {
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'שגיאה בטעינת טופס');
       setSelectedDispatch(payload.item || null);
+      setDeliveryPreview(null);
     } catch (e) {
       setError(e.message || 'שגיאה בטעינת פרטי טופס');
+    }
+  };
+
+  const loadDeliveryPreview = async (dispatchId) => {
+    try {
+      const res = await fetch(`${API_URL}/forms/hq/dispatches/${dispatchId}/delivery-preview`);
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'שגיאה בטעינת תצוגת משלוח');
+      setDeliveryPreview(payload.item || null);
+    } catch (e) {
+      setError(e.message || 'שגיאה בטעינת תצוגת משלוח');
     }
   };
 
@@ -210,7 +223,7 @@ export default function HQFormsPage() {
               >
                 <div className="font-medium">#{d.id} • {d.template_key} • {d.recipient_name}</div>
                 <div className="text-sm text-gray-600">
-                  {d.status} | {d.building_name || '-'} | נוצר: {d.created_at}
+                  {d.status} | משלוח: {d.delivery_status || '-'} | {d.building_name || '-'} | נוצר: {d.created_at}
                   {d.opened_at ? ` | נפתח: ${d.opened_at}` : ''}
                   {d.submitted_at ? ` | הוגש: ${d.submitted_at}` : ''}
                 </div>
@@ -231,12 +244,32 @@ export default function HQFormsPage() {
             <div><span className="font-semibold">סוג טופס:</span> {selectedDispatch.template_key}</div>
             <div><span className="font-semibold">נמען:</span> {selectedDispatch.recipient_name}</div>
             <div><span className="font-semibold">סטטוס:</span> {selectedDispatch.status}</div>
+            <div><span className="font-semibold">סטטוס משלוח:</span> {selectedDispatch.delivery_status || '-'}</div>
+            <div><span className="font-semibold">ערוץ:</span> {selectedDispatch.delivery_channel || '-'}</div>
+            <div><span className="font-semibold">מצב משלוח:</span> {selectedDispatch.delivery_mode || '-'}</div>
             <div><span className="font-semibold">מבנה:</span> {selectedDispatch.building_name || '-'}</div>
           </div>
 
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-            <div className="font-semibold mb-1">Payload</div>
+            <div className="font-semibold mb-2">Payload</div>
             <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(selectedDispatch.payload || {}, null, 2)}</pre>
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="font-semibold">תצוגת הודעת משלוח (ללא שליחה)</div>
+              <button
+                className="text-sm text-indigo-700"
+                onClick={() => loadDeliveryPreview(selectedDispatch.id)}
+              >
+                טען תצוגה
+              </button>
+            </div>
+            {deliveryPreview ? (
+              <pre className="text-xs whitespace-pre-wrap">{deliveryPreview.previewMessage}</pre>
+            ) : (
+              <div className="text-sm text-gray-500">לחץ "טען תצוגה" כדי לראות את ההודעה כפי שתישלח בעתיד.</div>
+            )}
           </div>
 
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
