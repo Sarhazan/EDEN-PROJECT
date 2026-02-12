@@ -66,8 +66,14 @@ export default function SiteFormsPage() {
   useEffect(() => { load(); }, []);
 
   useEffect(() => {
+    if (form.recipientType === 'tenant' && !form.buildingId && buildings.length > 0) {
+      // UX: auto-select a building so tenants dropdown is populated immediately
+      setForm((p) => ({ ...p, buildingId: String(buildings[0].id) }));
+      return;
+    }
+
     loadRecipients(form.recipientType, form.buildingId);
-  }, [form.recipientType, form.buildingId]);
+  }, [form.recipientType, form.buildingId, buildings]);
 
   const selectedRecipient = useMemo(() => {
     if (!form.recipientId) return null;
