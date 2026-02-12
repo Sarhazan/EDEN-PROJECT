@@ -124,6 +124,19 @@ export default function HQFormsPage() {
     }
   };
 
+  const sendLiveToTest = async (dispatchId) => {
+    try {
+      setError('');
+      const res = await fetch(`${API_URL}/forms/hq/dispatches/${dispatchId}/send-live`, { method: 'POST' });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'שגיאה בשליחת וואטסאפ');
+      await loadDispatches();
+      await openDispatch(dispatchId);
+    } catch (e) {
+      setError(e.message || 'שגיאה בשליחה');
+    }
+  };
+
   const selected = items.find((x) => String(x.buildingId) === String(selectedBuildingId));
 
   const filteredDispatches = useMemo(() => {
@@ -235,9 +248,17 @@ export default function HQFormsPage() {
 
       {selectedDispatch && (
         <section className="bg-white rounded-xl border border-indigo-200 p-4 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="font-semibold">פרטי טופס #{selectedDispatch.id}</h2>
-            <button className="text-sm text-gray-500" onClick={() => setSelectedDispatch(null)}>סגור</button>
+            <div className="flex items-center gap-2">
+              <button
+                className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded"
+                onClick={() => sendLiveToTest(selectedDispatch.id)}
+              >
+                שלח LIVE (TEST)
+              </button>
+              <button className="text-sm text-gray-500" onClick={() => setSelectedDispatch(null)}>סגור</button>
+            </div>
           </div>
 
           <div className="text-sm text-gray-700 space-y-1">

@@ -26,6 +26,37 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+const whatsappService = require('../services/whatsapp');
+
+const LIVE_ALLOWLIST_RAW = process.env.FORMS_LIVE_ALLOWLIST || '0549441093';
+
+function normalizePhone(input) {
+  const digits = String(input || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('972')) return digits;
+  return `972${digits.replace(/^0+/, '')}`;
+}
+
+function getLiveAllowlist() {
+  return LIVE_ALLOWLIST_RAW
+    .split(',')
+    .map((s) => normalizePhone(s.trim()))
+    .filter(Boolean);
+}
+
+function buildDispatchMessage(dispatch, payload) {
+  const templateLabel = TEMPLATE_DEFS[dispatch.template_key]?.label || dispatch.template_key;
+  const formUrl = `/forms/fill/${dispatch.id}`;
+
+  return [
+    `שלום ${dispatch.recipient_name},`,
+    `נשלח אליך ${templateLabel}.`,
+    payload?.title ? `נושא: ${payload.title}` : null,
+    payload?.message ? `הודעה: ${payload.message}` : null,
+    payload?.amount ? `סכום: ${payload.amount}` : null,
+    `קישור לטופס: ${formUrl}`
+  ].filter(Boolean).join('\n');
+}
 
 const TEMPLATE_DEFS = {
   regulation_signature: {
@@ -308,15 +339,15 @@ router.post('/site/send', (req, res) => {
     const id = result.lastInsertRowid;
     const formUrl = `/forms/fill/${id}`;
 
-    const templateLabel = TEMPLATE_DEFS[templateKey]?.label || templateKey;
-    const previewMessage = [
-      `שלום ${resolvedName},`,
-      `נשלח אליך ${templateLabel}.`,
-      title ? `נושא: ${title}` : null,
-      message ? `הודעה: ${message}` : null,
-      amount ? `סכום: ${amount}` : null,
-      `קישור לטופס: ${formUrl}`
-    ].filter(Boolean).join('\n');
+    const previewMessage = buildDispatchMessage({
+      id,
+      template_key: templateKey,
+      recipient_name: resolvedName
+    }, {
+      title: title || '',
+      message: message || '',
+      amount: amount || null
+    });
 
     res.status(201).json({
       success: true,
@@ -550,27 +581,79 @@ router.get('/hq/dispatches/:id/delivery-preview', (req, res) => {
     if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
 
     const payload = dispatch.payload_json ? JSON.parse(dispatch.payload_json) : {};
-    const templateLabel = TEMPLATE_DEFS[dispatch.template_key]?.label || dispatch.template_key;
-    const formUrl = `/forms/fill/${dispatch.id}`;
-
-    const previewMessage = [
-      `שלום ${dispatch.recipient_name},`,
-      `נשלח אליך ${templateLabel}.`,
-      payload.title ? `נושא: ${payload.title}` : null,
-      payload.message ? `הודעה: ${payload.message}` : null,
-      payload.amount ? `סכום: ${payload.amount}` : null,
-      `קישור לטופס: ${formUrl}`
-    ].filter(Boolean).join('\n');
+    const previewMessage = buildDispatchMessage(dispatch, payload);
 
     res.json({
       item: {
         dispatchId: dispatch.id,
         recipientName: dispatch.recipient_name,
         recipientContact: dispatch.recipient_contact,
-        formUrl,
+        formUrl: `/forms/fill/${dispatch.id}`,
         previewMessage
       }
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// HQ: send live via WhatsApp (explicit, allowlist-protected)
+router.post('/hq/dispatches/:id/send-live', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'id לא תקין' });
+
+    const dispatch = db.prepare(`
+      SELECT id, template_key, recipient_name, recipient_contact, payload_json,
+             delivery_status, delivery_mode
+      FROM form_dispatches
+      WHERE id = ?
+    `).get(id);
+
+    if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
+
+    const normalizedRecipient = normalizePhone(dispatch.recipient_contact);
+    const allowlist = getLiveAllowlist();
+    if (!normalizedRecipient || !allowlist.includes(normalizedRecipient)) {
+      return res.status(403).json({
+        error: 'המספר לא מורשה לשליחת LIVE',
+        details: 'השליחה בלייב מוגבלת למספרי TEST בלבד'
+      });
+    }
+
+    const status = whatsappService.getStatus();
+    if (!status.isReady) {
+      return res.status(400).json({ error: 'וואטסאפ לא מחובר כרגע' });
+    }
+
+    const payload = dispatch.payload_json ? JSON.parse(dispatch.payload_json) : {};
+    const message = buildDispatchMessage(dispatch, payload);
+
+    db.prepare(`
+      UPDATE form_dispatches
+      SET delivery_mode = 'live', delivery_status = 'sending', delivery_error = NULL
+      WHERE id = ?
+    `).run(id);
+
+    try {
+      await whatsappService.sendMessage(dispatch.recipient_contact, message);
+
+      db.prepare(`
+        UPDATE form_dispatches
+        SET delivery_status = 'sent', external_message_id = ?, delivery_error = NULL
+        WHERE id = ?
+      `).run(`wa-local-${Date.now()}`, id);
+
+      return res.json({ success: true, deliveryStatus: 'sent' });
+    } catch (sendError) {
+      db.prepare(`
+        UPDATE form_dispatches
+        SET delivery_status = 'failed', delivery_error = ?
+        WHERE id = ?
+      `).run(sendError.message || 'send failed', id);
+
+      return res.status(500).json({ error: sendError.message || 'שגיאה בשליחה' });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
