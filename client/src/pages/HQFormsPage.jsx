@@ -12,6 +12,7 @@ export default function HQFormsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedDispatch, setSelectedDispatch] = useState(null);
   const [deliveryPreview, setDeliveryPreview] = useState(null);
+  const [deliveryLogs, setDeliveryLogs] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -108,6 +109,14 @@ export default function HQFormsPage() {
       if (!res.ok) throw new Error(payload.error || 'שגיאה בטעינת טופס');
       setSelectedDispatch(payload.item || null);
       setDeliveryPreview(null);
+
+      const logsRes = await fetch(`${API_URL}/forms/hq/dispatches/${dispatchId}/delivery-logs`);
+      const logsPayload = await logsRes.json();
+      if (logsRes.ok) {
+        setDeliveryLogs(logsPayload.items || []);
+      } else {
+        setDeliveryLogs([]);
+      }
     } catch (e) {
       setError(e.message || 'שגיאה בטעינת פרטי טופס');
     }
@@ -257,7 +266,7 @@ export default function HQFormsPage() {
               >
                 שלח LIVE (TEST)
               </button>
-              <button className="text-sm text-gray-500" onClick={() => setSelectedDispatch(null)}>סגור</button>
+              <button className="text-sm text-gray-500" onClick={() => { setSelectedDispatch(null); setDeliveryLogs([]); setDeliveryPreview(null); }}>סגור</button>
             </div>
           </div>
 
@@ -299,6 +308,22 @@ export default function HQFormsPage() {
               <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(selectedDispatch.submission.answers || {}, null, 2)}</pre>
             ) : (
               <div className="text-sm text-gray-500">עדיין אין הגשה</div>
+            )}
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div className="font-semibold mb-2">לוג משלוחים</div>
+            {deliveryLogs.length === 0 ? (
+              <div className="text-sm text-gray-500">אין לוגים עדיין</div>
+            ) : (
+              <div className="space-y-1">
+                {deliveryLogs.map((log) => (
+                  <div key={log.id} className="text-xs text-gray-700 border border-gray-200 rounded p-2 bg-white">
+                    {log.created_at} | {log.channel} | {log.mode} | {log.status}
+                    {log.error ? ` | error: ${log.error}` : ''}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </section>

@@ -58,6 +58,13 @@ function buildDispatchMessage(dispatch, payload) {
   ].filter(Boolean).join('\n');
 }
 
+function insertDeliveryLog({ dispatchId, channel, mode, status, messagePreview, error }) {
+  db.prepare(`
+    INSERT INTO form_delivery_logs (dispatch_id, channel, mode, status, message_preview, error)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(dispatchId, channel || null, mode || null, status || null, messagePreview || null, error || null);
+}
+
 const TEMPLATE_DEFS = {
   regulation_signature: {
     key: 'regulation_signature',
@@ -233,7 +240,7 @@ router.get('/site/recipients', (req, res) => {
 });
 
 // Site manager: send interactive form
-router.post('/site/send', (req, res) => {
+router.post('/site/send', async (req, res) => {
   try {
     const {
       templateKey,
@@ -244,7 +251,8 @@ router.post('/site/send', (req, res) => {
       recipientContact,
       title,
       message,
-      amount
+      amount,
+      deliveryMode
     } = req.body;
 
     if (!templateKey) return res.status(400).json({ error: 'סוג טופס הוא שדה חובה' });
@@ -305,15 +313,17 @@ router.post('/site/send', (req, res) => {
       }
     }
 
-    const payload = JSON.stringify({
+    const payloadObj = {
       title: title || '',
       message: message || '',
       amount: amount || null
-    });
+    };
+    const payload = JSON.stringify(payloadObj);
 
+    const requestedMode = String(deliveryMode || 'manual').toLowerCase();
     const deliveryChannel = 'whatsapp';
-    const deliveryMode = 'manual'; // infrastructure ready; no external send yet
-    const deliveryStatus = 'queued';
+    const resolvedDeliveryMode = requestedMode === 'live' ? 'live' : 'manual';
+    const deliveryStatus = resolvedDeliveryMode === 'live' ? 'sending' : 'queued';
 
     const result = db.prepare(`
       INSERT INTO form_dispatches (
@@ -332,7 +342,7 @@ router.post('/site/send', (req, res) => {
       resolvedSupplierId,
       payload,
       deliveryChannel,
-      deliveryMode,
+      resolvedDeliveryMode,
       deliveryStatus
     );
 
@@ -343,11 +353,60 @@ router.post('/site/send', (req, res) => {
       id,
       template_key: templateKey,
       recipient_name: resolvedName
-    }, {
-      title: title || '',
-      message: message || '',
-      amount: amount || null
+    }, payloadObj);
+
+    insertDeliveryLog({
+      dispatchId: id,
+      channel: deliveryChannel,
+      mode: resolvedDeliveryMode,
+      status: deliveryStatus,
+      messagePreview: previewMessage,
+      error: null
     });
+
+    let finalDeliveryStatus = deliveryStatus;
+    let deliveryError = null;
+
+    if (resolvedDeliveryMode === 'live') {
+      const normalizedRecipient = normalizePhone(resolvedContact);
+      const allowlist = getLiveAllowlist();
+
+      if (!normalizedRecipient || !allowlist.includes(normalizedRecipient)) {
+        finalDeliveryStatus = 'blocked';
+        deliveryError = 'מספר לא מורשה ל-LIVE';
+      } else {
+        const waStatus = whatsappService.getStatus();
+        if (!waStatus.isReady) {
+          finalDeliveryStatus = 'failed';
+          deliveryError = 'וואטסאפ לא מחובר';
+        } else {
+          try {
+            await whatsappService.sendMessage(resolvedContact, previewMessage);
+            finalDeliveryStatus = 'sent';
+          } catch (sendError) {
+            finalDeliveryStatus = 'failed';
+            deliveryError = sendError.message || 'send failed';
+          }
+        }
+      }
+
+      db.prepare(`
+        UPDATE form_dispatches
+        SET delivery_status = ?,
+            external_message_id = CASE WHEN ? = 'sent' THEN ? ELSE external_message_id END,
+            delivery_error = ?
+        WHERE id = ?
+      `).run(finalDeliveryStatus, finalDeliveryStatus, finalDeliveryStatus === 'sent' ? `wa-live-${Date.now()}` : null, deliveryError, id);
+
+      insertDeliveryLog({
+        dispatchId: id,
+        channel: deliveryChannel,
+        mode: resolvedDeliveryMode,
+        status: finalDeliveryStatus,
+        messagePreview: previewMessage,
+        error: deliveryError
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -355,8 +414,9 @@ router.post('/site/send', (req, res) => {
       formUrl,
       delivery: {
         channel: deliveryChannel,
-        mode: deliveryMode,
-        status: deliveryStatus,
+        mode: resolvedDeliveryMode,
+        status: finalDeliveryStatus,
+        error: deliveryError,
         previewMessage
       }
     });
@@ -566,6 +626,26 @@ router.get('/hq/dispatches/:id', (req, res) => {
   }
 });
 
+// HQ: delivery logs
+router.get('/hq/dispatches/:id/delivery-logs', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'id לא תקין' });
+
+    const rows = db.prepare(`
+      SELECT id, channel, mode, status, error, created_at
+      FROM form_delivery_logs
+      WHERE dispatch_id = ?
+      ORDER BY created_at DESC
+      LIMIT 100
+    `).all(id);
+
+    res.json({ items: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // HQ: delivery preview (no external send)
 router.get('/hq/dispatches/:id/delivery-preview', (req, res) => {
   try {
@@ -635,6 +715,15 @@ router.post('/hq/dispatches/:id/send-live', async (req, res) => {
       WHERE id = ?
     `).run(id);
 
+    insertDeliveryLog({
+      dispatchId: id,
+      channel: 'whatsapp',
+      mode: 'live',
+      status: 'sending',
+      messagePreview: message,
+      error: null
+    });
+
     try {
       await whatsappService.sendMessage(dispatch.recipient_contact, message);
 
@@ -644,15 +733,34 @@ router.post('/hq/dispatches/:id/send-live', async (req, res) => {
         WHERE id = ?
       `).run(`wa-local-${Date.now()}`, id);
 
+      insertDeliveryLog({
+        dispatchId: id,
+        channel: 'whatsapp',
+        mode: 'live',
+        status: 'sent',
+        messagePreview: message,
+        error: null
+      });
+
       return res.json({ success: true, deliveryStatus: 'sent' });
     } catch (sendError) {
+      const errMsg = sendError.message || 'send failed';
       db.prepare(`
         UPDATE form_dispatches
         SET delivery_status = 'failed', delivery_error = ?
         WHERE id = ?
-      `).run(sendError.message || 'send failed', id);
+      `).run(errMsg, id);
 
-      return res.status(500).json({ error: sendError.message || 'שגיאה בשליחה' });
+      insertDeliveryLog({
+        dispatchId: id,
+        channel: 'whatsapp',
+        mode: 'live',
+        status: 'failed',
+        messagePreview: message,
+        error: errMsg
+      });
+
+      return res.status(500).json({ error: errMsg });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });

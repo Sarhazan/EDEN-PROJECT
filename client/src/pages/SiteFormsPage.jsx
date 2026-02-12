@@ -21,7 +21,8 @@ export default function SiteFormsPage() {
     recipientContact: '',
     title: '',
     message: '',
-    amount: ''
+    amount: '',
+    deliveryMode: 'manual'
   });
 
   const load = async () => {
@@ -117,7 +118,10 @@ export default function SiteFormsPage() {
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'שגיאה בשליחה');
 
-      setSuccess(`נשלח בהצלחה. קישור אינטראקטיבי: ${payload.formUrl}`);
+      const deliveryLine = payload?.delivery
+        ? ` | משלוח: ${payload.delivery.status}${payload.delivery.error ? ` (${payload.delivery.error})` : ''}`
+        : '';
+      setSuccess(`נשלח בהצלחה. קישור אינטראקטיבי: ${payload.formUrl}${deliveryLine}`);
       setForm((p) => ({ ...p, recipientId: '', recipientName: '', recipientContact: '', title: '', message: '', amount: '' }));
       await load();
     } catch (e2) {
@@ -202,6 +206,17 @@ export default function SiteFormsPage() {
           <textarea className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2" rows={3} value={form.message} onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))} />
         </label>
 
+        <label className="text-sm md:col-span-2">מצב שליחה
+          <select
+            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 bg-white"
+            value={form.deliveryMode}
+            onChange={(e) => setForm((p) => ({ ...p, deliveryMode: e.target.value }))}
+          >
+            <option value="manual">ידני (ללא שליחת וואטסאפ)</option>
+            <option value="live">LIVE TEST (נשלח רק למספר מורשה)</option>
+          </select>
+        </label>
+
         <div className="md:col-span-2">
           <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg">שלח טופס</button>
         </div>
@@ -216,7 +231,7 @@ export default function SiteFormsPage() {
             {history.map((h) => (
               <div key={h.id} className="border border-gray-200 rounded-lg p-3">
                 <div className="font-medium">{h.recipient_name} • {h.template_key}</div>
-                <div className="text-sm text-gray-600">{h.recipient_type} | {h.building_name || '-'} | {h.recipient_contact || '-'} | {h.status}</div>
+                <div className="text-sm text-gray-600">{h.recipient_type} | {h.building_name || '-'} | {h.recipient_contact || '-'} | {h.status} | delivery: {h.delivery_status || '-'}</div>
               </div>
             ))}
           </div>

@@ -437,6 +437,20 @@ function initializeDatabase() {
     )
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS form_delivery_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dispatch_id INTEGER NOT NULL,
+      channel TEXT,
+      mode TEXT,
+      status TEXT,
+      message_preview TEXT,
+      error TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (dispatch_id) REFERENCES form_dispatches(id) ON DELETE CASCADE
+    )
+  `);
+
   // Add relational columns to form_dispatches table (migration)
   try {
     db.exec(`ALTER TABLE form_dispatches ADD COLUMN building_id INTEGER REFERENCES buildings(id)`);
@@ -554,6 +568,7 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_form_dispatches_status_created_at', 'form_dispatches', 'status, created_at DESC');
   createIndexIfNotExists('idx_form_dispatches_delivery_status_created_at', 'form_dispatches', 'delivery_status, created_at DESC');
   createIndexIfNotExists('idx_form_submissions_dispatch_id', 'form_submissions', 'dispatch_id');
+  createIndexIfNotExists('idx_form_delivery_logs_dispatch_id_created_at', 'form_delivery_logs', 'dispatch_id, created_at DESC');
 
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');
