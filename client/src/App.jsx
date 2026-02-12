@@ -34,6 +34,7 @@ import HQListsPage from './pages/HQListsPage';
 import HQReportsPage from './pages/HQReportsPage';
 import HQFormsPage from './pages/HQFormsPage';
 import SiteFormsPage from './pages/SiteFormsPage';
+import FormFillPage from './pages/FormFillPage';
 import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus, FaFileAlt } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { ToastContainer } from 'react-toastify';
@@ -106,7 +107,7 @@ function MainContent() {
   };
 
   // Route modes
-  const isPublicRoute = location.pathname.startsWith('/confirm/');
+  const isPublicRoute = location.pathname.startsWith('/confirm/') || location.pathname.startsWith('/forms/fill/');
   const isHQRoute = location.pathname.startsWith('/hq');
 
   // HQ portal auth gate (separate login/session role)
@@ -189,6 +190,7 @@ function MainContent() {
           <Route path="/buildings" element={<BuildingsPage />} />
           <Route path="/tenants" element={<TenantsPage />} />
           <Route path="/forms" element={<SiteFormsPage />} />
+          <Route path="/forms/fill/:id" element={<FormFillPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/confirm/:token" element={<TaskConfirmationPage />} />
 

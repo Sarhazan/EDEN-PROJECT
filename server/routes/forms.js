@@ -27,6 +27,45 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+const TEMPLATE_DEFS = {
+  regulation_signature: {
+    key: 'regulation_signature',
+    label: 'טופס חתימה על תקנון',
+    fields: [
+      { key: 'full_name', label: 'שם מלא', type: 'text', required: true },
+      { key: 'id_number', label: 'תעודת זהות', type: 'text', required: true },
+      { key: 'accepted_regulation', label: 'אני מאשר/ת שקראתי את התקנון', type: 'checkbox', required: true }
+    ]
+  },
+  credit_card: {
+    key: 'credit_card',
+    label: 'טופס למילוי כרטיס אשראי',
+    fields: [
+      { key: 'full_name', label: 'שם בעל/ת הכרטיס', type: 'text', required: true },
+      { key: 'id_number', label: 'תעודת זהות', type: 'text', required: true },
+      { key: 'card_last4', label: '4 ספרות אחרונות', type: 'text', required: true },
+      { key: 'expiry', label: 'תוקף (MM/YY)', type: 'text', required: true }
+    ]
+  },
+  debt_payment: {
+    key: 'debt_payment',
+    label: 'טופס לתשלום חוב',
+    fields: [
+      { key: 'full_name', label: 'שם מלא', type: 'text', required: true },
+      { key: 'amount', label: 'סכום לתשלום', type: 'number', required: true },
+      { key: 'payment_reference', label: 'אסמכתא/הערה', type: 'text', required: false }
+    ]
+  },
+  notice: {
+    key: 'notice',
+    label: 'טופס הודעה',
+    fields: [
+      { key: 'full_name', label: 'שם מלא', type: 'text', required: true },
+      { key: 'notice_text', label: 'תוכן ההודעה', type: 'textarea', required: true }
+    ]
+  }
+};
+
 // HQ: view forms assets by building
 router.get('/hq/buildings-assets', (req, res) => {
   try {
@@ -123,12 +162,7 @@ router.delete('/hq/contracts/:id', (req, res) => {
 // Site manager: interactive form templates
 router.get('/site/templates', (req, res) => {
   res.json({
-    templates: [
-      { key: 'regulation_signature', label: 'טופס חתימה על תקנון' },
-      { key: 'credit_card', label: 'טופס למילוי כרטיס אשראי' },
-      { key: 'debt_payment', label: 'טופס לתשלום חוב' },
-      { key: 'notice', label: 'טופס הודעה' }
-    ]
+    templates: Object.values(TEMPLATE_DEFS).map(({ key, label }) => ({ key, label }))
   });
 });
 
@@ -183,6 +217,7 @@ router.post('/site/send', (req, res) => {
     } = req.body;
 
     if (!templateKey) return res.status(400).json({ error: 'סוג טופס הוא שדה חובה' });
+    if (!TEMPLATE_DEFS[templateKey]) return res.status(400).json({ error: 'סוג טופס לא מוכר' });
     if (!recipientType || !['supplier', 'tenant'].includes(recipientType)) return res.status(400).json({ error: 'סוג נמען לא תקין' });
 
     const parsedRecipientId = recipientId ? Number(recipientId) : null;
@@ -279,7 +314,8 @@ router.get('/site/dispatches', (req, res) => {
   try {
     const rows = db.prepare(`
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
-             fd.status, fd.created_at, fd.building_id, b.name AS building_name,
+             fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
+             fd.building_id, b.name AS building_name,
              fd.tenant_id, fd.supplier_id
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
@@ -288,6 +324,122 @@ router.get('/site/dispatches', (req, res) => {
     `).all();
 
     res.json({ items: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Public form fill: get dispatch details
+router.get('/site/dispatches/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'id לא תקין' });
+
+    const dispatch = db.prepare(`
+      SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
+             fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
+             fd.payload_json, b.name AS building_name
+      FROM form_dispatches fd
+      LEFT JOIN buildings b ON b.id = fd.building_id
+      WHERE fd.id = ?
+    `).get(id);
+
+    if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
+
+    const template = TEMPLATE_DEFS[dispatch.template_key];
+    if (!template) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
+
+    if (dispatch.status === 'sent') {
+      db.prepare(`
+        UPDATE form_dispatches
+        SET status = 'opened', opened_at = COALESCE(opened_at, CURRENT_TIMESTAMP)
+        WHERE id = ?
+      `).run(id);
+      dispatch.status = 'opened';
+      dispatch.opened_at = dispatch.opened_at || new Date().toISOString();
+    }
+
+    const existingSubmission = db.prepare(`
+      SELECT answers_json, submitted_by_name, submitted_by_contact, created_at
+      FROM form_submissions
+      WHERE dispatch_id = ?
+    `).get(id);
+
+    res.json({
+      item: {
+        ...dispatch,
+        payload: dispatch.payload_json ? JSON.parse(dispatch.payload_json) : {},
+        template,
+        submission: existingSubmission
+          ? {
+              ...existingSubmission,
+              answers: existingSubmission.answers_json ? JSON.parse(existingSubmission.answers_json) : {}
+            }
+          : null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Public form fill: submit answers
+router.post('/site/dispatches/:id/submit', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'id לא תקין' });
+
+    const dispatch = db.prepare(`
+      SELECT id, template_key, status
+      FROM form_dispatches
+      WHERE id = ?
+    `).get(id);
+
+    if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
+
+    if (dispatch.status === 'submitted') {
+      return res.status(409).json({ error: 'טופס כבר נשלח' });
+    }
+
+    const template = TEMPLATE_DEFS[dispatch.template_key];
+    if (!template) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
+
+    const { answers = {}, submittedByName = '', submittedByContact = '' } = req.body || {};
+
+    for (const field of template.fields) {
+      if (field.required) {
+        const value = answers[field.key];
+        const isEmpty = value === undefined || value === null || value === '' || value === false;
+        if (isEmpty) {
+          return res.status(400).json({ error: `השדה "${field.label}" הוא חובה` });
+        }
+      }
+    }
+
+    db.prepare(`
+      INSERT INTO form_submissions (dispatch_id, template_key, answers_json, submitted_by_name, submitted_by_contact)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(dispatch_id) DO UPDATE SET
+        answers_json = excluded.answers_json,
+        submitted_by_name = excluded.submitted_by_name,
+        submitted_by_contact = excluded.submitted_by_contact
+    `).run(
+      id,
+      dispatch.template_key,
+      JSON.stringify(answers),
+      String(submittedByName || '').trim() || null,
+      String(submittedByContact || '').trim() || null
+    );
+
+    db.prepare(`
+      UPDATE form_dispatches
+      SET status = 'submitted',
+          submitted_at = CURRENT_TIMESTAMP,
+          opened_at = COALESCE(opened_at, CURRENT_TIMESTAMP)
+      WHERE id = ?
+    `).run(id);
+
+    res.json({ success: true, status: 'submitted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

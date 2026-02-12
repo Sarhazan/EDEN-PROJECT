@@ -410,10 +410,25 @@ function initializeDatabase() {
       supplier_id INTEGER,
       payload_json TEXT,
       status TEXT DEFAULT 'sent',
+      opened_at TIMESTAMP,
+      submitted_at TIMESTAMP,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE SET NULL,
       FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE SET NULL,
       FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS form_submissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dispatch_id INTEGER NOT NULL UNIQUE,
+      template_key TEXT NOT NULL,
+      answers_json TEXT NOT NULL,
+      submitted_by_name TEXT,
+      submitted_by_contact TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (dispatch_id) REFERENCES form_dispatches(id) ON DELETE CASCADE
     )
   `);
 
@@ -436,6 +451,22 @@ function initializeDatabase() {
 
   try {
     db.exec(`ALTER TABLE form_dispatches ADD COLUMN supplier_id INTEGER REFERENCES suppliers(id)`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN opened_at TIMESTAMP`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN submitted_at TIMESTAMP`);
   } catch (e) {
     if (!e.message.includes('duplicate column')) {
       throw e;
@@ -475,6 +506,8 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_form_dispatches_building_id', 'form_dispatches', 'building_id');
   createIndexIfNotExists('idx_form_dispatches_tenant_id', 'form_dispatches', 'tenant_id');
   createIndexIfNotExists('idx_form_dispatches_supplier_id', 'form_dispatches', 'supplier_id');
+  createIndexIfNotExists('idx_form_dispatches_status_created_at', 'form_dispatches', 'status, created_at DESC');
+  createIndexIfNotExists('idx_form_submissions_dispatch_id', 'form_submissions', 'dispatch_id');
 
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');
