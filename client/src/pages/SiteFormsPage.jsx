@@ -1,17 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useApp } from '../context/AppContext';
 
 const API_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL
   : 'http://localhost:3002/api';
 
 export default function SiteFormsPage() {
+  const { buildings } = useApp();
   const [templates, setTemplates] = useState([]);
   const [history, setHistory] = useState([]);
+  const [recipients, setRecipients] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [form, setForm] = useState({
     templateKey: '',
     recipientType: 'tenant',
+    buildingId: '',
+    recipientId: '',
     recipientName: '',
     recipientContact: '',
     title: '',
@@ -38,7 +43,55 @@ export default function SiteFormsPage() {
     }
   };
 
+  const loadRecipients = async (type, buildingId) => {
+    try {
+      const params = new URLSearchParams({ type });
+      if (type === 'tenant' && buildingId) params.set('buildingId', buildingId);
+
+      if (type === 'tenant' && !buildingId) {
+        setRecipients([]);
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/forms/site/recipients?${params.toString()}`);
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'שגיאה בטעינת נמענים');
+      setRecipients(payload.items || []);
+    } catch (e) {
+      setRecipients([]);
+      setError(e.message || 'שגיאה בטעינת נמענים');
+    }
+  };
+
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    loadRecipients(form.recipientType, form.buildingId);
+  }, [form.recipientType, form.buildingId]);
+
+  const selectedRecipient = useMemo(() => {
+    if (!form.recipientId) return null;
+    return recipients.find((r) => String(r.id) === String(form.recipientId)) || null;
+  }, [form.recipientId, recipients]);
+
+  useEffect(() => {
+    if (!selectedRecipient) return;
+
+    if (form.recipientType === 'tenant') {
+      setForm((p) => ({
+        ...p,
+        recipientName: selectedRecipient.name || '',
+        recipientContact: selectedRecipient.phone || selectedRecipient.email || ''
+      }));
+      return;
+    }
+
+    setForm((p) => ({
+      ...p,
+      recipientName: selectedRecipient.name || '',
+      recipientContact: selectedRecipient.phone || selectedRecipient.email || ''
+    }));
+  }, [selectedRecipient, form.recipientType]);
 
   const send = async (e) => {
     e.preventDefault();
@@ -47,6 +100,7 @@ export default function SiteFormsPage() {
 
     try {
       if (!form.templateKey) throw new Error('נא לבחור טופס');
+      if (form.recipientType === 'tenant' && !form.buildingId) throw new Error('נא לבחור מבנה לדייר');
       if (!form.recipientName.trim()) throw new Error('נא להזין שם נמען');
 
       const res = await fetch(`${API_URL}/forms/site/send`, {
@@ -58,7 +112,7 @@ export default function SiteFormsPage() {
       if (!res.ok) throw new Error(payload.error || 'שגיאה בשליחה');
 
       setSuccess(`נשלח בהצלחה. קישור אינטראקטיבי: ${payload.formUrl}`);
-      setForm((p) => ({ ...p, recipientName: '', recipientContact: '', title: '', message: '', amount: '' }));
+      setForm((p) => ({ ...p, recipientId: '', recipientName: '', recipientContact: '', title: '', message: '', amount: '' }));
       await load();
     } catch (e2) {
       setError(e2.message || 'שגיאה בשליחה');
@@ -83,14 +137,47 @@ export default function SiteFormsPage() {
         </label>
 
         <label className="text-sm">סוג נמען
-          <select className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 bg-white" value={form.recipientType} onChange={(e) => setForm((p) => ({ ...p, recipientType: e.target.value }))}>
+          <select
+            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 bg-white"
+            value={form.recipientType}
+            onChange={(e) => setForm((p) => ({ ...p, recipientType: e.target.value, recipientId: '', recipientName: '', recipientContact: '' }))}
+          >
             <option value="tenant">דייר</option>
             <option value="supplier">ספק</option>
           </select>
         </label>
 
+        <label className="text-sm">מבנה (לדייר)
+          <select
+            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 bg-white"
+            value={form.buildingId}
+            onChange={(e) => setForm((p) => ({ ...p, buildingId: e.target.value, recipientId: '', recipientName: '', recipientContact: '' }))}
+            disabled={form.recipientType !== 'tenant'}
+          >
+            <option value="">בחר מבנה</option>
+            {buildings.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </label>
+
+        <label className="text-sm">נמען מרשימה
+          <select
+            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 bg-white"
+            value={form.recipientId}
+            onChange={(e) => setForm((p) => ({ ...p, recipientId: e.target.value }))}
+          >
+            <option value="">בחר נמען</option>
+            {recipients.map((r) => (
+              <option key={r.id} value={r.id}>
+                {form.recipientType === 'tenant'
+                  ? `${r.name} • קומה ${r.floor || '-'} • דירה ${r.apartment_number || '-'}`
+                  : r.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <label className="text-sm">שם נמען
-          <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2" value={form.recipientName} onChange={(e) => setForm((p) => ({ ...p, recipientName: e.target.value }))} />
+          <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2" value={form.recipientName} onChange={(e) => setForm((p) => ({ ...p, recipientName: e.target.value }))} placeholder="אפשר לבחור מרשימה או להקליד ידנית" />
         </label>
 
         <label className="text-sm">טלפון/אימייל
@@ -123,7 +210,7 @@ export default function SiteFormsPage() {
             {history.map((h) => (
               <div key={h.id} className="border border-gray-200 rounded-lg p-3">
                 <div className="font-medium">{h.recipient_name} • {h.template_key}</div>
-                <div className="text-sm text-gray-600">{h.recipient_type} | {h.recipient_contact || '-'} | {h.status}</div>
+                <div className="text-sm text-gray-600">{h.recipient_type} | {h.building_name || '-'} | {h.recipient_contact || '-'} | {h.status}</div>
               </div>
             ))}
           </div>

@@ -405,11 +405,42 @@ function initializeDatabase() {
       recipient_type TEXT NOT NULL,
       recipient_name TEXT NOT NULL,
       recipient_contact TEXT,
+      building_id INTEGER,
+      tenant_id INTEGER,
+      supplier_id INTEGER,
       payload_json TEXT,
       status TEXT DEFAULT 'sent',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE SET NULL,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE SET NULL,
+      FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
     )
   `);
+
+  // Add relational columns to form_dispatches table (migration)
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN building_id INTEGER REFERENCES buildings(id)`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN tenant_id INTEGER REFERENCES tenants(id)`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN supplier_id INTEGER REFERENCES suppliers(id)`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
 
   // Settings table for external service configurations (API keys, etc.)
   db.exec(`
@@ -441,6 +472,9 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_tenants_building_id', 'tenants', 'building_id');
   createIndexIfNotExists('idx_tenants_building_floor_apartment', 'tenants', 'building_id, floor, apartment_number');
   createIndexIfNotExists('idx_form_dispatches_created_at', 'form_dispatches', 'created_at DESC');
+  createIndexIfNotExists('idx_form_dispatches_building_id', 'form_dispatches', 'building_id');
+  createIndexIfNotExists('idx_form_dispatches_tenant_id', 'form_dispatches', 'tenant_id');
+  createIndexIfNotExists('idx_form_dispatches_supplier_id', 'form_dispatches', 'supplier_id');
 
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');

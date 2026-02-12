@@ -132,12 +132,49 @@ router.get('/site/templates', (req, res) => {
   });
 });
 
+// Site manager: recipients lookup (for structured sending)
+router.get('/site/recipients', (req, res) => {
+  try {
+    const type = String(req.query.type || '').trim(); // tenant | supplier
+    const buildingId = Number(req.query.buildingId || 0);
+
+    if (!['tenant', 'supplier'].includes(type)) {
+      return res.status(400).json({ error: 'type חייב להיות tenant או supplier' });
+    }
+
+    if (type === 'tenant') {
+      if (!buildingId) return res.status(400).json({ error: 'לבחירת דיירים יש לשלוח buildingId' });
+
+      const tenants = db.prepare(`
+        SELECT id, name, phone, email, apartment_number, floor, building_id
+        FROM tenants
+        WHERE building_id = ?
+        ORDER BY CAST(floor AS INTEGER) ASC, CAST(apartment_number AS INTEGER) ASC, name ASC
+      `).all(buildingId);
+
+      return res.json({ items: tenants });
+    }
+
+    const suppliers = db.prepare(`
+      SELECT id, name, phone, email
+      FROM suppliers
+      ORDER BY name ASC
+    `).all();
+
+    return res.json({ items: suppliers });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Site manager: send interactive form
 router.post('/site/send', (req, res) => {
   try {
     const {
       templateKey,
       recipientType, // supplier | tenant
+      recipientId,
+      buildingId,
       recipientName,
       recipientContact,
       title,
@@ -146,15 +183,84 @@ router.post('/site/send', (req, res) => {
     } = req.body;
 
     if (!templateKey) return res.status(400).json({ error: 'סוג טופס הוא שדה חובה' });
-    if (!recipientType) return res.status(400).json({ error: 'סוג נמען הוא שדה חובה' });
-    if (!recipientName || !recipientName.trim()) return res.status(400).json({ error: 'שם נמען הוא שדה חובה' });
+    if (!recipientType || !['supplier', 'tenant'].includes(recipientType)) return res.status(400).json({ error: 'סוג נמען לא תקין' });
 
-    const payload = JSON.stringify({ title: title || '', message: message || '', amount: amount || null });
+    const parsedRecipientId = recipientId ? Number(recipientId) : null;
+    const parsedBuildingId = buildingId ? Number(buildingId) : null;
+
+    let resolvedName = (recipientName || '').trim();
+    let resolvedContact = (recipientContact || '').trim();
+    let resolvedTenantId = null;
+    let resolvedSupplierId = null;
+    let resolvedBuildingId = parsedBuildingId || null;
+
+    if (recipientType === 'tenant') {
+      if (parsedRecipientId) {
+        const tenant = db.prepare(`
+          SELECT id, name, phone, email, building_id
+          FROM tenants
+          WHERE id = ?
+        `).get(parsedRecipientId);
+
+        if (!tenant) return res.status(400).json({ error: 'דייר לא נמצא' });
+
+        resolvedTenantId = tenant.id;
+        resolvedBuildingId = tenant.building_id;
+        resolvedName = tenant.name;
+        resolvedContact = tenant.phone || tenant.email || resolvedContact;
+      }
+
+      if (!resolvedName) {
+        return res.status(400).json({ error: 'שם נמען הוא שדה חובה' });
+      }
+
+      if (!resolvedBuildingId) {
+        return res.status(400).json({ error: 'לדייר חובה לבחור מבנה' });
+      }
+    }
+
+    if (recipientType === 'supplier') {
+      if (parsedRecipientId) {
+        const supplier = db.prepare(`
+          SELECT id, name, phone, email
+          FROM suppliers
+          WHERE id = ?
+        `).get(parsedRecipientId);
+
+        if (!supplier) return res.status(400).json({ error: 'ספק לא נמצא' });
+
+        resolvedSupplierId = supplier.id;
+        resolvedName = supplier.name;
+        resolvedContact = supplier.phone || supplier.email || resolvedContact;
+      }
+
+      if (!resolvedName) {
+        return res.status(400).json({ error: 'שם נמען הוא שדה חובה' });
+      }
+    }
+
+    const payload = JSON.stringify({
+      title: title || '',
+      message: message || '',
+      amount: amount || null
+    });
 
     const result = db.prepare(`
-      INSERT INTO form_dispatches (template_key, recipient_type, recipient_name, recipient_contact, payload_json, status)
-      VALUES (?, ?, ?, ?, ?, 'sent')
-    `).run(templateKey, recipientType, recipientName.trim(), (recipientContact || '').trim(), payload);
+      INSERT INTO form_dispatches (
+        template_key, recipient_type, recipient_name, recipient_contact,
+        building_id, tenant_id, supplier_id, payload_json, status
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'sent')
+    `).run(
+      templateKey,
+      recipientType,
+      resolvedName,
+      resolvedContact,
+      resolvedBuildingId,
+      resolvedTenantId,
+      resolvedSupplierId,
+      payload
+    );
 
     const id = result.lastInsertRowid;
 
@@ -172,9 +278,12 @@ router.post('/site/send', (req, res) => {
 router.get('/site/dispatches', (req, res) => {
   try {
     const rows = db.prepare(`
-      SELECT id, template_key, recipient_type, recipient_name, recipient_contact, status, created_at
-      FROM form_dispatches
-      ORDER BY created_at DESC
+      SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
+             fd.status, fd.created_at, fd.building_id, b.name AS building_name,
+             fd.tenant_id, fd.supplier_id
+      FROM form_dispatches fd
+      LEFT JOIN buildings b ON b.id = fd.building_id
+      ORDER BY fd.created_at DESC
       LIMIT 100
     `).all();
 
