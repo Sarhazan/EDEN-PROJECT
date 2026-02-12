@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding, FaEnvelope, FaFileAlt } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
-export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation, onAddBuilding }) {
+export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation, onAddBuilding, onAddTenant }) {
   const { connectionStatus, logout, tasks } = useApp();
   const location = useLocation();
   const [starFilter, setStarFilter] = useState(false);
@@ -29,6 +29,9 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
     }
     if (path === '/buildings') {
       return { show: true, label: 'מבנה חדש', onClick: onAddBuilding };
+    }
+    if (path === '/tenants') {
+      return { show: true, label: 'דייר חדש', onClick: onAddTenant };
     }
     return { show: false };
   };
@@ -61,6 +64,7 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
     { path: '/employees', icon: FaUsers, label: 'עובדים' },
     { path: '/locations', icon: FaMapMarkerAlt, label: 'מיקומים' },
     { path: '/buildings', icon: FaBuilding, label: 'מבנים' },
+    { path: '/tenants', icon: FaUsers, label: 'דיירים' },
     { path: '/forms', icon: FaFileAlt, label: 'טפסים' },
     { path: '/settings', icon: FaWrench, label: 'הגדרות' }
   ];

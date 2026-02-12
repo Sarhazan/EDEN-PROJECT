@@ -13,6 +13,7 @@ import SupplierForm from './components/forms/SupplierForm';
 import EmployeeForm from './components/forms/EmployeeForm';
 import LocationForm from './components/forms/LocationForm';
 import BuildingForm from './components/forms/BuildingForm';
+import TenantForm from './components/forms/TenantForm';
 import LoginPage from './pages/LoginPage';
 import MyDayPage from './pages/MyDayPage';
 import AllTasksPage from './pages/AllTasksPage';
@@ -22,6 +23,7 @@ import SuppliersPage from './pages/SuppliersPage';
 import EmployeesPage from './pages/EmployeesPage';
 import LocationsPage from './pages/LocationsPage';
 import BuildingsPage from './pages/BuildingsPage';
+import TenantsPage from './pages/TenantsPage';
 import SettingsPage from './pages/SettingsPage';
 import TaskConfirmationPage from './pages/TaskConfirmationPage';
 import HQDashboardPage from './pages/HQDashboardPage';
@@ -47,6 +49,7 @@ function MainContent() {
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isBuildingModalOpen, setIsBuildingModalOpen] = useState(false);
+  const [isTenantModalOpen, setIsTenantModalOpen] = useState(false);
 
   // Mobile drawer state and breakpoint detection
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -63,6 +66,7 @@ function MainContent() {
     { path: '/employees', icon: FaUsers, label: 'עובדים' },
     { path: '/locations', icon: FaMapMarkerAlt, label: 'מיקומים' },
     { path: '/buildings', icon: FaBuilding, label: 'מבנים' },
+    { path: '/tenants', icon: FaUsers, label: 'דיירים' },
     { path: '/forms', icon: FaFileAlt, label: 'טפסים' },
     { path: '/settings', icon: FaWrench, label: 'הגדרות' }
   ];
@@ -95,6 +99,10 @@ function MainContent() {
 
   const handleCloseBuildingModal = () => {
     setIsBuildingModalOpen(false);
+  };
+
+  const handleCloseTenantModal = () => {
+    setIsTenantModalOpen(false);
   };
 
   // Route modes
@@ -135,6 +143,7 @@ function MainContent() {
           onAddEmployee={() => setIsEmployeeModalOpen(true)}
           onAddLocation={() => setIsLocationModalOpen(true)}
           onAddBuilding={() => setIsBuildingModalOpen(true)}
+          onAddTenant={() => setIsTenantModalOpen(true)}
         />
       )}
 
@@ -178,6 +187,7 @@ function MainContent() {
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/locations" element={<LocationsPage />} />
           <Route path="/buildings" element={<BuildingsPage />} />
+          <Route path="/tenants" element={<TenantsPage />} />
           <Route path="/forms" element={<SiteFormsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/confirm/:token" element={<TaskConfirmationPage />} />
@@ -254,6 +264,15 @@ function MainContent() {
         title="מבנה חדש"
       >
         <BuildingForm building={null} onClose={handleCloseBuildingModal} />
+      </Modal>
+
+      {/* Tenant Modal */}
+      <Modal
+        isOpen={isTenantModalOpen}
+        onClose={handleCloseTenantModal}
+        title="דייר חדש"
+      >
+        <TenantForm tenant={null} onClose={handleCloseTenantModal} />
       </Modal>
 
       {/* Toast Container */}

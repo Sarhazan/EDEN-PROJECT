@@ -19,6 +19,7 @@ export function AppProvider({ children }) {
   const [suppliers, setSuppliers] = useState([]);
   const [locations, setLocations] = useState([]);
   const [buildings, setBuildings] = useState([]);
+  const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -120,7 +121,8 @@ export function AppProvider({ children }) {
         fetchEmployees(),
         fetchSuppliers(),
         fetchLocations(),
-        fetchBuildings()
+        fetchBuildings(),
+        fetchTenants()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -387,6 +389,42 @@ export function AppProvider({ children }) {
     });
     if (!response.ok) throw new Error('שגיאה במחיקת מבנה');
     await fetchBuildings();
+    await fetchTenants();
+  };
+
+  // Tenants
+  const fetchTenants = async () => {
+    const response = await fetch(`${API_URL}/tenants`);
+    const data = await response.json();
+    setTenants(data);
+  };
+
+  const addTenant = async (tenant) => {
+    const response = await fetch(`${API_URL}/tenants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tenant)
+    });
+    if (!response.ok) throw new Error('שגיאה ביצירת דייר');
+    await fetchTenants();
+  };
+
+  const updateTenant = async (id, tenant) => {
+    const response = await fetch(`${API_URL}/tenants/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tenant)
+    });
+    if (!response.ok) throw new Error('שגיאה בעדכון דייר');
+    await fetchTenants();
+  };
+
+  const deleteTenant = async (id) => {
+    const response = await fetch(`${API_URL}/tenants/${id}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error('שגיאה במחיקת דייר');
+    await fetchTenants();
   };
 
   // Data management
@@ -440,6 +478,7 @@ export function AppProvider({ children }) {
     suppliers,
     locations,
     buildings,
+    tenants,
     loading,
     // Task modal state
     isTaskModalOpen,
@@ -473,6 +512,10 @@ export function AppProvider({ children }) {
     addBuilding,
     updateBuilding,
     deleteBuilding,
+    // Tenant methods
+    addTenant,
+    updateTenant,
+    deleteTenant,
     // Data management
     seedData,
     clearData,

@@ -329,6 +329,22 @@ function initializeDatabase() {
     )
   `);
 
+  // Tenants table (linked to buildings)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tenants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT,
+      email TEXT,
+      apartment_number TEXT NOT NULL,
+      floor TEXT NOT NULL,
+      building_id INTEGER NOT NULL,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE CASCADE
+    )
+  `);
+
   // Add building_id column to tasks table (optional building linking)
   try {
     db.exec(`ALTER TABLE tasks ADD COLUMN building_id INTEGER REFERENCES buildings(id)`);
@@ -422,6 +438,8 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_distribution_list_members_list_id', 'distribution_list_members', 'list_id');
   createIndexIfNotExists('idx_distribution_list_members_employee_id', 'distribution_list_members', 'employee_id');
   createIndexIfNotExists('idx_building_contracts_building_id', 'building_contracts', 'building_id');
+  createIndexIfNotExists('idx_tenants_building_id', 'tenants', 'building_id');
+  createIndexIfNotExists('idx_tenants_building_floor_apartment', 'tenants', 'building_id, floor, apartment_number');
   createIndexIfNotExists('idx_form_dispatches_created_at', 'form_dispatches', 'created_at DESC');
 
   // Enable WAL mode for better concurrency (reads during writes)
