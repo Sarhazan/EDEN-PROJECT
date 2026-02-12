@@ -445,4 +445,65 @@ router.post('/site/dispatches/:id/submit', (req, res) => {
   }
 });
 
+// HQ: list dispatches with status and submission flag
+router.get('/hq/dispatches', (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
+             fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
+             fd.building_id, b.name AS building_name,
+             CASE WHEN fs.id IS NULL THEN 0 ELSE 1 END AS has_submission
+      FROM form_dispatches fd
+      LEFT JOIN buildings b ON b.id = fd.building_id
+      LEFT JOIN form_submissions fs ON fs.dispatch_id = fd.id
+      ORDER BY fd.created_at DESC
+      LIMIT 300
+    `).all();
+
+    res.json({ items: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// HQ: dispatch details + submitted answers
+router.get('/hq/dispatches/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'id לא תקין' });
+
+    const dispatch = db.prepare(`
+      SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
+             fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
+             fd.payload_json, b.name AS building_name
+      FROM form_dispatches fd
+      LEFT JOIN buildings b ON b.id = fd.building_id
+      WHERE fd.id = ?
+    `).get(id);
+
+    if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
+
+    const submission = db.prepare(`
+      SELECT answers_json, submitted_by_name, submitted_by_contact, created_at
+      FROM form_submissions
+      WHERE dispatch_id = ?
+    `).get(id);
+
+    res.json({
+      item: {
+        ...dispatch,
+        payload: dispatch.payload_json ? JSON.parse(dispatch.payload_json) : {},
+        submission: submission
+          ? {
+              ...submission,
+              answers: submission.answers_json ? JSON.parse(submission.answers_json) : {}
+            }
+          : null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
