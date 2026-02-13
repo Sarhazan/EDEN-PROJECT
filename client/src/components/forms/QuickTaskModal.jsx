@@ -111,6 +111,18 @@ export default function QuickTaskModal({ isOpen, onClose }) {
   };
 
   const showTaskCreatedToast = (createdTask) => {
+    const parseISODate = (value) => {
+      if (!value) return null;
+      const [year, month, day] = value.split('-').map(Number);
+      if (!year || !month || !day) return null;
+      return new Date(year, month - 1, day);
+    };
+
+    const createdDate = parseISODate(createdTask?.start_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const shouldShowNavigate = createdDate && createdDate > today;
+
     const navigateToTask = () => {
       if (!createdTask?.id || !createdTask?.start_date) return;
       window.dispatchEvent(new CustomEvent('myday:navigate-to-task', {
@@ -125,16 +137,18 @@ export default function QuickTaskModal({ isOpen, onClose }) {
     toast.success(
       <div className="flex flex-col gap-1">
         <span>המשימה נוצרה בהצלחה</span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigateToTask();
-          }}
-          className="text-sm underline text-blue-700 text-right"
-        >
-          למעבר למשימה לחץ כאן
-        </button>
+        {shouldShowNavigate && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigateToTask();
+            }}
+            className="text-sm underline text-blue-700 text-right"
+          >
+            למעבר למשימה לחץ כאן
+          </button>
+        )}
       </div>,
       {
         position: 'bottom-center',
