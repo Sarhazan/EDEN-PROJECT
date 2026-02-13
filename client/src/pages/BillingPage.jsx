@@ -10,6 +10,8 @@ export default function BillingPage() {
   const [dashboard, setDashboard] = useState(null);
   const [tenantSummaries, setTenantSummaries] = useState([]);
   const [sendingForTenant, setSendingForTenant] = useState(null);
+  const [chargeForm, setChargeForm] = useState({ tenant_id: '', amount: '', due_date: '', period: '' });
+  const [paymentForm, setPaymentForm] = useState({ tenant_id: '', charge_id: '', amount: '', method: 'cash', reference: '' });
 
   const overdueAlerts = useMemo(() => {
     return (dashboard?.overdue_tenants || []).filter((t) => Number(t.open_balance || 0) > 0);
@@ -53,6 +55,57 @@ export default function BillingPage() {
     }
   }
 
+  async function handleCreateCharge(e) {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_URL}/billing/charges`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: Number(chargeForm.tenant_id),
+          amount: Number(chargeForm.amount),
+          due_date: chargeForm.due_date,
+          period: chargeForm.period || null
+        })
+      });
+
+      if (!res.ok) throw new Error('failed');
+
+      setChargeForm({ tenant_id: '', amount: '', due_date: '', period: '' });
+      await fetchData();
+      alert('חיוב נוצר בהצלחה');
+    } catch {
+      alert('שגיאה ביצירת חיוב');
+    }
+  }
+
+  async function handleCreatePayment(e) {
+    e.preventDefault();
+    try {
+      const body = {
+        tenant_id: Number(paymentForm.tenant_id),
+        amount: Number(paymentForm.amount),
+        method: paymentForm.method || null,
+        reference: paymentForm.reference || null
+      };
+      if (paymentForm.charge_id) body.charge_id = Number(paymentForm.charge_id);
+
+      const res = await fetch(`${API_URL}/billing/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) throw new Error('failed');
+
+      setPaymentForm({ tenant_id: '', charge_id: '', amount: '', method: 'cash', reference: '' });
+      await fetchData();
+      alert('תשלום נרשם בהצלחה');
+    } catch {
+      alert('שגיאה ברישום תשלום');
+    }
+  }
+
   if (loading) {
     return <div className="p-6">טוען נתוני גבייה...</div>;
   }
@@ -69,6 +122,36 @@ export default function BillingPage() {
       <div>
         <h1 className="text-3xl font-bold">גבייה</h1>
         <p className="text-gray-600 mt-1">דשבורד גבייה, איחורים והתראות תשלום</p>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <form onSubmit={handleCreateCharge} className="bg-white border rounded-lg p-4 space-y-3">
+          <div className="font-semibold">חיוב חדש</div>
+          <div className="grid grid-cols-2 gap-2">
+            <select className="border rounded px-3 py-2" value={chargeForm.tenant_id} onChange={(e) => setChargeForm((p) => ({ ...p, tenant_id: e.target.value }))} required>
+              <option value="">בחר דייר</option>
+              {tenantSummaries.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <input className="border rounded px-3 py-2" type="number" step="0.01" min="0" placeholder="סכום" value={chargeForm.amount} onChange={(e) => setChargeForm((p) => ({ ...p, amount: e.target.value }))} required />
+            <input className="border rounded px-3 py-2" type="date" value={chargeForm.due_date} onChange={(e) => setChargeForm((p) => ({ ...p, due_date: e.target.value }))} required />
+            <input className="border rounded px-3 py-2" placeholder="תקופה (אופציונלי)" value={chargeForm.period} onChange={(e) => setChargeForm((p) => ({ ...p, period: e.target.value }))} />
+          </div>
+          <button className="bg-primary text-white px-3 py-2 rounded hover:bg-orange-600">צור חיוב</button>
+        </form>
+
+        <form onSubmit={handleCreatePayment} className="bg-white border rounded-lg p-4 space-y-3">
+          <div className="font-semibold">רישום תשלום</div>
+          <div className="grid grid-cols-2 gap-2">
+            <select className="border rounded px-3 py-2" value={paymentForm.tenant_id} onChange={(e) => setPaymentForm((p) => ({ ...p, tenant_id: e.target.value }))} required>
+              <option value="">בחר דייר</option>
+              {tenantSummaries.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <input className="border rounded px-3 py-2" type="number" min="0" placeholder="מספר חיוב (אופציונלי)" value={paymentForm.charge_id} onChange={(e) => setPaymentForm((p) => ({ ...p, charge_id: e.target.value }))} />
+            <input className="border rounded px-3 py-2" type="number" step="0.01" min="0" placeholder="סכום" value={paymentForm.amount} onChange={(e) => setPaymentForm((p) => ({ ...p, amount: e.target.value }))} required />
+            <input className="border rounded px-3 py-2" placeholder="אסמכתא" value={paymentForm.reference} onChange={(e) => setPaymentForm((p) => ({ ...p, reference: e.target.value }))} />
+          </div>
+          <button className="bg-emerald-600 text-white px-3 py-2 rounded hover:bg-emerald-700">רשום תשלום</button>
+        </form>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
