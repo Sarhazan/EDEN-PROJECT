@@ -20,6 +20,7 @@ export default function MyDayPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const [timelineRangeDays, setTimelineRangeDays] = useState(7);
+  const [highlightTaskId, setHighlightTaskId] = useState(null);
 
   // Filter states
   const [filterCategory, setFilterCategory] = useState(''); // '' | 'priority' | 'system' | 'status' | 'employee'
@@ -64,6 +65,34 @@ export default function MyDayPage() {
     };
   }, []);
 
+  // Navigate to created task only when user explicitly clicks CTA in toast
+  useEffect(() => {
+    const parseISODate = (value) => {
+      if (!value) return null;
+      const [year, month, day] = value.split('-').map(Number);
+      if (!year || !month || !day) return null;
+      return new Date(year, month - 1, day);
+    };
+
+    const handleNavigateToTask = (e) => {
+      const { taskId, startDate } = e.detail || {};
+      if (!taskId || !startDate) return;
+
+      const taskDate = parseISODate(startDate);
+      if (taskDate) setSelectedDate(taskDate);
+
+      setHighlightTaskId(taskId);
+      setTimeout(() => {
+        const el = document.getElementById(`task-${taskId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 250);
+      setTimeout(() => setHighlightTaskId(null), 4500);
+    };
+
+    window.addEventListener('myday:navigate-to-task', handleNavigateToTask);
+    return () => window.removeEventListener('myday:navigate-to-task', handleNavigateToTask);
+  }, []);
+
   // Debounced localStorage save for column widths
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -86,6 +115,16 @@ export default function MyDayPage() {
     setEditingTask(task);
     setIsTaskModalOpen(true);
   };
+
+  const renderTaskCard = (task) => (
+    <div
+      id={`task-${task.id}`}
+      key={task.id}
+      className={highlightTaskId === task.id ? 'rounded-lg ring-2 ring-blue-400 ring-offset-2 transition-all' : ''}
+    >
+      <TaskCard task={task} onEdit={handleEdit} />
+    </div>
+  );
 
   // Reset column widths to default
   const handleResetColumnWidths = () => {
@@ -1030,7 +1069,7 @@ export default function MyDayPage() {
                 return timeA.localeCompare(timeB);
               })
               .map((task) => (
-                <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                renderTaskCard(task)
               ))
             }
             {recurringTasks.length === 0 && oneTimeTasks.length === 0 && (
@@ -1198,7 +1237,7 @@ export default function MyDayPage() {
                     <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
                   ) : (
                     recurringTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                      renderTaskCard(task)
                     ))
                   )}
                 </div>
@@ -1215,7 +1254,7 @@ export default function MyDayPage() {
                     <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
                   ) : (
                     oneTimeTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                      renderTaskCard(task)
                     ))
                   )}
                 </div>
@@ -1228,7 +1267,7 @@ export default function MyDayPage() {
                     </h3>
                     <div className="space-y-0">
                       {lateTasks.map((task) => (
-                        <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                        renderTaskCard(task)
                       ))}
                     </div>
                   </>
@@ -1347,7 +1386,7 @@ export default function MyDayPage() {
                   <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
                 ) : (
                   recurringTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                    renderTaskCard(task)
                   ))
                 )}
               </div>
@@ -1362,7 +1401,7 @@ export default function MyDayPage() {
                   <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
                 ) : (
                   oneTimeTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                    renderTaskCard(task)
                   ))
                 )}
               </div>
@@ -1375,7 +1414,7 @@ export default function MyDayPage() {
                   </h3>
                   <div className="space-y-0">
                     {lateTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                      renderTaskCard(task)
                     ))}
                   </div>
                 </>
@@ -1387,3 +1426,5 @@ export default function MyDayPage() {
     </div>
   );
 }
+
+

@@ -160,7 +160,9 @@ export function AppProvider({ children }) {
       body: JSON.stringify(task)
     });
     if (!response.ok) throw new Error('שגיאה ביצירת משימה');
+    const createdTask = await response.json();
     await fetchTasks();
+    return createdTask;
   };
 
   const updateTask = async (id, task) => {

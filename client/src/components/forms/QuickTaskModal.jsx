@@ -110,6 +110,41 @@ export default function QuickTaskModal({ isOpen, onClose }) {
     }
   };
 
+  const showTaskCreatedToast = (createdTask) => {
+    const navigateToTask = () => {
+      if (!createdTask?.id || !createdTask?.start_date) return;
+      window.dispatchEvent(new CustomEvent('myday:navigate-to-task', {
+        detail: {
+          taskId: createdTask.id,
+          startDate: createdTask.start_date
+        }
+      }));
+      toast.dismiss();
+    };
+
+    toast.success(
+      <div className="flex flex-col gap-1">
+        <span>המשימה נוצרה בהצלחה</span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigateToTask();
+          }}
+          className="text-sm underline text-blue-700 text-right"
+        >
+          למעבר למשימה לחץ כאן
+        </button>
+      </div>,
+      {
+        position: 'bottom-center',
+        autoClose: 5000,
+        hideProgressBar: true,
+        rtl: true
+      }
+    );
+  };
+
   const handleQuickSave = async () => {
     // Validate title
     if (!title.trim()) {
@@ -139,13 +174,8 @@ export default function QuickTaskModal({ isOpen, onClose }) {
         status: 'draft'
       };
 
-      await addTask(taskData);
-      toast.success('משימה נוצרה', {
-        position: 'bottom-center',
-        autoClose: 2000,
-        hideProgressBar: true,
-        rtl: true
-      });
+      const createdTask = await addTask(taskData);
+      showTaskCreatedToast(createdTask);
       onClose();
       // Reset form
       setTitle('');
@@ -197,13 +227,8 @@ export default function QuickTaskModal({ isOpen, onClose }) {
         status: 'draft'
       };
 
-      await addTask(taskData);
-      toast.success('משימה נוצרה', {
-        position: 'bottom-center',
-        autoClose: 2000,
-        hideProgressBar: true,
-        rtl: true
-      });
+      const createdTask = await addTask(taskData);
+      showTaskCreatedToast(createdTask);
       onClose();
       // Reset form
       setTitle('');
