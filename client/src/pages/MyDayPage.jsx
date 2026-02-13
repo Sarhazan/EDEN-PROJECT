@@ -826,27 +826,28 @@ export default function MyDayPage() {
                 >
                   {day.count}
                 </div>
-                {/* Date */}
-                <div className="text-center">
-                  {(timelineRangeDays === 7 || index % 2 === 0 || day.isToday) && (
-                    <>
+                {/* Date (fixed height to keep monthly bars perfectly aligned) */}
+                {(() => {
+                  const showLabel = timelineRangeDays === 7 || index % 2 === 0 || day.isToday;
+                  return (
+                    <div className="text-center h-9 flex flex-col justify-start">
                       <div
                         className={`text-xs font-semibold ${
                           day.isToday ? 'text-blue-600' : 'text-gray-600'
-                        }`}
+                        } ${showLabel ? '' : 'opacity-0'}`}
                       >
                         {day.dayLabel}
                       </div>
                       <div
                         className={`text-xs ${
                           day.isToday ? 'text-blue-500' : 'text-gray-500'
-                        }`}
+                        } ${showLabel ? '' : 'opacity-0'}`}
                       >
                         {day.dateLabel}
                       </div>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  );
+                })()}
               </div>
               );
             })}
