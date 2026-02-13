@@ -24,6 +24,7 @@ import EmployeesPage from './pages/EmployeesPage';
 import LocationsPage from './pages/LocationsPage';
 import BuildingsPage from './pages/BuildingsPage';
 import TenantsPage from './pages/TenantsPage';
+import BillingPage from './pages/BillingPage';
 import SettingsPage from './pages/SettingsPage';
 import TaskConfirmationPage from './pages/TaskConfirmationPage';
 import HQDashboardPage from './pages/HQDashboardPage';
@@ -35,7 +36,7 @@ import HQReportsPage from './pages/HQReportsPage';
 import HQFormsPage from './pages/HQFormsPage';
 import SiteFormsPage from './pages/SiteFormsPage';
 import FormFillPage from './pages/FormFillPage';
-import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus, FaFileAlt } from 'react-icons/fa';
+import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus, FaFileAlt, FaMoneyBillWave } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -68,6 +69,7 @@ function MainContent() {
     { path: '/locations', icon: FaMapMarkerAlt, label: 'מיקומים' },
     { path: '/buildings', icon: FaBuilding, label: 'מבנים' },
     { path: '/tenants', icon: FaUsers, label: 'דיירים' },
+    { path: '/billing', icon: FaMoneyBillWave, label: 'גבייה' },
     { path: '/forms', icon: FaFileAlt, label: 'טפסים' },
     { path: '/settings', icon: FaWrench, label: 'הגדרות' }
   ];
@@ -189,6 +191,7 @@ function MainContent() {
           <Route path="/locations" element={<LocationsPage />} />
           <Route path="/buildings" element={<BuildingsPage />} />
           <Route path="/tenants" element={<TenantsPage />} />
+          <Route path="/billing" element={<BillingPage />} />
           <Route path="/forms" element={<SiteFormsPage />} />
           <Route path="/forms/fill/:id" element={<FormFillPage />} />
           <Route path="/settings" element={<SettingsPage />} />

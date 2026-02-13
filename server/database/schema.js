@@ -355,6 +355,51 @@ function initializeDatabase() {
     }
   }
 
+  // Billing: tenant charges
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS charges (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tenant_id INTEGER NOT NULL,
+      amount REAL NOT NULL,
+      paid_amount REAL DEFAULT 0,
+      due_date DATE NOT NULL,
+      period TEXT,
+      notes TEXT,
+      status TEXT CHECK(status IN ('open', 'partial', 'paid', 'overdue')) DEFAULT 'open',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Billing: tenant payments
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tenant_id INTEGER NOT NULL,
+      charge_id INTEGER,
+      amount REAL NOT NULL,
+      paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      method TEXT,
+      reference TEXT,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+      FOREIGN KEY (charge_id) REFERENCES charges(id) ON DELETE SET NULL
+    )
+  `);
+
+  // Billing: internal credit profile per tenant
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tenant_credit_profile (
+      tenant_id INTEGER PRIMARY KEY,
+      score INTEGER DEFAULT 75,
+      risk_level TEXT CHECK(risk_level IN ('normal', 'medium', 'high')) DEFAULT 'normal',
+      last_calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+    )
+  `);
+
   // HQ distribution lists
   db.exec(`
     CREATE TABLE IF NOT EXISTS distribution_lists (
@@ -561,6 +606,10 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_building_contracts_building_id', 'building_contracts', 'building_id');
   createIndexIfNotExists('idx_tenants_building_id', 'tenants', 'building_id');
   createIndexIfNotExists('idx_tenants_building_floor_apartment', 'tenants', 'building_id, floor, apartment_number');
+  createIndexIfNotExists('idx_charges_tenant_id', 'charges', 'tenant_id');
+  createIndexIfNotExists('idx_charges_status_due_date', 'charges', 'status, due_date');
+  createIndexIfNotExists('idx_payments_tenant_id_paid_at', 'payments', 'tenant_id, paid_at DESC');
+  createIndexIfNotExists('idx_payments_charge_id', 'payments', 'charge_id');
   createIndexIfNotExists('idx_form_dispatches_created_at', 'form_dispatches', 'created_at DESC');
   createIndexIfNotExists('idx_form_dispatches_building_id', 'form_dispatches', 'building_id');
   createIndexIfNotExists('idx_form_dispatches_tenant_id', 'form_dispatches', 'tenant_id');

@@ -1,12 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { FaPlus, FaEdit, FaTrash, FaUsers } from 'react-icons/fa';
 import Modal from '../components/shared/Modal';
 import TenantForm from '../components/forms/TenantForm';
 
+const API_URL = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL
+  : 'http://localhost:3002/api';
+
 export default function TenantsPage() {
   const { tenants, buildings, deleteTenant } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [billingByTenantId, setBillingByTenantId] = useState({});
   const [editingTenant, setEditingTenant] = useState(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState('all');
 
@@ -14,6 +19,25 @@ export default function TenantsPage() {
     if (selectedBuildingId === 'all') return tenants;
     return tenants.filter((tenant) => String(tenant.building_id) === selectedBuildingId);
   }, [tenants, selectedBuildingId]);
+
+  useEffect(() => {
+    const fetchBillingSummaries = async () => {
+      try {
+        const response = await fetch(`${API_URL}/billing/tenant-summaries`);
+        if (!response.ok) return;
+        const summaries = await response.json();
+        const map = {};
+        summaries.forEach((item) => {
+          map[item.id] = item;
+        });
+        setBillingByTenantId(map);
+      } catch (error) {
+        console.error('Failed to fetch tenant billing summaries', error);
+      }
+    };
+
+    fetchBillingSummaries();
+  }, [tenants.length]);
 
   const handleEdit = (tenant) => {
     setEditingTenant(tenant);
@@ -101,6 +125,24 @@ export default function TenantsPage() {
                 {tenant.email && <div><span className="font-semibold">אימייל:</span> {tenant.email}</div>}
                 {tenant.notes && <div><span className="font-semibold">הערות:</span> {tenant.notes}</div>}
               </div>
+
+              {billingByTenantId[tenant.id] && (
+                <div className="mt-4 pt-3 border-t border-gray-100 text-sm space-y-1">
+                  <div className="font-semibold text-gray-900">כרטיס פיננסי</div>
+                  <div>יתרה פתוחה: {Number(billingByTenantId[tenant.id].open_balance || 0).toFixed(2)} ₪</div>
+                  <div>חיובים באיחור: {billingByTenantId[tenant.id].overdue_items || 0}</div>
+                  <div>דירוג אשראי פנימי: {billingByTenantId[tenant.id].credit_score}</div>
+                  <div>
+                    סטטוס: {
+                      billingByTenantId[tenant.id].risk_level === 'high'
+                        ? 'בעייתי'
+                        : billingByTenantId[tenant.id].risk_level === 'medium'
+                          ? 'בסיכון'
+                          : 'תקין'
+                    }
+                  </div>
+                </div>
+              )}
             </div>
           ))
         )}
