@@ -454,11 +454,20 @@ export default function MyDayPage() {
         tasksForDay = tasksForDay.filter((t) => t.is_starred === 1);
       }
 
+      const urgentCount = tasksForDay.filter((t) => t.priority === 'urgent').length;
+      const normalCount = tasksForDay.filter((t) => t.priority === 'normal').length;
+      const optionalCount = tasksForDay.filter((t) => t.priority === 'optional').length;
+
       timeline.push({
         date: currentDate,
         dateLabel: format(currentDate, 'dd/MM', { locale: he }),
         dayLabel: format(currentDate, 'EEE', { locale: he }),
         count: tasksForDay.length,
+        byPriority: {
+          urgent: urgentCount,
+          normal: normalCount,
+          optional: optionalCount
+        },
         isToday: isSameDay(currentDate, new Date())
       });
     }
@@ -760,8 +769,15 @@ export default function MyDayPage() {
             </button>
           </div>
         </div>
+
+        <div className="flex items-center gap-4 mb-2 text-xs text-gray-600">
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>דחוף</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>רגיל</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>נמוך</span>
+        </div>
+
         <div className="overflow-x-auto -mx-4 px-4">
-          <div className={`flex items-end justify-between ${timelineRangeDays === 30 ? 'gap-1' : 'gap-1 sm:gap-2'} h-40 pt-4 min-w-[600px]`}>
+          <div className={`flex items-end justify-between ${timelineRangeDays === 30 ? 'gap-1 min-w-[1200px]' : 'gap-1 sm:gap-2 min-w-[600px]'} h-40 pt-4`}>
             {timelineData.timeline.map((day, index) => {
               const barHeight = (day.count / timelineData.maxCount) * 100;
               return (
@@ -773,15 +789,34 @@ export default function MyDayPage() {
                 {/* Bar */}
                 <div className="w-full flex flex-col justify-end h-28">
                   <div
-                    className={`w-full rounded-t-lg transition-all duration-300 ${
-                      day.isToday
-                        ? 'bg-blue-500'
-                        : day.count > 0
-                        ? 'bg-primary'
-                        : 'bg-gray-200'
-                    }`}
+                    className={`w-full transition-all duration-300 rounded-t-md overflow-hidden ${day.count > 0 ? 'shadow-sm' : ''}`}
                     style={{ height: `${barHeight}%` }}
-                  />
+                  >
+                    {day.count > 0 ? (
+                      <div className="w-full h-full flex flex-col-reverse">
+                        {day.byPriority.optional > 0 && (
+                          <div
+                            className="w-full bg-emerald-500"
+                            style={{ height: `${(day.byPriority.optional / day.count) * 100}%` }}
+                          />
+                        )}
+                        {day.byPriority.normal > 0 && (
+                          <div
+                            className="w-full bg-blue-500"
+                            style={{ height: `${(day.byPriority.normal / day.count) * 100}%` }}
+                          />
+                        )}
+                        {day.byPriority.urgent > 0 && (
+                          <div
+                            className="w-full bg-red-500"
+                            style={{ height: `${(day.byPriority.urgent / day.count) * 100}%` }}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-full h-full bg-gray-200" />
+                    )}
+                  </div>
                 </div>
                 {/* Count */}
                 <div
