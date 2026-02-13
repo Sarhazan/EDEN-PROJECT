@@ -506,17 +506,6 @@ export default function MyDayPage() {
           >
             היום
           </button>
-          <button
-            onClick={() => setSelectedDate(addDays(selectedDate, -1))}
-            disabled={isSameDay(selectedDate, today)}
-            className={`bg-white border border-gray-300 px-3 py-2 rounded-lg min-h-[44px] text-sm ${
-              isSameDay(selectedDate, today)
-                ? 'opacity-50 cursor-not-allowed'
-                : 'hover:bg-gray-50'
-            }`}
-          >
-            יום קודם
-          </button>
           <DatePicker
             selected={selectedDate}
             onChange={(date) => setSelectedDate(date)}
@@ -524,12 +513,6 @@ export default function MyDayPage() {
             className="border border-gray-300 px-3 py-2 rounded-lg w-32 sm:w-auto min-h-[44px]"
             minDate={today}
           />
-          <button
-            onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-            className="bg-white border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] text-sm"
-          >
-            יום הבא
-          </button>
         </div>
       </div>
 
