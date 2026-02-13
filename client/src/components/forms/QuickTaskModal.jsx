@@ -37,6 +37,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSaving, setIsSaving] = useState(false);
   const [titleError, setTitleError] = useState(false);
+  const [showRecurringAdvanced, setShowRecurringAdvanced] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -326,7 +327,10 @@ export default function QuickTaskModal({ isOpen, onClose }) {
           <div className="flex gap-2 bg-gray-100 p-1 rounded-full">
             <button
               type="button"
-              onClick={() => setTaskMode('one-time')}
+              onClick={() => {
+                setTaskMode('one-time');
+                setShowRecurringAdvanced(false);
+              }}
               className={`flex-1 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 taskMode === 'one-time'
                   ? 'bg-gray-900 text-white'
@@ -357,18 +361,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
           >
             <div className="min-h-0">
               <div className="space-y-4 pt-2">
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">תיאור</label>
-                  <input
-                    type="text"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="תיאור המשימה (אופציונלי)"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                  />
-                </div>
+                {/* Advanced fields moved below */}
 
                 {/* Frequency + Start Date */}
                 <div className="grid grid-cols-2 gap-3">
@@ -403,10 +396,15 @@ export default function QuickTaskModal({ isOpen, onClose }) {
                       dateFormat="dd/MM/yyyy"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      המופע הראשון של המשימה יופיע בתאריך זה
-                    </p>
                   </div>
+                </div>
+
+                <div className="text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+                  תיווצר משימה {frequencyOptions.find((f) => f.value === formData.frequency)?.label || ''} החל מ־
+                  {parseISODate(formData.start_date)
+                    ? `${String(parseISODate(formData.start_date).getDate()).padStart(2, '0')}/${String(parseISODate(formData.start_date).getMonth() + 1).padStart(2, '0')}/${parseISODate(formData.start_date).getFullYear()}`
+                    : '--/--/----'}
+                  {formData.start_time ? ` בשעה ${formData.start_time}` : ''}
                 </div>
 
                 {/* Weekly Days Selection - Only for Daily frequency */}
@@ -479,76 +477,103 @@ export default function QuickTaskModal({ isOpen, onClose }) {
                   </div>
                 </div>
 
-                {/* System and Employee */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">מערכת</label>
-                    <select
-                      name="system_id"
-                      value={formData.system_id}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                    >
-                      <option value="">משימה כללית</option>
-                      {systems.map((system) => (
-                        <option key={system.id} value={system.id}>
-                          {system.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">עובד אחראי</label>
-                    <select
-                      name="employee_id"
-                      value={formData.employee_id}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                    >
-                      <option value="">עובד כללי</option>
-                      {employees.map((employee) => (
-                        <option key={employee.id} value={employee.id}>
-                          {employee.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowRecurringAdvanced((v) => !v)}
+                    className="text-sm text-gray-600 hover:text-gray-900 underline"
+                  >
+                    {showRecurringAdvanced ? 'הסתר הגדרות נוספות' : 'עוד הגדרות'}
+                  </button>
                 </div>
 
-                {/* Building + Priority */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">מבנה</label>
-                    <select
-                      name="building_id"
-                      value={formData.building_id}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                    >
-                      <option value="">ללא מבנה</option>
-                      {buildings.map((building) => (
-                        <option key={building.id} value={building.id}>
-                          {building.name}
-                        </option>
-                      ))}
-                    </select>
+                {showRecurringAdvanced && (
+                  <div className="space-y-3 pt-1">
+                    {/* Description */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1">תיאור</label>
+                      <input
+                        type="text"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        placeholder="תיאור המשימה (אופציונלי)"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      />
+                    </div>
+
+                    {/* System and Employee */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">מערכת</label>
+                        <select
+                          name="system_id"
+                          value={formData.system_id}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                        >
+                          <option value="">משימה כללית</option>
+                          {systems.map((system) => (
+                            <option key={system.id} value={system.id}>
+                              {system.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">עובד אחראי</label>
+                        <select
+                          name="employee_id"
+                          value={formData.employee_id}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                        >
+                          <option value="">עובד כללי</option>
+                          {employees.map((employee) => (
+                            <option key={employee.id} value={employee.id}>
+                              {employee.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Building + Priority */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">מבנה</label>
+                        <select
+                          name="building_id"
+                          value={formData.building_id}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                        >
+                          <option value="">ללא מבנה</option>
+                          {buildings.map((building) => (
+                            <option key={building.id} value={building.id}>
+                              {building.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">עדיפות</label>
+                        <select
+                          name="priority"
+                          value={formData.priority}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                        >
+                          {priorityOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">עדיפות</label>
-                    <select
-                      name="priority"
-                      value={formData.priority}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                    >
-                      {priorityOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -569,3 +594,5 @@ export default function QuickTaskModal({ isOpen, onClose }) {
     </div>
   );
 }
+
+
