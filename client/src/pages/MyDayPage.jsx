@@ -1132,6 +1132,10 @@ export default function MyDayPage() {
                         dateFormat="dd/MM/yyyy"
                         className="border border-gray-300 px-3 py-1.5 rounded-lg w-36 text-sm"
                         minDate={today}
+                        popperPlacement="bottom-start"
+                        popperModifiers={[
+                          { name: 'flip', enabled: false }
+                        ]}
                       />
                     </div>
                     <button
@@ -1297,6 +1301,10 @@ export default function MyDayPage() {
                     dateFormat="dd/MM/yyyy"
                     className="border border-gray-300 px-3 py-1.5 rounded-lg w-32 text-sm"
                     minDate={today}
+                    popperPlacement="bottom-start"
+                    popperModifiers={[
+                      { name: 'flip', enabled: false }
+                    ]}
                   />
                   <button
                     onClick={handleSendAllTasks}
