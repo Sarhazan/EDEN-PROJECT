@@ -138,12 +138,14 @@ router.get('/dashboard', (req, res) => {
 router.get('/tenant-summaries', (req, res) => {
   try {
     normalizeTenantChargeStatuses();
+    const buildingId = req.query.buildingId ? Number(req.query.buildingId) : null;
 
     const tenants = db.prepare(`
       SELECT t.id
       FROM tenants t
+      ${buildingId ? 'WHERE t.building_id = ?' : ''}
       ORDER BY t.id ASC
-    `).all();
+    `).all(...(buildingId ? [buildingId] : []));
 
     for (const tenant of tenants) {
       upsertTenantCreditProfile(tenant.id);
@@ -163,9 +165,10 @@ router.get('/tenant-summaries', (req, res) => {
       LEFT JOIN buildings b ON b.id = t.building_id
       LEFT JOIN charges c ON c.tenant_id = t.id
       LEFT JOIN tenant_credit_profile p ON p.tenant_id = t.id
+      ${buildingId ? 'WHERE t.building_id = ?' : ''}
       GROUP BY t.id
       ORDER BY open_balance DESC, t.name ASC
-    `).all();
+    `).all(...(buildingId ? [buildingId] : []));
 
     res.json(summaries);
   } catch (error) {
@@ -311,6 +314,26 @@ router.post('/payments', (req, res) => {
     upsertTenantCreditProfile(Number(tenant_id));
 
     res.status(201).json(payment);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/payments', (req, res) => {
+  try {
+    const tenantId = req.query.tenantId ? Number(req.query.tenantId) : null;
+
+    const payments = db.prepare(`
+      SELECT p.*, t.name AS tenant_name, b.name AS building_name
+      FROM payments p
+      JOIN tenants t ON t.id = p.tenant_id
+      LEFT JOIN buildings b ON b.id = t.building_id
+      ${tenantId ? 'WHERE p.tenant_id = ?' : ''}
+      ORDER BY p.paid_at DESC
+      LIMIT 200
+    `).all(...(tenantId ? [tenantId] : []));
+
+    res.json(payments);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

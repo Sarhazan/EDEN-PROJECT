@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FaBell, FaMoneyBillWave, FaPaperPlane } from 'react-icons/fa';
+import { useApp } from '../context/AppContext';
 
 const API_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL
   : 'http://localhost:3002/api';
 
 export default function BillingPage() {
+  const { buildings } = useApp();
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState(null);
   const [tenantSummaries, setTenantSummaries] = useState([]);
+  const [paymentsHistory, setPaymentsHistory] = useState([]);
   const [sendingForTenant, setSendingForTenant] = useState(null);
+  const [selectedBuildingId, setSelectedBuildingId] = useState('all');
   const [chargeForm, setChargeForm] = useState({ tenant_id: '', amount: '', due_date: '', period: '' });
   const [paymentForm, setPaymentForm] = useState({ tenant_id: '', charge_id: '', amount: '', method: 'cash', reference: '' });
 
@@ -20,16 +24,20 @@ export default function BillingPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [dashboardRes, summariesRes] = await Promise.all([
+      const query = selectedBuildingId !== 'all' ? `?buildingId=${selectedBuildingId}` : '';
+      const [dashboardRes, summariesRes, paymentsRes] = await Promise.all([
         fetch(`${API_URL}/billing/dashboard`),
-        fetch(`${API_URL}/billing/tenant-summaries`)
+        fetch(`${API_URL}/billing/tenant-summaries${query}`),
+        fetch(`${API_URL}/billing/payments`)
       ]);
 
       const dashboardData = await dashboardRes.json();
       const summariesData = await summariesRes.json();
+      const paymentsData = await paymentsRes.json();
 
       setDashboard(dashboardData);
       setTenantSummaries(Array.isArray(summariesData) ? summariesData : []);
+      setPaymentsHistory(Array.isArray(paymentsData) ? paymentsData : []);
     } finally {
       setLoading(false);
     }
@@ -37,7 +45,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [selectedBuildingId]);
 
   async function handleRequestPayment(tenantId) {
     try {
@@ -120,9 +128,25 @@ export default function BillingPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">גבייה</h1>
-        <p className="text-gray-600 mt-1">דשבורד גבייה, איחורים והתראות תשלום</p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">גבייה</h1>
+          <p className="text-gray-600 mt-1">דשבורד גבייה, איחורים והתראות תשלום</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">סינון לפי מבנה</label>
+          <select
+            className="border border-gray-300 rounded px-3 py-2"
+            value={selectedBuildingId}
+            onChange={(e) => setSelectedBuildingId(e.target.value)}
+          >
+            <option value="all">כל המבנים</option>
+            {buildings.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -228,21 +252,41 @@ export default function BillingPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-4 border-b font-semibold">תזכורות תשלום אחרונות</div>
-        <div className="p-4">
-          {(dashboard?.recent_reminders || []).length === 0 ? (
-            <div className="text-sm text-gray-500">עדיין לא הוכנו תזכורות.</div>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {dashboard.recent_reminders.map((r) => (
-                <li key={r.id} className="flex items-center justify-between border rounded px-3 py-2">
-                  <span>{r.tenant_name}</span>
-                  <span className="text-gray-500">#{r.id} · {r.status}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-4 border-b font-semibold">תיעוד תקבולים אחרונים</div>
+          <div className="p-4">
+            {paymentsHistory.length === 0 ? (
+              <div className="text-sm text-gray-500">עדיין לא נרשמו תקבולים.</div>
+            ) : (
+              <ul className="space-y-2 text-sm max-h-64 overflow-auto">
+                {paymentsHistory.slice(0, 12).map((p) => (
+                  <li key={p.id} className="flex items-center justify-between border rounded px-3 py-2">
+                    <span>{p.tenant_name}</span>
+                    <span className="text-gray-500">₪{Number(p.amount || 0).toLocaleString()} · {p.method || 'manual'}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-4 border-b font-semibold">תזכורות תשלום אחרונות</div>
+          <div className="p-4">
+            {(dashboard?.recent_reminders || []).length === 0 ? (
+              <div className="text-sm text-gray-500">עדיין לא הוכנו תזכורות.</div>
+            ) : (
+              <ul className="space-y-2 text-sm max-h-64 overflow-auto">
+                {dashboard.recent_reminders.map((r) => (
+                  <li key={r.id} className="flex items-center justify-between border rounded px-3 py-2">
+                    <span>{r.tenant_name}</span>
+                    <span className="text-gray-500">#{r.id} · {r.status}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
 
