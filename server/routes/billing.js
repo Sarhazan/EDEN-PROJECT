@@ -2,6 +2,26 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../database/schema');
 
+function normalizeTenantChargeStatuses(tenantId = null) {
+  const sql = `
+    UPDATE charges
+    SET status = CASE
+      WHEN paid_amount >= amount THEN 'paid'
+      WHEN due_date < DATE('now') AND paid_amount < amount THEN 'overdue'
+      WHEN paid_amount > 0 AND paid_amount < amount THEN 'partial'
+      ELSE 'open'
+    END,
+    updated_at = CURRENT_TIMESTAMP
+    ${tenantId ? 'WHERE tenant_id = ?' : ''}
+  `;
+
+  if (tenantId) {
+    db.prepare(sql).run(tenantId);
+  } else {
+    db.prepare(sql).run();
+  }
+}
+
 function getTenantScore(tenantId) {
   const row = db.prepare(`
     SELECT
@@ -52,6 +72,8 @@ function upsertTenantCreditProfile(tenantId) {
 
 router.get('/dashboard', (req, res) => {
   try {
+    normalizeTenantChargeStatuses();
+
     const kpi = db.prepare(`
       SELECT
         COUNT(*) AS total_charges,
@@ -106,6 +128,8 @@ router.get('/dashboard', (req, res) => {
 
 router.get('/tenant-summaries', (req, res) => {
   try {
+    normalizeTenantChargeStatuses();
+
     const tenants = db.prepare(`
       SELECT t.id
       FROM tenants t
@@ -143,6 +167,7 @@ router.get('/tenant-summaries', (req, res) => {
 router.get('/tenants/:tenantId', (req, res) => {
   try {
     const tenantId = Number(req.params.tenantId);
+    normalizeTenantChargeStatuses(tenantId);
 
     const tenant = db.prepare(`
       SELECT t.*, b.name AS building_name
