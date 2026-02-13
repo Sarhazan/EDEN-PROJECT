@@ -345,6 +345,51 @@ function initializeDatabase() {
     )
   `);
 
+  // Billing: charges per tenant
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS charges (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tenant_id INTEGER NOT NULL,
+      amount REAL NOT NULL,
+      paid_amount REAL DEFAULT 0,
+      due_date DATE NOT NULL,
+      period TEXT,
+      status TEXT CHECK(status IN ('open', 'partial', 'paid', 'overdue')) DEFAULT 'open',
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Billing: payment records
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tenant_id INTEGER NOT NULL,
+      charge_id INTEGER,
+      amount REAL NOT NULL,
+      paid_at TIMESTAMP NOT NULL,
+      method TEXT,
+      reference TEXT,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+      FOREIGN KEY (charge_id) REFERENCES charges(id) ON DELETE SET NULL
+    )
+  `);
+
+  // Billing: derived credit profile (internal score)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tenant_credit_profile (
+      tenant_id INTEGER PRIMARY KEY,
+      score INTEGER NOT NULL DEFAULT 75,
+      risk_level TEXT CHECK(risk_level IN ('normal', 'medium', 'high')) DEFAULT 'normal',
+      last_calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+    )
+  `);
+
   // Add building_id column to tasks table (optional building linking)
   try {
     db.exec(`ALTER TABLE tasks ADD COLUMN building_id INTEGER REFERENCES buildings(id)`);

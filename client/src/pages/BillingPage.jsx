@@ -1,186 +1,174 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FaMoneyBillWave, FaExclamationTriangle, FaBell, FaPaperPlane, FaCheckCircle } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { FaBell, FaMoneyBillWave, FaPaperPlane } from 'react-icons/fa';
 
 const API_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL
   : 'http://localhost:3002/api';
 
-const formatCurrency = (value) => `${Number(value || 0).toFixed(2)} ₪`;
-
 export default function BillingPage() {
-  const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sendingTenantId, setSendingTenantId] = useState(null);
+  const [dashboard, setDashboard] = useState(null);
+  const [tenantSummaries, setTenantSummaries] = useState([]);
+  const [sendingForTenant, setSendingForTenant] = useState(null);
 
-  const fetchDashboard = async () => {
-    const response = await fetch(`${API_URL}/billing/dashboard`);
-    if (!response.ok) throw new Error('שגיאה בטעינת דשבורד גבייה');
-    const data = await response.json();
-    setDashboard(data);
-  };
+  const overdueAlerts = useMemo(() => {
+    return (dashboard?.overdue_tenants || []).filter((t) => Number(t.open_balance || 0) > 0);
+  }, [dashboard]);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        await fetchDashboard();
-      } catch (error) {
-        toast.error(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, []);
-
-  const sendPaymentRequest = async (tenant) => {
+  async function fetchData() {
+    setLoading(true);
     try {
-      setSendingTenantId(tenant.id);
+      const [dashboardRes, summariesRes] = await Promise.all([
+        fetch(`${API_URL}/billing/dashboard`),
+        fetch(`${API_URL}/billing/tenant-summaries`)
+      ]);
 
-      const reqResponse = await fetch(`${API_URL}/billing/tenants/${tenant.id}/request-payment`, {
-        method: 'POST'
-      });
-      const reqData = await reqResponse.json();
+      const dashboardData = await dashboardRes.json();
+      const summariesData = await summariesRes.json();
 
-      if (!reqResponse.ok) {
-        throw new Error(reqData.error || 'שגיאה ביצירת בקשת תשלום');
-      }
-
-      if (!reqData.phone) {
-        throw new Error('אין מספר טלפון לדייר');
-      }
-
-      const waResponse = await fetch(`${API_URL}/whatsapp/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: reqData.phone,
-          message: reqData.message
-        })
-      });
-
-      const waData = await waResponse.json();
-      if (!waResponse.ok) {
-        throw new Error(waData.error || 'שגיאה בשליחת הודעת WhatsApp');
-      }
-
-      toast.success(`בקשת תשלום נשלחה ל-${tenant.name}`);
-    } catch (error) {
-      toast.error(error.message);
+      setDashboard(dashboardData);
+      setTenantSummaries(Array.isArray(summariesData) ? summariesData : []);
     } finally {
-      setSendingTenantId(null);
+      setLoading(false);
     }
-  };
-
-  if (loading) {
-    return <div className="p-6">טוען דשבורד גבייה...</div>;
   }
 
-  const kpi = dashboard?.kpi || {};
-  const overdueTenants = dashboard?.overdue_tenants || [];
-  const recentPayments = dashboard?.recent_payments || [];
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const alerts = useMemo(() => {
-    const overdueTenantsCount = overdueTenants.length;
-    const totalOverdueBalance = overdueTenants.reduce((sum, tenant) => sum + Number(tenant.open_balance || 0), 0);
+  async function handleRequestPayment(tenantId) {
+    try {
+      setSendingForTenant(tenantId);
+      const res = await fetch(`${API_URL}/billing/tenants/${tenantId}/request-payment`, { method: 'POST' });
+      const data = await res.json();
 
-    return {
-      overdueTenantsCount,
-      totalOverdueBalance,
-      hasAlerts: overdueTenantsCount > 0
-    };
-  }, [overdueTenants]);
+      const text = `${data.message}\n\nמספר דייר: ${data.phone || 'לא זמין'}`;
+      await navigator.clipboard.writeText(text);
+      alert('בקשת התשלום הוכנה והועתקה ללוח.');
+    } catch (error) {
+      alert('שגיאה בהכנת בקשת תשלום');
+    } finally {
+      setSendingForTenant(null);
+    }
+  }
+
+  if (loading) {
+    return <div className="p-6">טוען נתוני גבייה...</div>;
+  }
+
+  const kpi = dashboard?.kpi || {
+    total_billed: 0,
+    total_paid: 0,
+    total_open: 0,
+    overdue_charges: 0
+  };
 
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">גבייה</h1>
-        <p className="text-gray-600 mt-1">דשבורד גבייה, התראות ודיירים באיחור</p>
+        <p className="text-gray-600 mt-1">דשבורד גבייה, איחורים והתראות תשלום</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard title="סה״כ חיובים" value={kpi.total_charges || 0} icon={FaMoneyBillWave} color="text-blue-600" />
-        <KpiCard title="סה״כ לחיוב" value={formatCurrency(kpi.total_billed)} icon={FaMoneyBillWave} color="text-indigo-600" />
-        <KpiCard title="סה״כ נגבה" value={formatCurrency(kpi.total_paid)} icon={FaMoneyBillWave} color="text-green-600" />
-        <KpiCard title="יתרה פתוחה" value={formatCurrency(kpi.total_open)} icon={FaExclamationTriangle} color="text-red-600" />
+        <KpiCard title="סה״כ לחיוב" value={`₪${Number(kpi.total_billed || 0).toLocaleString()}`} />
+        <KpiCard title="סה״כ נגבה" value={`₪${Number(kpi.total_paid || 0).toLocaleString()}`} />
+        <KpiCard title="יתרה פתוחה" value={`₪${Number(kpi.total_open || 0).toLocaleString()}`} danger />
+        <KpiCard title="חיובים באיחור" value={Number(kpi.overdue_charges || 0)} danger />
       </div>
 
-      <div className={`rounded-xl border p-4 ${alerts.hasAlerts ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
-        <div className="flex items-center gap-2">
-          {alerts.hasAlerts ? <FaBell className="text-amber-600" /> : <FaCheckCircle className="text-emerald-600" />}
-          <h2 className="text-lg font-bold">
-            {alerts.hasAlerts ? 'התראות אי-תשלום פעילות' : 'אין התראות אי-תשלום'}
-          </h2>
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-3 text-amber-800 font-semibold">
+          <FaBell /> התראות אי-תשלום
         </div>
-        <p className="mt-2 text-sm text-gray-700">
-          {alerts.hasAlerts
-            ? `${alerts.overdueTenantsCount} דיירים באיחור, יתרה כוללת ${formatCurrency(alerts.totalOverdueBalance)}`
-            : 'כל הדיירים מעודכנים בתשלומים נכון לעכשיו.'}
-        </p>
-      </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h2 className="text-xl font-bold mb-4">רשימת דיירים באיחור</h2>
-
-        {overdueTenants.length === 0 ? (
-          <div className="text-gray-500">אין כרגע דיירים באיחור ✅</div>
+        {overdueAlerts.length === 0 ? (
+          <p className="text-sm text-gray-600">אין כרגע דיירים באיחור.</p>
         ) : (
-          <div className="space-y-3">
-            {overdueTenants.map((tenant) => (
-              <div key={tenant.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border border-red-100 rounded-lg p-4 bg-red-50/40">
-                <div>
-                  <div className="font-bold text-gray-900">{tenant.name}</div>
-                  <div className="text-sm text-gray-700">{tenant.building_name || 'ללא מבנה'} · קומה {tenant.floor} · דירה {tenant.apartment_number}</div>
-                  <div className="text-sm text-red-700 font-medium mt-1">
-                    יתרה פתוחה: {formatCurrency(tenant.open_balance)} · {tenant.overdue_items} חיובים באיחור
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => sendPaymentRequest(tenant)}
-                  disabled={sendingTenantId === tenant.id}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-orange-600 disabled:opacity-60"
-                >
-                  <FaPaperPlane />
-                  {sendingTenantId === tenant.id ? 'שולח...' : 'שלח בקשת תשלום'}
-                </button>
-              </div>
+          <ul className="space-y-2">
+            {overdueAlerts.map((tenant) => (
+              <li key={tenant.id} className="text-sm text-gray-800">
+                {tenant.name} ({tenant.building_name || 'ללא מבנה'}) — יתרה פתוחה: ₪{Number(tenant.open_balance || 0).toLocaleString()}
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h2 className="text-xl font-bold mb-4">תשלומים אחרונים</h2>
-        {recentPayments.length === 0 ? (
-          <div className="text-gray-500">אין תשלומים אחרונים להצגה.</div>
-        ) : (
-          <div className="space-y-2 text-sm">
-            {recentPayments.slice(0, 5).map((payment) => (
-              <div key={payment.id} className="flex items-center justify-between border-b border-gray-100 pb-2 last:border-b-0 last:pb-0">
-                <span className="font-medium text-gray-800">{payment.tenant_name}</span>
-                <span className="text-gray-600">{formatCurrency(payment.amount)}</span>
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 border-b font-semibold">דיירים וסטטוס גבייה</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-right p-3">דייר</th>
+                <th className="text-right p-3">מבנה</th>
+                <th className="text-right p-3">יתרה פתוחה</th>
+                <th className="text-right p-3">באיחור</th>
+                <th className="text-right p-3">דירוג אשראי</th>
+                <th className="text-right p-3">פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tenantSummaries.map((tenant) => (
+                <tr key={tenant.id} className="border-t">
+                  <td className="p-3 font-medium">{tenant.name}</td>
+                  <td className="p-3">{tenant.building_name || '-'}</td>
+                  <td className="p-3">₪{Number(tenant.open_balance || 0).toLocaleString()}</td>
+                  <td className="p-3">{Number(tenant.overdue_items || 0)}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded text-xs ${riskClass(tenant.risk_level)}`}>
+                      {tenant.credit_score} · {riskLabel(tenant.risk_level)}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    <button
+                      onClick={() => handleRequestPayment(tenant.id)}
+                      disabled={sendingForTenant === tenant.id}
+                      className="inline-flex items-center gap-2 bg-primary text-white px-3 py-2 rounded hover:bg-orange-600 disabled:opacity-50"
+                    >
+                      <FaPaperPlane />
+                      {sendingForTenant === tenant.id ? 'שולח...' : 'בקשת תשלום'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {tenantSummaries.length === 0 && (
+                <tr>
+                  <td className="p-4 text-center text-gray-500" colSpan={6}>אין נתוני גבייה להצגה</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="text-xs text-gray-500 flex items-center gap-2">
+        <FaMoneyBillWave />
+        Local-first mode: הודעות תשלום מועתקות ללוח לשליחה ידנית.
       </div>
     </div>
   );
 }
 
-function KpiCard({ title, value, icon: Icon, color }) {
+function KpiCard({ title, value, danger = false }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm text-gray-500">{title}</div>
-          <div className="text-2xl font-bold mt-1">{value}</div>
-        </div>
-        <Icon className={`text-2xl ${color}`} />
-      </div>
+    <div className={`rounded-lg p-4 border ${danger ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-white'}`}>
+      <div className="text-sm text-gray-600">{title}</div>
+      <div className={`text-2xl font-bold mt-1 ${danger ? 'text-red-700' : 'text-gray-900'}`}>{value}</div>
     </div>
   );
+}
+
+function riskClass(level) {
+  if (level === 'high') return 'bg-red-100 text-red-700';
+  if (level === 'medium') return 'bg-amber-100 text-amber-700';
+  return 'bg-green-100 text-green-700';
+}
+
+function riskLabel(level) {
+  if (level === 'high') return 'סיכון גבוה';
+  if (level === 'medium') return 'סיכון בינוני';
+  return 'תקין';
 }

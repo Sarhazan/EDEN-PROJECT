@@ -75,6 +75,7 @@ app.use('/api/employees', require('./routes/employees'));
 app.use('/api/locations', require('./routes/locations'));
 app.use('/api/buildings', require('./routes/buildings'));
 app.use('/api/tenants', require('./routes/tenants'));
+app.use('/api/billing', require('./routes/billing'));
 app.use('/api/data', require('./routes/data'));
 app.use('/api/whatsapp', require('./routes/whatsapp'));
 const taskConfirmationRouter = require('./routes/taskConfirmation');
