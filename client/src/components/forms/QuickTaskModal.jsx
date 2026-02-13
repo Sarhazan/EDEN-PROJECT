@@ -9,12 +9,12 @@ import { toast } from 'react-toastify';
 
 const frequencyOptions = [
   { value: 'one-time', label: 'חד-פעמי' },
-  { value: 'daily', label: 'יומי' },
   { value: 'weekly', label: 'שבועי' },
   { value: 'biweekly', label: 'שבועיים' },
   { value: 'monthly', label: 'חודשי' },
   { value: 'semi-annual', label: 'חצי שנתי' },
-  { value: 'annual', label: 'שנתי' }
+  { value: 'annual', label: 'שנתי' },
+  { value: 'daily', label: 'מותאם אישית' }
 ];
 
 const priorityOptions = [
@@ -42,7 +42,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
 
   const [formData, setFormData] = useState({
     description: '',
-    frequency: 'daily',
+    frequency: 'weekly',
     weekly_days: [],
     start_date: todayStr,
     start_time: '',
@@ -250,7 +250,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
       setTaskMode('one-time');
       setFormData({
         description: '',
-        frequency: 'daily',
+        frequency: 'weekly',
         weekly_days: [],
         start_date: new Date().toISOString().split('T')[0],
         start_time: '',
