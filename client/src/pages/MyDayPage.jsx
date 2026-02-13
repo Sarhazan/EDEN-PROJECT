@@ -454,28 +454,39 @@ export default function MyDayPage() {
         tasksForDay = tasksForDay.filter((t) => t.is_starred === 1);
       }
 
+      const isTodayDate = isSameDay(currentDate, new Date());
       const urgentCount = tasksForDay.filter((t) => t.priority === 'urgent').length;
       const normalCount = tasksForDay.filter((t) => t.priority === 'normal').length;
       const optionalCount = tasksForDay.filter((t) => t.priority === 'optional').length;
+
+      // Keep forecast's "today" fully aligned with the headline open-tasks counters
+      const dayCount = isTodayDate ? stats.total : tasksForDay.length;
+      const dayPriority = isTodayDate
+        ? {
+            urgent: stats.byPriority.urgent,
+            normal: stats.byPriority.normal,
+            optional: stats.byPriority.optional
+          }
+        : {
+            urgent: urgentCount,
+            normal: normalCount,
+            optional: optionalCount
+          };
 
       timeline.push({
         date: currentDate,
         dateLabel: format(currentDate, 'dd/MM', { locale: he }),
         dayLabel: format(currentDate, 'EEE', { locale: he }),
-        count: tasksForDay.length,
-        byPriority: {
-          urgent: urgentCount,
-          normal: normalCount,
-          optional: optionalCount
-        },
-        isToday: isSameDay(currentDate, new Date())
+        count: dayCount,
+        byPriority: dayPriority,
+        isToday: isTodayDate
       });
     }
 
     const maxCount = Math.max(...timeline.map(d => d.count), 1);
 
     return { timeline, maxCount };
-  }, [tasks, starFilter, timelineRangeDays]);
+  }, [tasks, starFilter, timelineRangeDays, stats]);
 
   return (
     <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
