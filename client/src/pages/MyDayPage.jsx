@@ -530,41 +530,23 @@ export default function MyDayPage() {
   return (
     <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold">היום שלי</h1>
-            {tomorrowTasksCount > 0 && (
-              <span className="text-xs sm:text-sm font-semibold text-blue-600 bg-blue-50 px-2 sm:px-3 py-1 rounded-lg">
-                משימות למחר: {tomorrowTasksCount}
-              </span>
-            )}
-            {lateTasksCount > 0 && (
-              <span className="text-xs sm:text-sm font-semibold text-red-600 bg-red-50 px-2 sm:px-3 py-1 rounded-lg">
-                משימות באיחור: {lateTasksCount}
-              </span>
-            )}
-          </div>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">
-            {format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: he })}
-          </p>
+      <div className="mb-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold">היום שלי</h1>
+          {tomorrowTasksCount > 0 && (
+            <span className="text-xs sm:text-sm font-semibold text-blue-600 bg-blue-50 px-2 sm:px-3 py-1 rounded-lg">
+              משימות למחר: {tomorrowTasksCount}
+            </span>
+          )}
+          {lateTasksCount > 0 && (
+            <span className="text-xs sm:text-sm font-semibold text-red-600 bg-red-50 px-2 sm:px-3 py-1 rounded-lg">
+              משימות באיחור: {lateTasksCount}
+            </span>
+          )}
         </div>
-
-        <div className="flex flex-col items-start gap-2 w-fit">
-          <button
-            onClick={() => setSelectedDate(new Date())}
-            className="bg-white border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95 text-sm"
-          >
-            היום
-          </button>
-          <DatePicker
-            selected={selectedDate}
-            onChange={(date) => setSelectedDate(date)}
-            dateFormat="dd/MM/yyyy"
-            className="border border-gray-300 px-3 py-2 rounded-lg w-40 min-h-[44px]"
-            minDate={today}
-          />
-        </div>
+        <p className="text-gray-600 mt-1 text-sm sm:text-base">
+          {format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: he })}
+        </p>
       </div>
 
       {/* Stats Bar */}
@@ -1132,18 +1114,35 @@ export default function MyDayPage() {
               }}
             >
               <div className="bg-white rounded-lg shadow-md p-4 h-full">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-start justify-between mb-4 gap-3">
                   <h2 className="text-xl font-bold">
                     משימות קבועות ({recurringTasks.length})
                   </h2>
-                  <button
-                    onClick={handleSendAllTasks}
-                    disabled={isSendingBulk}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <FaPaperPlane />
-                    <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
-                  </button>
+                  <div className="flex items-start gap-3">
+                    <div className="flex flex-col items-start gap-2">
+                      <button
+                        onClick={() => setSelectedDate(new Date())}
+                        className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
+                      >
+                        היום
+                      </button>
+                      <DatePicker
+                        selected={selectedDate}
+                        onChange={(date) => setSelectedDate(date)}
+                        dateFormat="dd/MM/yyyy"
+                        className="border border-gray-300 px-3 py-1.5 rounded-lg w-36 text-sm"
+                        minDate={today}
+                      />
+                    </div>
+                    <button
+                      onClick={handleSendAllTasks}
+                      disabled={isSendingBulk}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FaPaperPlane />
+                      <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Filters */}
@@ -1281,18 +1280,33 @@ export default function MyDayPage() {
           <div className="lg:hidden grid grid-cols-1 gap-6">
             {/* Recurring Tasks */}
             <div className="bg-white rounded-lg shadow-md p-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-start justify-between mb-4 gap-3">
                 <h2 className="text-xl font-bold">
                   משימות קבועות ({recurringTasks.length})
                 </h2>
-                <button
-                  onClick={handleSendAllTasks}
-                  disabled={isSendingBulk}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <FaPaperPlane />
-                  <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
-                </button>
+                <div className="flex flex-col items-end gap-2">
+                  <button
+                    onClick={() => setSelectedDate(new Date())}
+                    className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
+                  >
+                    היום
+                  </button>
+                  <DatePicker
+                    selected={selectedDate}
+                    onChange={(date) => setSelectedDate(date)}
+                    dateFormat="dd/MM/yyyy"
+                    className="border border-gray-300 px-3 py-1.5 rounded-lg w-32 text-sm"
+                    minDate={today}
+                  />
+                  <button
+                    onClick={handleSendAllTasks}
+                    disabled={isSendingBulk}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FaPaperPlane />
+                    <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Filters */}
