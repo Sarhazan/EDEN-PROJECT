@@ -530,7 +530,7 @@ export default function MyDayPage() {
   return (
     <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <h1 className="text-2xl sm:text-3xl font-bold">היום שלי</h1>
@@ -549,10 +549,11 @@ export default function MyDayPage() {
             {format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: he })}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+
+        <div className="flex flex-col items-start gap-2 w-fit">
           <button
             onClick={() => setSelectedDate(new Date())}
-            className="bg-white border border-gray-300 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95 text-sm sm:text-base"
+            className="bg-white border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95 text-sm"
           >
             היום
           </button>
@@ -560,7 +561,7 @@ export default function MyDayPage() {
             selected={selectedDate}
             onChange={(date) => setSelectedDate(date)}
             dateFormat="dd/MM/yyyy"
-            className="border border-gray-300 px-3 py-2 rounded-lg w-32 sm:w-auto min-h-[44px]"
+            className="border border-gray-300 px-3 py-2 rounded-lg w-40 min-h-[44px]"
             minDate={today}
           />
         </div>
