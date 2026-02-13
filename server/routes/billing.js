@@ -110,6 +110,14 @@ router.get('/dashboard', (req, res) => {
       LIMIT 10
     `).all();
 
+    const recentReminders = db.prepare(`
+      SELECT r.*, t.name AS tenant_name
+      FROM payment_reminders r
+      JOIN tenants t ON t.id = r.tenant_id
+      ORDER BY r.created_at DESC
+      LIMIT 10
+    `).all();
+
     res.json({
       kpi: {
         total_charges: Number(kpi?.total_charges || 0),
@@ -119,7 +127,8 @@ router.get('/dashboard', (req, res) => {
         overdue_charges: Number(kpi?.overdue_charges || 0)
       },
       overdue_tenants: overdueTenants,
-      recent_payments: recentPayments
+      recent_payments: recentPayments,
+      recent_reminders: recentReminders
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -326,11 +335,17 @@ router.post('/tenants/:tenantId/request-payment', (req, res) => {
 
     const message = `שלום ${tenant.name},\nתזכורת לתשלום יתרה פתוחה בסך ${openBalance.toFixed(2)} ₪.\nנשמח להסדיר את התשלום בהקדם. תודה.`;
 
+    const reminderResult = db.prepare(`
+      INSERT INTO payment_reminders (tenant_id, message, channel, status)
+      VALUES (?, ?, 'manual', 'prepared')
+    `).run(tenantId, message);
+
     res.json({
       tenant_id: tenantId,
       phone: tenant.phone,
       message,
-      open_balance: openBalance
+      open_balance: openBalance,
+      reminder_id: reminderResult.lastInsertRowid
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

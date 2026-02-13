@@ -47,7 +47,8 @@ export default function BillingPage() {
 
       const text = `${data.message}\n\nמספר דייר: ${data.phone || 'לא זמין'}`;
       await navigator.clipboard.writeText(text);
-      alert('בקשת התשלום הוכנה והועתקה ללוח.');
+      alert(`בקשת התשלום הוכנה והועתקה ללוח (תזכורת #${data.reminder_id}).`);
+      await fetchData();
     } catch (error) {
       alert('שגיאה בהכנת בקשת תשלום');
     } finally {
@@ -224,6 +225,24 @@ export default function BillingPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 border-b font-semibold">תזכורות תשלום אחרונות</div>
+        <div className="p-4">
+          {(dashboard?.recent_reminders || []).length === 0 ? (
+            <div className="text-sm text-gray-500">עדיין לא הוכנו תזכורות.</div>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {dashboard.recent_reminders.map((r) => (
+                <li key={r.id} className="flex items-center justify-between border rounded px-3 py-2">
+                  <span>{r.tenant_name}</span>
+                  <span className="text-gray-500">#{r.id} · {r.status}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 

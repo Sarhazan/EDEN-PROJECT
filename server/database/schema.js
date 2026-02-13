@@ -390,6 +390,19 @@ function initializeDatabase() {
     )
   `);
 
+  // Billing: reminder tracking for unpaid tenants
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS payment_reminders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tenant_id INTEGER NOT NULL,
+      message TEXT NOT NULL,
+      channel TEXT DEFAULT 'manual',
+      status TEXT DEFAULT 'prepared',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+    )
+  `);
+
   // Add building_id column to tasks table (optional building linking)
   try {
     db.exec(`ALTER TABLE tasks ADD COLUMN building_id INTEGER REFERENCES buildings(id)`);
@@ -657,6 +670,7 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_payments_tenant_id_paid_at', 'payments', 'tenant_id, paid_at DESC');
   createIndexIfNotExists('idx_payments_charge_id', 'payments', 'charge_id');
   createIndexIfNotExists('idx_tenant_credit_profile_risk_level', 'tenant_credit_profile', 'risk_level, score DESC');
+  createIndexIfNotExists('idx_payment_reminders_tenant_created_at', 'payment_reminders', 'tenant_id, created_at DESC');
   createIndexIfNotExists('idx_form_dispatches_created_at', 'form_dispatches', 'created_at DESC');
   createIndexIfNotExists('idx_form_dispatches_building_id', 'form_dispatches', 'building_id');
   createIndexIfNotExists('idx_form_dispatches_tenant_id', 'form_dispatches', 'tenant_id');
