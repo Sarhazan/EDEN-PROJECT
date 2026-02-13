@@ -1,0 +1,1335 @@
+import { useState, useMemo, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
+import { format, isBefore, startOfDay, addDays, isSameDay } from 'date-fns';
+import { he } from 'date-fns/locale';
+import { FaCalendarDay, FaPaperPlane, FaDatabase, FaTrash } from 'react-icons/fa';
+import TaskCard from '../components/shared/TaskCard';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import '../components/forms/datepicker-custom.css';
+import axios from 'axios';
+import { Resizable } from 're-resizable';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+
+export default function MyDayPage() {
+  const { tasks, systems, employees, locations, setIsTaskModalOpen, setEditingTask, updateTaskStatus, seedData, clearData } = useApp();
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const today = startOfDay(new Date());
+  const [isSendingBulk, setIsSendingBulk] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [showAdvancedStats, setShowAdvancedStats] = useState(false);
+
+  // Filter states
+  const [filterCategory, setFilterCategory] = useState(''); // '' | 'priority' | 'system' | 'status' | 'employee'
+  const [filterValue, setFilterValue] = useState(''); // The specific value within the selected category
+
+  // Star filter state from localStorage
+  const [starFilter, setStarFilter] = useState(() => {
+    return localStorage.getItem('starFilter') === 'true';
+  });
+
+  // Column widths state with localStorage initialization
+  const [columnWidths, setColumnWidths] = useState(() => {
+    const stored = localStorage.getItem('myDayColumnWidths');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        console.error('Failed to parse column widths:', e);
+      }
+    }
+    // Default: 60% for left column, right column uses flex: 1
+    return { left: '60%', right: 'auto' };
+  });
+
+  // Listen to localStorage changes for star filter (cross-tab sync) and custom event (same-tab sync)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'starFilter') {
+        setStarFilter(e.newValue === 'true');
+      }
+    };
+
+    const handleStarFilterChanged = (e) => {
+      setStarFilter(e.detail.value);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('starFilterChanged', handleStarFilterChanged);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('starFilterChanged', handleStarFilterChanged);
+    };
+  }, []);
+
+  // Debounced localStorage save for column widths
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem('myDayColumnWidths', JSON.stringify(columnWidths));
+    }, 100); // 100ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [columnWidths]);
+
+  // Update current time every minute to refresh countdown displays
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleEdit = (task) => {
+    setEditingTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  // Reset column widths to default
+  const handleResetColumnWidths = () => {
+    const defaultWidths = { left: '60%', right: 'auto' };
+    setColumnWidths(defaultWidths);
+    localStorage.setItem('myDayColumnWidths', JSON.stringify(defaultWidths));
+  };
+
+  // Handle filter category change (reset value when category changes)
+  const handleCategoryChange = (category) => {
+    setFilterCategory(category);
+    setFilterValue(''); // Reset value when category changes
+  };
+
+  // Handle bulk send all tasks
+  const handleSendAllTasks = async () => {
+    // Get current time
+    const now = new Date();
+    const currentTime = format(now, 'HH:mm');
+
+    // Query ALL tasks for the selected date directly (ignore UI filters for bulk send)
+    // This ensures bulk send works regardless of active status/priority/system/employee filters
+    const allTasksForDate = tasks.filter((t) =>
+      shouldTaskAppearOnDate(t, selectedDate)
+    );
+
+    // Filter tasks to send (not sent yet, and time hasn't passed)
+    let tasksToSend = allTasksForDate.filter(task => {
+      // Only draft tasks (not sent yet)
+      if (task.status !== 'draft') return false;
+
+      // Must have employee
+      if (!task.employee_id) return false;
+
+      // Check if task time hasn't passed
+      if (isSameDay(new Date(task.start_date), selectedDate)) {
+        // If it's today, check if time hasn't passed
+        if (task.start_time < currentTime) return false;
+      }
+
+      return true;
+    });
+
+    // If employee filter is active, respect it for bulk send
+    if (filterCategory === 'employee' && filterValue) {
+      if (filterValue === 'general') {
+        tasksToSend = tasksToSend.filter((t) => !t.employee_id);
+      } else {
+        tasksToSend = tasksToSend.filter((t) => t.employee_id === parseInt(filterValue));
+      }
+    }
+
+    if (tasksToSend.length === 0) {
+      alert('אין משימות לשליחה (כל המשימות כבר נשלחו או שהזמן עבר)');
+      return;
+    }
+
+    // Group tasks by employee
+    const tasksByEmployee = {};
+    tasksToSend.forEach(task => {
+      if (!tasksByEmployee[task.employee_id]) {
+        const employee = employees.find(emp => emp.id === task.employee_id);
+        if (!employee) return;
+
+        tasksByEmployee[task.employee_id] = {
+          phone: employee.phone,
+          name: employee.name,
+          tasks: [],
+          date: format(new Date(task.start_date), 'dd/MM/yyyy'),
+          language: employee.language || 'he'
+        };
+      }
+
+      tasksByEmployee[task.employee_id].tasks.push({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        start_time: task.start_time,
+        priority: task.priority || 'normal',
+        system_name: task.system_name,
+        estimated_duration_minutes: task.estimated_duration_minutes,
+        status: task.status
+      });
+    });
+
+    const employeeCount = Object.keys(tasksByEmployee).length;
+    const confirmMessage = filterCategory === 'employee' && filterValue
+      ? `האם לשלוח ${tasksToSend.length} משימות ל-${tasksByEmployee[Object.keys(tasksByEmployee)[0]]?.name}?`
+      : `האם לשלוח ${tasksToSend.length} משימות ל-${employeeCount} עובדים?`;
+
+    if (!confirm(confirmMessage)) return;
+
+    setIsSendingBulk(true);
+
+    try {
+      const response = await axios.post(`${API_URL}/whatsapp/send-bulk`, {
+        tasksByEmployee
+      }, { timeout: 120000 }); // 2 minute timeout for bulk operations
+
+      // Update all tasks status to 'sent'
+      const taskIds = tasksToSend.map(t => t.id);
+      for (const taskId of taskIds) {
+        await updateTaskStatus(taskId, 'sent');
+      }
+
+      alert(response.data.message);
+    } catch (error) {
+      alert('שגיאה: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setIsSendingBulk(false);
+    }
+  };
+
+  // Helper function to check if a task should appear on the selected date
+  const shouldTaskAppearOnDate = (task, date) => {
+    // One-time tasks: check exact date match
+    if (!task.is_recurring) {
+      return isSameDay(new Date(task.start_date), date);
+    }
+
+    // Recurring tasks: check if they apply to this day
+    const taskStartDate = new Date(task.start_date);
+
+    // Task hasn't started yet
+    if (date < taskStartDate) {
+      return false;
+    }
+
+    // Daily tasks: appear every day after start date
+    if (task.frequency === 'daily') {
+      return true;
+    }
+
+    // Weekly tasks: check weekly_days
+    if (task.frequency === 'weekly' && task.weekly_days) {
+      try {
+        const weeklyDays = JSON.parse(task.weekly_days);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        return weeklyDays.includes(dayNames[dayOfWeek]);
+      } catch (e) {
+        console.error('Error parsing weekly_days:', e);
+        return false;
+      }
+    }
+
+    // For other frequencies, just show on the exact date for now
+    return isSameDay(taskStartDate, date);
+  };
+
+  // Calculate statistics and filter tasks
+  const stats = useMemo(() => {
+    // Filter tasks for selected date (excluding completed tasks)
+    let todayTasks = tasks.filter((t) =>
+      shouldTaskAppearOnDate(t, selectedDate) &&
+      t.status !== 'completed'
+    );
+
+    // Apply star filter to statistics if active
+    if (starFilter) {
+      todayTasks = todayTasks.filter((t) => t.is_starred === 1);
+    }
+
+    // 1. Total tasks for today (excluding completed)
+    const totalToday = todayTasks.length;
+
+    // 2. Tasks by priority (today only)
+    const urgentToday = todayTasks.filter((t) => t.priority === 'urgent').length;
+    const normalToday = todayTasks.filter((t) => t.priority === 'normal').length;
+    const optionalToday = todayTasks.filter((t) => t.priority === 'optional').length;
+
+    // 3. Tasks by system (today only)
+    const tasksBySystem = {};
+    todayTasks.forEach((task) => {
+      if (task.system_id) {
+        tasksBySystem[task.system_id] = (tasksBySystem[task.system_id] || 0) + 1;
+      }
+    });
+    const recurringTasksCount = todayTasks.filter((t) => t.is_recurring === 1).length;
+    const oneTimeTasksCount = todayTasks.filter((t) => t.is_recurring === 0).length;
+
+    // 4. Tasks by status (today only, excluding completed)
+    const newTasks = todayTasks.filter((t) => t.status === 'draft').length;
+    const sentTasks = todayTasks.filter((t) => t.status === 'sent').length;
+    const inProgressTasks = todayTasks.filter((t) => t.status === 'in_progress').length;
+
+    // 5. Count completed tasks separately for completion rate
+    let completedTasks = tasks.filter((t) =>
+      shouldTaskAppearOnDate(t, selectedDate) &&
+      t.status === 'completed'
+    );
+    // Apply star filter to completed tasks too
+    if (starFilter) {
+      completedTasks = completedTasks.filter((t) => t.is_starred === 1);
+    }
+    const completedCount = completedTasks.length;
+
+    // Completion rate calculation (completed / (uncompleted + completed))
+    const totalIncludingCompleted = totalToday + completedCount;
+    const completionRate =
+      totalIncludingCompleted > 0 ? Math.round((completedCount / totalIncludingCompleted) * 100) : 0;
+
+    return {
+      total: totalToday,
+      byPriority: {
+        urgent: urgentToday,
+        normal: normalToday,
+        optional: optionalToday
+      },
+      bySystem: tasksBySystem,
+      recurringTasks: recurringTasksCount,
+      oneTimeTasks: oneTimeTasksCount,
+      byStatus: {
+        new: newTasks,
+        sent: sentTasks,
+        inProgress: inProgressTasks,
+        completed: completedCount
+      },
+      completed: completedCount,
+      completionRate
+    };
+  }, [tasks, selectedDate, starFilter]);
+
+  // Filter recurring tasks (all systems including general, selected date, not completed) and sort by time
+  const recurringTasks = useMemo(() => {
+    let filtered = tasks.filter(
+      (t) =>
+        shouldTaskAppearOnDate(t, selectedDate) &&
+        t.status !== 'completed' &&
+        t.is_recurring === 1 // Recurring tasks only
+    );
+
+    // Apply star filter
+    if (starFilter) {
+      // Show only starred tasks, exclude completed
+      filtered = filtered.filter((t) => t.is_starred === 1 && t.status !== 'completed');
+    }
+
+    // Apply filters based on selected category and value
+    if (filterCategory && filterValue) {
+      switch (filterCategory) {
+        case 'priority':
+          filtered = filtered.filter((t) => t.priority === filterValue);
+          break;
+        case 'system':
+          filtered = filtered.filter((t) => t.system_id === parseInt(filterValue));
+          break;
+        case 'status':
+          filtered = filtered.filter((t) => t.status === filterValue);
+          break;
+        case 'employee':
+          if (filterValue === 'general') {
+            filtered = filtered.filter((t) => !t.employee_id);
+          } else {
+            filtered = filtered.filter((t) => t.employee_id === parseInt(filterValue));
+          }
+          break;
+        case 'location':
+          if (filterValue === 'none') {
+            filtered = filtered.filter((t) => !t.location_id);
+          } else {
+            filtered = filtered.filter((t) => t.location_id === parseInt(filterValue));
+          }
+          break;
+      }
+    }
+
+    return filtered.sort((a, b) => {
+      // Sort by start_time chronologically
+      const timeA = a.start_time || '00:00';
+      const timeB = b.start_time || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+  }, [tasks, selectedDate, filterCategory, filterValue, starFilter]);
+
+  // Filter one-time tasks (selected date, not completed) and sort by time
+  const oneTimeTasks = useMemo(() => {
+    let filtered = tasks
+      .filter(
+        (t) =>
+          shouldTaskAppearOnDate(t, selectedDate) &&
+          t.status !== 'completed' &&
+          t.is_recurring === 0 // One-time tasks only
+      );
+
+    // Apply star filter
+    if (starFilter) {
+      // Show only starred tasks, exclude completed
+      filtered = filtered.filter((t) => t.is_starred === 1 && t.status !== 'completed');
+    }
+
+    // Apply employee filter (same logic as recurring tasks)
+    if (filterCategory === 'employee' && filterValue) {
+      if (filterValue === 'general') {
+        filtered = filtered.filter((t) => !t.employee_id);
+      } else {
+        filtered = filtered.filter((t) => t.employee_id === parseInt(filterValue));
+      }
+    }
+
+    return filtered.sort((a, b) => {
+      // Sort by start_time chronologically
+      const timeA = a.start_time || '00:00';
+      const timeB = b.start_time || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+  }, [tasks, selectedDate, filterCategory, filterValue, starFilter]);
+
+  // Filter late tasks (is_late = true, not completed) and sort by date and time
+  const lateTasks = useMemo(() => {
+    let filtered = tasks.filter(
+      (t) =>
+        t.is_late === true &&
+        t.status !== 'completed'
+    );
+
+    // Apply star filter
+    if (starFilter) {
+      filtered = filtered.filter((t) => t.is_starred === 1);
+    }
+
+    return filtered.sort((a, b) => {
+      // Sort by date first, then by time
+      const dateCompare = new Date(a.start_date) - new Date(b.start_date);
+      if (dateCompare !== 0) return dateCompare;
+
+      const timeA = a.start_time || '00:00';
+      const timeB = b.start_time || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+  }, [tasks, starFilter]);
+
+  // Calculate tomorrow's tasks count (for any selected date)
+  const tomorrowTasksCount = useMemo(() => {
+    const tomorrow = addDays(selectedDate, 1);
+    let filtered = tasks.filter(
+      (t) =>
+        shouldTaskAppearOnDate(t, tomorrow) &&
+        t.status !== 'completed'
+    );
+    // Apply star filter
+    if (starFilter) {
+      filtered = filtered.filter((t) => t.is_starred === 1);
+    }
+    return filtered.length;
+  }, [tasks, selectedDate, starFilter]);
+
+  // Count late tasks
+  const lateTasksCount = useMemo(() => {
+    return lateTasks.length;
+  }, [lateTasks]);
+
+  // Calculate timeline data for the next 7 days from selected date
+  const timelineData = useMemo(() => {
+    const startDate = startOfDay(selectedDate);
+    const timeline = [];
+
+    for (let i = 0; i < 7; i++) {
+      const currentDate = addDays(startDate, i);
+      let tasksForDay = tasks.filter((task) =>
+        shouldTaskAppearOnDate(task, currentDate) &&
+        task.status !== 'completed'
+      );
+      // Apply star filter
+      if (starFilter) {
+        tasksForDay = tasksForDay.filter((t) => t.is_starred === 1);
+      }
+
+      timeline.push({
+        date: currentDate,
+        dateLabel: format(currentDate, 'dd/MM', { locale: he }),
+        dayLabel: format(currentDate, 'EEE', { locale: he }),
+        count: tasksForDay.length,
+        isToday: isSameDay(currentDate, selectedDate)
+      });
+    }
+
+    const maxCount = Math.max(...timeline.map(d => d.count), 1);
+
+    return { timeline, maxCount };
+  }, [tasks, selectedDate, starFilter]);
+
+  return (
+    <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold">היום שלי</h1>
+            {tomorrowTasksCount > 0 && (
+              <span className="text-xs sm:text-sm font-semibold text-blue-600 bg-blue-50 px-2 sm:px-3 py-1 rounded-lg">
+                משימות למחר: {tomorrowTasksCount}
+              </span>
+            )}
+            {lateTasksCount > 0 && (
+              <span className="text-xs sm:text-sm font-semibold text-red-600 bg-red-50 px-2 sm:px-3 py-1 rounded-lg">
+                משימות באיחור: {lateTasksCount}
+              </span>
+            )}
+          </div>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
+            {format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: he })}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+          <button
+            onClick={() => setSelectedDate(new Date())}
+            className="bg-white border border-gray-300 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95 text-sm sm:text-base"
+          >
+            היום
+          </button>
+          <button
+            onClick={() => setSelectedDate(addDays(selectedDate, -1))}
+            disabled={isSameDay(selectedDate, today)}
+            className={`bg-white border border-gray-300 px-3 py-2 rounded-lg min-h-[44px] text-sm ${
+              isSameDay(selectedDate, today)
+                ? 'opacity-50 cursor-not-allowed'
+                : 'hover:bg-gray-50'
+            }`}
+          >
+            יום קודם
+          </button>
+          <DatePicker
+            selected={selectedDate}
+            onChange={(date) => setSelectedDate(date)}
+            dateFormat="dd/MM/yyyy"
+            className="border border-gray-300 px-3 py-2 rounded-lg w-32 sm:w-auto min-h-[44px]"
+            minDate={today}
+          />
+          <button
+            onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+            className="bg-white border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] text-sm"
+          >
+            יום הבא
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="flex items-center justify-end mb-2">
+        <button
+          onClick={() => setShowAdvancedStats((v) => !v)}
+          className="text-xs text-gray-600 hover:text-indigo-600 underline"
+        >
+          {showAdvancedStats ? 'הסתר נתונים מתקדמים' : 'הצג נתונים מתקדמים'}
+        </button>
+      </div>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 ${showAdvancedStats ? 'lg:grid-cols-5' : 'lg:grid-cols-3'}`}>
+        {/* 1. Total tasks for today */}
+        <div className="bg-blue-50 border-r-4 border-blue-500 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <FaCalendarDay className="text-3xl text-blue-500" />
+            <div>
+              <div className="text-3xl font-bold text-blue-700">{stats.total}</div>
+              <div className="text-sm text-blue-600">משימות להיום</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Tasks by priority - Donut Chart */}
+        <div className="bg-purple-50 border-r-4 border-purple-500 rounded-lg p-4">
+          <div className="text-sm font-bold text-purple-700 mb-2 text-center">לפי עדיפות</div>
+          {(() => {
+            const items = [
+              { label: 'דחוף', value: stats.byPriority.urgent, color: '#EF4444' },
+              { label: 'רגיל', value: stats.byPriority.normal, color: '#3B82F6' },
+              { label: 'נמוכה', value: stats.byPriority.optional, color: '#22C55E' },
+            ].filter(i => i.value > 0);
+            const total = items.reduce((s, i) => s + i.value, 0);
+            const R = 40, C = 2 * Math.PI * R;
+            let offset = 0;
+            return (
+              <div className="flex items-center justify-center gap-3">
+                <div className="relative w-[100px] h-[100px]">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {total === 0 ? (
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                    ) : items.map((item, i) => {
+                      const dash = (item.value / total) * C;
+                      const el = <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={item.color} strokeWidth="12" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-offset} strokeLinecap="round" className="transition-all duration-700" />;
+                      offset += dash;
+                      return el;
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-purple-700">{total}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600">{item.label}</span>
+                      <span className="font-bold text-gray-800">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {showAdvancedStats && (
+        <>
+        {/* 3. Tasks by system - Donut Chart */}
+        <div className="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4">
+          <div className="text-sm font-bold text-orange-700 mb-2 text-center">לפי מערכת</div>
+          {(() => {
+            const systemColors = ['#F97316', '#FB923C', '#FDBA74', '#C2410C', '#EA580C', '#FED7AA'];
+            const items = [
+              ...systems.map((s, i) => ({ label: s.name, value: stats.bySystem[s.id] || 0, color: systemColors[i % systemColors.length] })),
+            ].filter(i => i.value > 0);
+            const total = items.reduce((s, i) => s + i.value, 0);
+            const R = 40, C = 2 * Math.PI * R;
+            let offset = 0;
+            return (
+              <div className="flex items-center justify-center gap-3">
+                <div className="relative w-[100px] h-[100px]">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {total === 0 ? (
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                    ) : items.map((item, i) => {
+                      const dash = (item.value / total) * C;
+                      const el = <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={item.color} strokeWidth="12" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-offset} strokeLinecap="round" className="transition-all duration-700" />;
+                      offset += dash;
+                      return el;
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-orange-700">{total}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600 truncate max-w-[60px]" title={item.label}>{item.label}</span>
+                      <span className="font-bold text-gray-800">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+        </>
+        )}
+
+        {/* 4. Tasks by status - Donut Chart */}
+        <div className="bg-green-50 border-r-4 border-green-500 rounded-lg p-4">
+          <div className="text-sm font-bold text-green-700 mb-2 text-center">לפי סטטוס</div>
+          {(() => {
+            const items = [
+              { label: 'חדש', value: stats.byStatus.new, color: '#6B7280' },
+              { label: 'נשלח', value: stats.byStatus.sent, color: '#3B82F6' },
+              { label: 'בביצוע', value: stats.byStatus.inProgress, color: '#EAB308' },
+              { label: 'הושלם', value: stats.byStatus.completed, color: '#22C55E' },
+            ].filter(i => i.value > 0);
+            const total = items.reduce((s, i) => s + i.value, 0);
+            const R = 40, C = 2 * Math.PI * R;
+            let offset = 0;
+            return (
+              <div className="flex items-center justify-center gap-3">
+                <div className="relative w-[100px] h-[100px]">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {total === 0 ? (
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                    ) : items.map((item, i) => {
+                      const dash = (item.value / total) * C;
+                      const el = <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={item.color} strokeWidth="12" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-offset} strokeLinecap="round" className="transition-all duration-700" />;
+                      offset += dash;
+                      return el;
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-green-700">{total}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600">{item.label}</span>
+                      <span className="font-bold text-gray-800">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {showAdvancedStats && (
+        <>
+        {/* 5. Recurring vs One-time - Donut Chart */}
+        <div className="bg-teal-50 border-r-4 border-teal-500 rounded-lg p-4">
+          <div className="text-sm font-bold text-teal-700 mb-2 text-center">סוג משימה</div>
+          {(() => {
+            const items = [
+              { label: 'קבועות', value: stats.recurringTasks, color: '#14B8A6' },
+              { label: 'חד פעמיות', value: stats.oneTimeTasks, color: '#60A5FA' },
+            ].filter(i => i.value > 0);
+            const total = items.reduce((s, i) => s + i.value, 0);
+            const R = 40, C = 2 * Math.PI * R;
+            let offset = 0;
+            return (
+              <div className="flex items-center justify-center gap-3">
+                <div className="relative w-[100px] h-[100px]">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {total === 0 ? (
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                    ) : items.map((item, i) => {
+                      const dash = (item.value / total) * C;
+                      const el = <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={item.color} strokeWidth="12" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-offset} strokeLinecap="round" className="transition-all duration-700" />;
+                      offset += dash;
+                      return el;
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-teal-700">{total}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600">{item.label}</span>
+                      <span className="font-bold text-gray-800">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+        </>
+        )}
+      </div>
+
+      {stats.total === 0 && stats.completed === 0 && (
+        <div className="bg-white rounded-lg shadow-md p-8 mb-6 text-center">
+          <h3 className="text-xl font-bold mb-2">אין משימות ליום שנבחר</h3>
+          <p className="text-gray-600 mb-4">נתחיל בקטן: צור משימה ראשונה או טען נתוני דמה לפיתוח.</p>
+          <button
+            onClick={() => setIsTaskModalOpen(true)}
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-orange-600"
+          >
+            צור משימה ראשונה
+          </button>
+        </div>
+      )}
+
+      {/* Timeline Chart - Next 7 Days */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6 overflow-hidden">
+        <h3 className="text-lg font-semibold mb-4">משימות לשבוע הקרוב</h3>
+        <div className="overflow-x-auto -mx-4 px-4">
+          <div className="flex items-end justify-between gap-1 sm:gap-2 h-40 pt-4">
+            {timelineData.timeline.map((day, index) => {
+              const barHeight = (day.count / timelineData.maxCount) * 100;
+              return (
+                <div
+                  key={index}
+                  onClick={() => setSelectedDate(day.date)}
+                  className="flex-1 flex flex-col items-center gap-1 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[40px] sm:min-w-[60px]"
+                >
+                {/* Bar */}
+                <div className="w-full flex flex-col justify-end h-28">
+                  <div
+                    className={`w-full rounded-t-lg transition-all duration-300 ${
+                      day.isToday
+                        ? 'bg-blue-500'
+                        : day.count > 0
+                        ? 'bg-primary'
+                        : 'bg-gray-200'
+                    }`}
+                    style={{ height: `${barHeight}%` }}
+                  />
+                </div>
+                {/* Count */}
+                <div
+                  className={`text-sm font-bold ${
+                    day.isToday ? 'text-blue-700' : 'text-gray-700'
+                  }`}
+                >
+                  {day.count}
+                </div>
+                {/* Date */}
+                <div className="text-center">
+                  <div
+                    className={`text-xs font-semibold ${
+                      day.isToday ? 'text-blue-600' : 'text-gray-600'
+                    }`}
+                  >
+                    {day.dayLabel}
+                  </div>
+                  <div
+                    className={`text-xs ${
+                      day.isToday ? 'text-blue-500' : 'text-gray-500'
+                    }`}
+                  >
+                    {day.dateLabel}
+                  </div>
+                </div>
+              </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar - All Today's Tasks */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold">התקדמות משימות היום</h3>
+          <span className="text-sm text-gray-600">
+            {stats.completed} מתוך {stats.total} הושלמו
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-4">
+          <div
+            className="bg-green-500 h-4 rounded-full transition-all duration-300"
+            style={{ width: `${stats.completionRate}%` }}
+          />
+        </div>
+        <p className="text-center text-2xl font-bold text-green-600 mt-2">
+          {stats.completionRate}%
+        </p>
+      </div>
+
+      {/* Data management buttons */}
+      <div className="flex gap-2 mb-3">
+        <button
+          onClick={async () => {
+            if (confirm('פעולה זו תמחק את כל הנתונים הקיימים ותטען נתוני דמה. להמשיך?')) {
+              try {
+                await seedData();
+                alert('נתוני דמה נטענו בהצלחה!');
+              } catch (error) {
+                alert('שגיאה: ' + error.message);
+              }
+            }
+          }}
+          className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center gap-1.5"
+        >
+          <FaDatabase size={12} />
+          טען נתוני דמה
+        </button>
+        <button
+          onClick={async () => {
+            if (confirm('אזהרה! פעולה זו תמחק את כל הנתונים. האם אתה בטוח?')) {
+              try {
+                await clearData();
+                alert('כל הנתונים נמחקו בהצלחה');
+              } catch (error) {
+                alert('שגיאה: ' + error.message);
+              }
+            }
+          }}
+          className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center gap-1.5"
+        >
+          <FaTrash size={12} />
+          נקה נתונים
+        </button>
+      </div>
+
+      {/* Column width reset button - Desktop only */}
+      {!(filterCategory === 'employee' && filterValue) && (
+        <div className="hidden lg:flex justify-start mb-3">
+          <button
+            onClick={handleResetColumnWidths}
+            className="text-sm text-gray-600 hover:text-indigo-600 underline"
+          >
+            איפוס גודל עמודות
+          </button>
+        </div>
+      )}
+
+      {/* Main Content - Dynamic Layout */}
+      {filterCategory === 'employee' && filterValue ? (
+        /* Unified view when filtering by employee */
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">
+              כל המשימות ({recurringTasks.length + oneTimeTasks.length})
+            </h2>
+            <button
+              onClick={handleSendAllTasks}
+              disabled={isSendingBulk}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaPaperPlane />
+              <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+            </button>
+          </div>
+
+          {/* Filters */}
+          <div className="mb-4 flex gap-3">
+            {/* Primary filter - Category selection */}
+            <select
+              value={filterCategory}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+            >
+              <option value="">כל המשימות</option>
+              <option value="priority">סנן לפי עדיפות</option>
+              <option value="system">סנן לפי מערכת</option>
+              <option value="status">סנן לפי סטטוס</option>
+              <option value="employee">סנן לפי עובד</option>
+              <option value="location">סנן לפי מיקום</option>
+            </select>
+
+            {/* Secondary filter - Value selection based on category */}
+            {filterCategory && (
+              <select
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+              >
+                <option value="">בחר...</option>
+
+                {filterCategory === 'priority' && (
+                  <>
+                    <option value="urgent">דחוף</option>
+                    <option value="normal">רגיל</option>
+                    <option value="optional">עדיפות נמוכה</option>
+                  </>
+                )}
+
+                {filterCategory === 'system' &&
+                  systems.map((system) => (
+                    <option key={system.id} value={system.id}>
+                      {system.name}
+                    </option>
+                  ))
+                }
+
+                {filterCategory === 'status' && (
+                  <>
+                    <option value="draft">חדש</option>
+                    <option value="sent">נשלח</option>
+                    <option value="in_progress">בביצוע</option>
+                  </>
+                )}
+
+                {filterCategory === 'employee' && (
+                  <>
+                    <option value="general">כללי (ללא עובד)</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name}
+                      </option>
+                    ))}
+                  </>
+                )}
+
+                {filterCategory === 'location' && (
+                  <>
+                    <option value="none">ללא מיקום</option>
+                    {locations && locations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+            )}
+
+            {/* Clear filters button */}
+            {filterCategory && (
+              <button
+                onClick={() => {
+                  setFilterCategory('');
+                  setFilterValue('');
+                }}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
+              >
+                נקה סינון
+              </button>
+            )}
+          </div>
+
+          {/* Unified task list - all tasks sorted by time */}
+          <div className="space-y-0 bg-white rounded-lg shadow-sm">
+            {[...recurringTasks, ...oneTimeTasks]
+              .sort((a, b) => {
+                const timeA = a.start_time || '00:00';
+                const timeB = b.start_time || '00:00';
+                return timeA.localeCompare(timeB);
+              })
+              .map((task) => (
+                <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+              ))
+            }
+            {recurringTasks.length === 0 && oneTimeTasks.length === 0 && (
+              <p className="text-gray-500 text-center py-8">אין משימות להצגה</p>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Split layout when not filtering by employee */
+        <>
+          {/* Desktop: Resizable columns (>= 1024px) */}
+          <div className="hidden lg:flex gap-0 relative w-full">
+            {/* Recurring Tasks (All Systems) - RIGHT SIDE - Resizable */}
+            <Resizable
+              size={{ width: columnWidths.left, height: 'auto' }}
+              onResizeStop={(e, direction, ref, d) => {
+                const container = ref.parentElement;
+                const containerWidth = container.offsetWidth;
+                const newLeftWidth = ref.offsetWidth;
+
+                // Enforce min-width: 250px for left column
+                if (newLeftWidth < 250) return;
+
+                // Enforce max-width: 70% for left column (ensures right column gets at least 30%)
+                const leftPercent = (newLeftWidth / containerWidth) * 100;
+                if (leftPercent > 70) return;
+
+                // Only store the left column width - right column will use flex: 1
+                setColumnWidths({
+                  left: `${newLeftWidth}px`,
+                  right: 'auto'
+                });
+              }}
+              minWidth={250}
+              maxWidth="70%"
+              enable={{
+                top: false,
+                right: false,
+                bottom: false,
+                left: true,
+                topRight: false,
+                bottomRight: false,
+                bottomLeft: false,
+                topLeft: false
+              }}
+              handleStyles={{
+                left: {
+                  width: '12px',
+                  left: '0px',
+                  cursor: 'col-resize',
+                  zIndex: 30,
+                  backgroundColor: '#9ca3af',
+                  borderRadius: '8px 0 0 8px',
+                  transition: 'background-color 0.2s'
+                }
+              }}
+              handleClasses={{
+                left: 'hover:!bg-indigo-500'
+              }}
+            >
+              <div className="bg-white rounded-lg shadow-md p-4 h-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">
+                    משימות קבועות ({recurringTasks.length})
+                  </h2>
+                  <button
+                    onClick={handleSendAllTasks}
+                    disabled={isSendingBulk}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FaPaperPlane />
+                    <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+                  </button>
+                </div>
+
+                {/* Filters */}
+                <div className="mb-4 flex gap-3">
+                  {/* Primary filter - Category selection */}
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                  >
+                    <option value="">כל המשימות</option>
+                    <option value="priority">סנן לפי עדיפות</option>
+                    <option value="system">סנן לפי מערכת</option>
+                    <option value="status">סנן לפי סטטוס</option>
+                    <option value="employee">סנן לפי עובד</option>
+                    <option value="location">סנן לפי מיקום</option>
+                  </select>
+
+                  {/* Secondary filter - Value selection based on category */}
+                  {filterCategory && (
+                    <select
+                      value={filterValue}
+                      onChange={(e) => setFilterValue(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    >
+                      <option value="">בחר...</option>
+
+                      {filterCategory === 'priority' && (
+                        <>
+                          <option value="urgent">דחוף</option>
+                          <option value="normal">רגיל</option>
+                          <option value="optional">עדיפות נמוכה</option>
+                        </>
+                      )}
+
+                      {filterCategory === 'system' &&
+                        systems.map((system) => (
+                          <option key={system.id} value={system.id}>
+                            {system.name}
+                          </option>
+                        ))
+                      }
+
+                      {filterCategory === 'status' && (
+                        <>
+                          <option value="draft">חדש</option>
+                          <option value="sent">נשלח</option>
+                          <option value="in_progress">בביצוע</option>
+                        </>
+                      )}
+
+                      {filterCategory === 'employee' && (
+                        <>
+                          <option value="general">כללי (ללא עובד)</option>
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.id}>
+                              {emp.name}
+                            </option>
+                          ))}
+                        </>
+                      )}
+
+                      {filterCategory === 'location' && (
+                        <>
+                          <option value="none">ללא מיקום</option>
+                          {locations && locations.map((loc) => (
+                            <option key={loc.id} value={loc.id}>
+                              {loc.name}
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                  )}
+
+                  {/* Clear filters button */}
+                  {filterCategory && (
+                    <button
+                      onClick={() => {
+                        setFilterCategory('');
+                        setFilterValue('');
+                      }}
+                      className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
+                    >
+                      נקה סינון
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-0">
+                  {recurringTasks.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
+                  ) : (
+                    recurringTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                    ))
+                  )}
+                </div>
+              </div>
+            </Resizable>
+
+            {/* One-Time and Late Tasks - LEFT SIDE - Flex to fill remaining space */}
+            <div className="relative flex-1 min-w-[250px]">
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
+
+                <div className="space-y-0">
+                  {oneTimeTasks.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
+                  ) : (
+                    oneTimeTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                    ))
+                  )}
+                </div>
+
+                {lateTasks.length > 0 && (
+                  <>
+                    <div className="my-4 border-t border-gray-300" />
+                    <h3 className="text-lg font-semibold text-red-600 mb-3">
+                      משימות באיחור
+                    </h3>
+                    <div className="space-y-0">
+                      {lateTasks.map((task) => (
+                        <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile: Stack vertically (< 1024px) */}
+          <div className="lg:hidden grid grid-cols-1 gap-6">
+            {/* Recurring Tasks */}
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">
+                  משימות קבועות ({recurringTasks.length})
+                </h2>
+                <button
+                  onClick={handleSendAllTasks}
+                  disabled={isSendingBulk}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FaPaperPlane />
+                  <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+                </button>
+              </div>
+
+              {/* Filters */}
+              <div className="mb-4 flex gap-3">
+                {/* Primary filter - Category selection */}
+                <select
+                  value={filterCategory}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                >
+                  <option value="">כל המשימות</option>
+                  <option value="priority">סנן לפי עדיפות</option>
+                  <option value="system">סנן לפי מערכת</option>
+                  <option value="status">סנן לפי סטטוס</option>
+                  <option value="employee">סנן לפי עובד</option>
+                  <option value="location">סנן לפי מיקום</option>
+                </select>
+
+                {/* Secondary filter - Value selection based on category */}
+                {filterCategory && (
+                  <select
+                    value={filterValue}
+                    onChange={(e) => setFilterValue(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                  >
+                    <option value="">בחר...</option>
+
+                    {filterCategory === 'priority' && (
+                      <>
+                        <option value="urgent">דחוף</option>
+                        <option value="normal">רגיל</option>
+                        <option value="optional">עדיפות נמוכה</option>
+                      </>
+                    )}
+
+                    {filterCategory === 'system' &&
+                      systems.map((system) => (
+                        <option key={system.id} value={system.id}>
+                          {system.name}
+                        </option>
+                      ))
+                    }
+
+                    {filterCategory === 'status' && (
+                      <>
+                        <option value="draft">חדש</option>
+                        <option value="sent">נשלח</option>
+                        <option value="in_progress">בביצוע</option>
+                      </>
+                    )}
+
+                    {filterCategory === 'employee' && (
+                      <>
+                        <option value="general">כללי (ללא עובד)</option>
+                        {employees.map((emp) => (
+                          <option key={emp.id} value={emp.id}>
+                            {emp.name}
+                          </option>
+                        ))}
+                      </>
+                    )}
+
+                    {filterCategory === 'location' && (
+                      <>
+                        <option value="none">ללא מיקום</option>
+                        {locations && locations.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                )}
+
+                {/* Clear filters button */}
+                {filterCategory && (
+                  <button
+                    onClick={() => {
+                      setFilterCategory('');
+                      setFilterValue('');
+                    }}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
+                  >
+                    נקה סינון
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-0">
+                {recurringTasks.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">אין משימות קבועות להיום</p>
+                ) : (
+                  recurringTasks.map((task) => (
+                    <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* One-Time and Late Tasks */}
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
+
+              <div className="space-y-0">
+                {oneTimeTasks.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">אין משימות חד פעמיות להיום</p>
+                ) : (
+                  oneTimeTasks.map((task) => (
+                    <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                  ))
+                )}
+              </div>
+
+              {lateTasks.length > 0 && (
+                <>
+                  <div className="my-4 border-t border-gray-300" />
+                  <h3 className="text-lg font-semibold text-red-600 mb-3">
+                    משימות באיחור
+                  </h3>
+                  <div className="space-y-0">
+                    {lateTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
