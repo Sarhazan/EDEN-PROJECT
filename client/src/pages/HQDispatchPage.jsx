@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import '../components/forms/datepicker-custom.css';
 
 const API_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL
   : 'http://localhost:3002/api';
+
+const parseISODate = (value) => {
+  if (!value) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
 
 export default function HQDispatchPage() {
   const [employees, setEmployees] = useState([]);
@@ -148,11 +158,17 @@ export default function HQDispatchPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label className="text-sm text-gray-700">
             תאריך
-            <input
-              type="date"
+            <DatePicker
+              selected={parseISODate(form.start_date)}
+              onChange={(date) => {
+                if (!date) return;
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                setForm((prev) => ({ ...prev, start_date: `${year}-${month}-${day}` }));
+              }}
+              dateFormat="dd/MM/yyyy"
               className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2"
-              value={form.start_date}
-              onChange={(e) => setForm((prev) => ({ ...prev, start_date: e.target.value }))}
             />
           </label>
 

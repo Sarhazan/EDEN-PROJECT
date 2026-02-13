@@ -1,10 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import '../components/forms/datepicker-custom.css';
 import { FaBell, FaMoneyBillWave, FaPaperPlane } from 'react-icons/fa';
 import { useApp } from '../context/AppContext';
 
 const API_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL
   : 'http://localhost:3002/api';
+
+const parseISODate = (value) => {
+  if (!value) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
 
 export default function BillingPage() {
   const { buildings } = useApp();
@@ -158,7 +168,19 @@ export default function BillingPage() {
               {tenantSummaries.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
             <input className="border rounded px-3 py-2" type="number" step="0.01" min="0" placeholder="סכום" value={chargeForm.amount} onChange={(e) => setChargeForm((p) => ({ ...p, amount: e.target.value }))} required />
-            <input className="border rounded px-3 py-2" type="date" value={chargeForm.due_date} onChange={(e) => setChargeForm((p) => ({ ...p, due_date: e.target.value }))} required />
+            <DatePicker
+              selected={parseISODate(chargeForm.due_date)}
+              onChange={(date) => {
+                if (!date) return;
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                setChargeForm((p) => ({ ...p, due_date: `${year}-${month}-${day}` }));
+              }}
+              dateFormat="dd/MM/yyyy"
+              className="border rounded px-3 py-2"
+              required
+            />
             <input className="border rounded px-3 py-2" placeholder="תקופה (אופציונלי)" value={chargeForm.period} onChange={(e) => setChargeForm((p) => ({ ...p, period: e.target.value }))} />
           </div>
           <button className="bg-primary text-white px-3 py-2 rounded hover:bg-orange-600">צור חיוב</button>

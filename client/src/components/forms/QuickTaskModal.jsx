@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import './datepicker-custom.css';
 import { useApp } from '../../context/AppContext';
 import { FaTimes } from 'react-icons/fa';
 import DateChip from './DateChip';
@@ -19,6 +22,13 @@ const priorityOptions = [
   { value: 'normal', label: 'רגיל' },
   { value: 'optional', label: 'עדיפות נמוכה' }
 ];
+
+const parseISODate = (value) => {
+  if (!value) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
 
 export default function QuickTaskModal({ isOpen, onClose }) {
   const { addTask, systems, employees, buildings } = useApp();
@@ -342,11 +352,16 @@ export default function QuickTaskModal({ isOpen, onClose }) {
                     <label className="block text-sm font-medium mb-1">
                       החל מתאריך <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="date"
-                      name="start_date"
-                      value={formData.start_date}
-                      onChange={handleChange}
+                    <DatePicker
+                      selected={parseISODate(formData.start_date)}
+                      onChange={(date) => {
+                        if (!date) return;
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        setFormData((prev) => ({ ...prev, start_date: `${year}-${month}-${day}` }));
+                      }}
+                      dateFormat="dd/MM/yyyy"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                     <p className="text-xs text-gray-500 mt-1">
