@@ -196,10 +196,12 @@ router.post('/charges', (req, res) => {
       return res.status(400).json({ error: 'דייר לא קיים' });
     }
 
+    const initialStatus = new Date(due_date) < new Date() ? 'overdue' : 'open';
+
     const result = db.prepare(`
       INSERT INTO charges (tenant_id, amount, paid_amount, due_date, period, notes, status)
-      VALUES (?, ?, 0, ?, ?, ?, 'open')
-    `).run(tenant_id, amount, due_date, period || null, notes || null);
+      VALUES (?, ?, 0, ?, ?, ?, ?)
+    `).run(tenant_id, amount, due_date, period || null, notes || null, initialStatus);
 
     const charge = db.prepare('SELECT * FROM charges WHERE id = ?').get(result.lastInsertRowid);
     upsertTenantCreditProfile(Number(tenant_id));
@@ -235,6 +237,9 @@ router.post('/payments', (req, res) => {
         const charge = db.prepare('SELECT * FROM charges WHERE id = ?').get(charge_id);
         if (!charge) {
           throw new Error('חיוב לא נמצא');
+        }
+        if (Number(charge.tenant_id) !== Number(tenant_id)) {
+          throw new Error('החיוב אינו שייך לדייר המבוקש');
         }
 
         const newPaidAmount = Number(charge.paid_amount) + Number(amount);
