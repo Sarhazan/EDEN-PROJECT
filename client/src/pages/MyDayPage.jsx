@@ -19,6 +19,7 @@ export default function MyDayPage() {
   const [isSendingBulk, setIsSendingBulk] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
+  const [timelineRangeDays, setTimelineRangeDays] = useState(7);
 
   // Filter states
   const [filterCategory, setFilterCategory] = useState(''); // '' | 'priority' | 'system' | 'status' | 'employee'
@@ -437,12 +438,12 @@ export default function MyDayPage() {
     return lateTasks.length;
   }, [lateTasks]);
 
-  // Calculate timeline data for the next 7 days from selected date
+  // Calculate timeline data from today (7/30 day planning view)
   const timelineData = useMemo(() => {
-    const startDate = startOfDay(selectedDate);
+    const startDate = startOfDay(new Date());
     const timeline = [];
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < timelineRangeDays; i++) {
       const currentDate = addDays(startDate, i);
       let tasksForDay = tasks.filter((task) =>
         shouldTaskAppearOnDate(task, currentDate) &&
@@ -458,14 +459,14 @@ export default function MyDayPage() {
         dateLabel: format(currentDate, 'dd/MM', { locale: he }),
         dayLabel: format(currentDate, 'EEE', { locale: he }),
         count: tasksForDay.length,
-        isToday: isSameDay(currentDate, selectedDate)
+        isToday: isSameDay(currentDate, new Date())
       });
     }
 
     const maxCount = Math.max(...timeline.map(d => d.count), 1);
 
     return { timeline, maxCount };
-  }, [tasks, selectedDate, starFilter]);
+  }, [tasks, starFilter, timelineRangeDays]);
 
   return (
     <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
@@ -737,18 +738,37 @@ export default function MyDayPage() {
         </div>
       )}
 
-      {/* Timeline Chart - Next 7 Days */}
+      {/* Timeline Chart */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6 overflow-hidden">
-        <h3 className="text-lg font-semibold mb-4">משימות לשבוע הקרוב</h3>
+        <div className="flex items-center justify-between mb-3 gap-3">
+          <div>
+            <h3 className="text-lg font-semibold">תחזית עומס משימות</h3>
+            <p className="text-xs text-gray-500">תמיד מחושב מהיום קדימה</p>
+          </div>
+          <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setTimelineRangeDays(7)}
+              className={`px-3 py-1.5 text-xs rounded ${timelineRangeDays === 7 ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
+            >
+              שבוע
+            </button>
+            <button
+              onClick={() => setTimelineRangeDays(30)}
+              className={`px-3 py-1.5 text-xs rounded ${timelineRangeDays === 30 ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
+            >
+              חודש
+            </button>
+          </div>
+        </div>
         <div className="overflow-x-auto -mx-4 px-4">
-          <div className="flex items-end justify-between gap-1 sm:gap-2 h-40 pt-4">
+          <div className={`flex items-end justify-between ${timelineRangeDays === 30 ? 'gap-1' : 'gap-1 sm:gap-2'} h-40 pt-4 min-w-[600px]`}>
             {timelineData.timeline.map((day, index) => {
               const barHeight = (day.count / timelineData.maxCount) * 100;
               return (
                 <div
                   key={index}
-                  onClick={() => setSelectedDate(day.date)}
-                  className="flex-1 flex flex-col items-center gap-1 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[40px] sm:min-w-[60px]"
+                  title={`${day.dateLabel} · ${day.count} משימות`}
+                  className="flex-1 flex flex-col items-center gap-1 sm:gap-2 min-w-[32px] sm:min-w-[44px]"
                 >
                 {/* Bar */}
                 <div className="w-full flex flex-col justify-end h-28">
@@ -773,20 +793,24 @@ export default function MyDayPage() {
                 </div>
                 {/* Date */}
                 <div className="text-center">
-                  <div
-                    className={`text-xs font-semibold ${
-                      day.isToday ? 'text-blue-600' : 'text-gray-600'
-                    }`}
-                  >
-                    {day.dayLabel}
-                  </div>
-                  <div
-                    className={`text-xs ${
-                      day.isToday ? 'text-blue-500' : 'text-gray-500'
-                    }`}
-                  >
-                    {day.dateLabel}
-                  </div>
+                  {(timelineRangeDays === 7 || index % 2 === 0 || day.isToday) && (
+                    <>
+                      <div
+                        className={`text-xs font-semibold ${
+                          day.isToday ? 'text-blue-600' : 'text-gray-600'
+                        }`}
+                      >
+                        {day.dayLabel}
+                      </div>
+                      <div
+                        className={`text-xs ${
+                          day.isToday ? 'text-blue-500' : 'text-gray-500'
+                        }`}
+                      >
+                        {day.dateLabel}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               );
