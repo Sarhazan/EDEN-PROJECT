@@ -133,6 +133,20 @@ export default function AllTasksPage() {
         />
       </div>
 
+      {/* Recent created tasks container */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <h2 className="text-xl font-bold mb-4">נוצרו לאחרונה (5 אחרונות) ({recentCreatedTasks.length})</h2>
+        <div className="space-y-0 rounded-lg overflow-hidden border border-gray-100">
+          {recentCreatedTasks.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">אין היסטוריית יצירה להצגה</div>
+          ) : (
+            recentCreatedTasks.map((task) => (
+              <TaskCard key={`recent-${task.id}`} task={task} onEdit={handleEdit} />
+            ))
+          )}
+        </div>
+      </div>
+
       {/* Recurring tasks container */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
         <h2 className="text-xl font-bold mb-4">משימות קבועות (מופע קרוב בלבד) ({recurringNearestTasks.length})</h2>
@@ -148,7 +162,7 @@ export default function AllTasksPage() {
       </div>
 
       {/* One-time tasks container */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4">
         <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
         <div className="space-y-0 rounded-lg overflow-hidden border border-gray-100">
           {oneTimeTasks.length === 0 ? (
@@ -156,20 +170,6 @@ export default function AllTasksPage() {
           ) : (
             oneTimeTasks.map((task) => (
               <TaskCard key={task.id} task={task} onEdit={handleEdit} />
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Recent created tasks container */}
-      <div className="bg-white rounded-lg shadow-md p-4">
-        <h2 className="text-xl font-bold mb-4">נוצרו לאחרונה (5 אחרונות) ({recentCreatedTasks.length})</h2>
-        <div className="space-y-0 rounded-lg overflow-hidden border border-gray-100">
-          {recentCreatedTasks.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">אין היסטוריית יצירה להצגה</div>
-          ) : (
-            recentCreatedTasks.map((task) => (
-              <TaskCard key={`recent-${task.id}`} task={task} onEdit={handleEdit} />
             ))
           )}
         </div>
