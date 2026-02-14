@@ -274,10 +274,12 @@ export default function MyDayPage() {
     }
   };
 
+  const isRecurringTask = (task) => Number(task?.is_recurring) === 1;
+
   // Helper function to check if a task should appear on the selected date
   const shouldTaskAppearOnDate = (task, date) => {
     // One-time tasks: check exact date match
-    if (!task.is_recurring) {
+    if (!isRecurringTask(task)) {
       return isSameDay(new Date(task.start_date), date);
     }
 
@@ -339,8 +341,8 @@ export default function MyDayPage() {
         tasksBySystem[task.system_id] = (tasksBySystem[task.system_id] || 0) + 1;
       }
     });
-    const recurringTasksCount = todayTasks.filter((t) => t.is_recurring === 1).length;
-    const oneTimeTasksCount = todayTasks.filter((t) => t.is_recurring === 0).length;
+    const recurringTasksCount = todayTasks.filter((t) => isRecurringTask(t)).length;
+    const oneTimeTasksCount = todayTasks.filter((t) => !isRecurringTask(t)).length;
 
     // 4. Tasks by status (today only, excluding completed)
     const newTasks = todayTasks.filter((t) => t.status === 'draft').length;
@@ -413,7 +415,7 @@ export default function MyDayPage() {
       (t) =>
         shouldTaskAppearOnDate(t, selectedDate) &&
         t.status !== 'completed' &&
-        t.is_recurring === 1 // Recurring tasks only
+        isRecurringTask(t) // Recurring tasks only
     );
 
     // Apply star filter
@@ -466,7 +468,7 @@ export default function MyDayPage() {
         (t) =>
           shouldTaskAppearOnDate(t, selectedDate) &&
           t.status !== 'completed' &&
-          t.is_recurring === 0 // One-time tasks only
+          !isRecurringTask(t) // One-time tasks only
       );
 
     // Apply star filter
