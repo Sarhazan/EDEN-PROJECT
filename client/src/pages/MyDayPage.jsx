@@ -1115,15 +1115,18 @@ export default function MyDayPage() {
             >
               <div className="bg-white rounded-lg shadow-md p-4 h-full">
                 <div className="flex items-start justify-between mb-4 gap-3">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-3">
                     <button
-                      onClick={handleSendAllTasks}
-                      disabled={isSendingBulk}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => setSelectedDate(new Date())}
+                      className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
                     >
-                      <FaPaperPlane />
-                      <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+                      היום
                     </button>
+                    <h2 className="text-xl font-bold">
+                      משימות קבועות ({recurringTasks.length})
+                    </h2>
+                  </div>
+                  <div className="flex items-start gap-3">
                     <DatePicker
                       selected={selectedDate}
                       onChange={(date) => setSelectedDate(date)}
@@ -1135,17 +1138,14 @@ export default function MyDayPage() {
                         { name: 'flip', enabled: false }
                       ]}
                     />
-                  </div>
-                  <div className="flex items-center gap-3">
                     <button
-                      onClick={() => setSelectedDate(new Date())}
-                      className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
+                      onClick={handleSendAllTasks}
+                      disabled={isSendingBulk}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      היום
+                      <FaPaperPlane />
+                      <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
                     </button>
-                    <h2 className="text-xl font-bold">
-                      משימות קבועות ({recurringTasks.length})
-                    </h2>
                   </div>
                 </div>
 
@@ -1297,14 +1297,6 @@ export default function MyDayPage() {
                   </button>
                 </div>
                 <div className="flex items-start gap-2">
-                  <button
-                    onClick={handleSendAllTasks}
-                    disabled={isSendingBulk}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <FaPaperPlane />
-                    <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
-                  </button>
                   <DatePicker
                     selected={selectedDate}
                     onChange={(date) => setSelectedDate(date)}
@@ -1316,6 +1308,14 @@ export default function MyDayPage() {
                       { name: 'flip', enabled: false }
                     ]}
                   />
+                  <button
+                    onClick={handleSendAllTasks}
+                    disabled={isSendingBulk}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FaPaperPlane />
+                    <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+                  </button>
                 </div>
               </div>
 
