@@ -82,10 +82,15 @@ export default function MyDayPage() {
       if (taskDate) setSelectedDate(taskDate);
 
       setHighlightTaskId(taskId);
-      setTimeout(() => {
-        const el = document.getElementById(`task-${taskId}`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 250);
+
+      // Try a few times to allow date-filtered lists to finish rendering before scrolling
+      [250, 500, 900].forEach((delay) => {
+        setTimeout(() => {
+          const el = document.getElementById(`task-${taskId}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, delay);
+      });
+
       setTimeout(() => setHighlightTaskId(null), 4500);
     };
 
@@ -122,7 +127,7 @@ export default function MyDayPage() {
       key={task.id}
       className={highlightTaskId === task.id ? 'rounded-lg ring-2 ring-blue-400 ring-offset-2 transition-all' : ''}
     >
-      <TaskCard task={task} onEdit={handleEdit} />
+      <TaskCard task={task} onEdit={handleEdit} forceExpand={highlightTaskId === task.id} />
     </div>
   );
 
