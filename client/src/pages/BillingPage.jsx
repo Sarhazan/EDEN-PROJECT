@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../components/forms/datepicker-custom.css';
@@ -33,6 +33,9 @@ export default function BillingPage() {
     period: 'monthly'
   });
   const [paymentForm, setPaymentForm] = useState({ tenant_id: '', charge_id: '', amount: '', method: 'cash', reference: '' });
+  const [expandedTenantId, setExpandedTenantId] = useState(null);
+  const [tenantDebtDetails, setTenantDebtDetails] = useState({});
+  const [loadingDebtForTenant, setLoadingDebtForTenant] = useState(null);
 
   const overdueAlerts = useMemo(() => {
     return (dashboard?.overdue_tenants || []).filter((t) => Number(t.open_balance || 0) > 0);
@@ -78,6 +81,39 @@ export default function BillingPage() {
       alert('שגיאה בהכנת בקשת תשלום');
     } finally {
       setSendingForTenant(null);
+    }
+  }
+
+  async function handleToggleTenantDebt(tenantId) {
+    if (expandedTenantId === tenantId) {
+      setExpandedTenantId(null);
+      return;
+    }
+
+    setExpandedTenantId(tenantId);
+
+    if (tenantDebtDetails[tenantId]) {
+      return;
+    }
+
+    try {
+      setLoadingDebtForTenant(tenantId);
+      const res = await fetch(`${API_URL}/billing/tenants/${tenantId}`);
+      const data = await res.json();
+
+      const overdueUnpaidCharges = (data?.charges || []).filter((charge) => {
+        const openAmount = Number(charge.amount || 0) - Number(charge.paid_amount || 0);
+        return charge.status === 'overdue' && openAmount > 0;
+      });
+
+      setTenantDebtDetails((prev) => ({
+        ...prev,
+        [tenantId]: overdueUnpaidCharges
+      }));
+    } catch {
+      alert('שגיאה בטעינת פירוט חובות');
+    } finally {
+      setLoadingDebtForTenant(null);
     }
   }
 
@@ -301,29 +337,75 @@ export default function BillingPage() {
               </tr>
             </thead>
             <tbody>
-              {tenantSummaries.map((tenant) => (
-                <tr key={tenant.id} className="border-t">
-                  <td className="p-3 font-medium">{tenant.name}</td>
-                  <td className="p-3">{tenant.building_name || '-'}</td>
-                  <td className="p-3">₪{Number(tenant.open_balance || 0).toLocaleString()}</td>
-                  <td className="p-3">{Number(tenant.overdue_items || 0)}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded text-xs ${riskClass(tenant.risk_level)}`}>
-                      {tenant.credit_score} · {riskLabel(tenant.risk_level)}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <button
-                      onClick={() => handleRequestPayment(tenant.id)}
-                      disabled={sendingForTenant === tenant.id}
-                      className="inline-flex items-center gap-2 bg-primary text-white px-3 py-2 rounded hover:bg-orange-600 disabled:opacity-50"
-                    >
-                      <FaPaperPlane />
-                      {sendingForTenant === tenant.id ? 'שולח...' : 'בקשת תשלום'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {tenantSummaries.map((tenant) => {
+                const isExpanded = expandedTenantId === tenant.id;
+                const debts = tenantDebtDetails[tenant.id] || [];
+
+                return (
+                  <Fragment key={tenant.id}>
+                    <tr className="border-t">
+                      <td className="p-3 font-medium">{tenant.name}</td>
+                      <td className="p-3">{tenant.building_name || '-'}</td>
+                      <td className="p-3">₪{Number(tenant.open_balance || 0).toLocaleString()}</td>
+                      <td className="p-3">{Number(tenant.overdue_items || 0)}</td>
+                      <td className="p-3">
+                        <span className={`px-2 py-1 rounded text-xs ${riskClass(tenant.risk_level)}`}>
+                          {tenant.credit_score} · {riskLabel(tenant.risk_level)}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleToggleTenantDebt(tenant.id)}
+                            className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 px-3 py-2 rounded hover:bg-slate-200"
+                          >
+                            {isExpanded ? 'הסתר חובות' : 'הצג חובות'}
+                          </button>
+                          <button
+                            onClick={() => handleRequestPayment(tenant.id)}
+                            disabled={sendingForTenant === tenant.id}
+                            className="inline-flex items-center gap-2 bg-primary text-white px-3 py-2 rounded hover:bg-orange-600 disabled:opacity-50"
+                          >
+                            <FaPaperPlane />
+                            {sendingForTenant === tenant.id ? 'שולח...' : 'בקשת תשלום'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {isExpanded && (
+                      <tr className="bg-slate-50 border-t">
+                        <td className="p-3" colSpan={6}>
+                          {loadingDebtForTenant === tenant.id ? (
+                            <div className="text-sm text-gray-600">טוען פירוט חובות...</div>
+                          ) : debts.length === 0 ? (
+                            <div className="text-sm text-green-700">אין חיובים באיחור שלא שולמו.</div>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="text-sm font-semibold text-gray-700">חיובים באיחור שלא שולמו:</div>
+                              <ul className="space-y-2">
+                                {debts.map((charge) => {
+                                  const openAmount = Number(charge.amount || 0) - Number(charge.paid_amount || 0);
+                                  const overdueDays = getOverdueDays(charge.due_date);
+                                  return (
+                                    <li key={charge.id} className="text-sm border rounded bg-white px-3 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                      <span>
+                                        <span className="font-medium">{charge.notes || `חיוב #${charge.id}`}</span>
+                                        <span className="text-gray-500"> · לתשלום עד {formatDateDisplay(charge.due_date)}</span>
+                                      </span>
+                                      <span className="text-red-700 font-medium">₪{openAmount.toLocaleString()} · איחור {overdueDays} ימים</span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
               {tenantSummaries.length === 0 && (
                 <tr>
                   <td className="p-4 text-center text-gray-500" colSpan={6}>אין נתוני גבייה להצגה</td>
@@ -378,6 +460,19 @@ export default function BillingPage() {
       </div>
     </div>
   );
+}
+
+function formatDateDisplay(value) {
+  if (!value) return '-';
+  return new Date(value).toLocaleDateString('he-IL');
+}
+
+function getOverdueDays(dueDate) {
+  if (!dueDate) return 0;
+  const due = new Date(dueDate);
+  const now = new Date();
+  const diffMs = now.setHours(0, 0, 0, 0) - due.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 }
 
 function KpiCard({ title, value, danger = false }) {
