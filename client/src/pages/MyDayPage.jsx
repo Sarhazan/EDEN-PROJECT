@@ -121,15 +121,19 @@ export default function MyDayPage() {
     setIsTaskModalOpen(true);
   };
 
-  const renderTaskCard = (task) => (
-    <div
-      id={`task-${task.id}`}
-      key={task.id}
-      className={highlightTaskId === task.id ? 'rounded-lg ring-2 ring-blue-400 ring-offset-2 transition-all' : ''}
-    >
-      <TaskCard task={task} onEdit={handleEdit} forceExpand={highlightTaskId === task.id} />
-    </div>
-  );
+  const renderTaskCard = (task) => {
+    const isHighlighted = String(highlightTaskId) === String(task.id);
+
+    return (
+      <div
+        id={`task-${task.id}`}
+        key={task.id}
+        className={isHighlighted ? 'rounded-lg ring-2 ring-blue-400 ring-offset-2 transition-all' : ''}
+      >
+        <TaskCard task={task} onEdit={handleEdit} forceExpand={isHighlighted} />
+      </div>
+    );
+  };
 
   // Reset column widths to default
   const handleResetColumnWidths = () => {
