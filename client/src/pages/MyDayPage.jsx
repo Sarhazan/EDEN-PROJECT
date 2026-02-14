@@ -77,8 +77,9 @@ export default function MyDayPage() {
     };
 
     const handleNavigateToTask = (e) => {
-      const { taskId, startDate } = e.detail || {};
+      const { taskId, startDate, source } = e.detail || {};
       if (!taskId || !startDate) return;
+      if (source !== 'toast-button') return;
 
       const taskDate = parseISODate(startDate);
       if (taskDate) setSelectedDate(taskDate);
@@ -1346,7 +1347,7 @@ export default function MyDayPage() {
                   )}
                 </div>
 
-                {lateTasks.length > 0 && (
+                {isSelectedDateToday && lateTasks.length > 0 && (
                   <>
                     <div className="my-4 border-t border-gray-300" />
                     <h3 className="text-lg font-semibold text-red-600 mb-3">
@@ -1514,7 +1515,7 @@ export default function MyDayPage() {
                 )}
               </div>
 
-              {lateTasks.length > 0 && (
+              {isSelectedDateToday && lateTasks.length > 0 && (
                 <>
                   <div className="my-4 border-t border-gray-300" />
                   <h3 className="text-lg font-semibold text-red-600 mb-3">

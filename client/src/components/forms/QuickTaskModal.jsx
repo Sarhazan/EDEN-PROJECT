@@ -129,7 +129,8 @@ export default function QuickTaskModal({ isOpen, onClose }) {
       window.dispatchEvent(new CustomEvent('myday:navigate-to-task', {
         detail: {
           taskId: createdTask.id,
-          startDate: createdTask.start_date
+          startDate: createdTask.start_date,
+          source: 'toast-button'
         }
       }));
       toast.dismiss();
@@ -155,6 +156,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
         position: 'bottom-center',
         autoClose: 5000,
         hideProgressBar: true,
+        closeOnClick: false,
         rtl: true
       }
     );
