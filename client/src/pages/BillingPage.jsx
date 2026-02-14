@@ -24,7 +24,14 @@ export default function BillingPage() {
   const [paymentsHistory, setPaymentsHistory] = useState([]);
   const [sendingForTenant, setSendingForTenant] = useState(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState('all');
-  const [chargeForm, setChargeForm] = useState({ tenant_id: '', amount: '', due_date: '', period: '' });
+  const [chargeForm, setChargeForm] = useState({
+    tenant_id: '',
+    amount: '',
+    due_date: '',
+    description: '',
+    billing_type: 'one-time', // one-time | recurring
+    period: 'monthly'
+  });
   const [paymentForm, setPaymentForm] = useState({ tenant_id: '', charge_id: '', amount: '', method: 'cash', reference: '' });
 
   const overdueAlerts = useMemo(() => {
@@ -84,13 +91,21 @@ export default function BillingPage() {
           tenant_id: Number(chargeForm.tenant_id),
           amount: Number(chargeForm.amount),
           due_date: chargeForm.due_date,
-          period: chargeForm.period || null
+          period: chargeForm.billing_type === 'recurring' ? chargeForm.period : null,
+          notes: chargeForm.description || null
         })
       });
 
       if (!res.ok) throw new Error('failed');
 
-      setChargeForm({ tenant_id: '', amount: '', due_date: '', period: '' });
+      setChargeForm({
+        tenant_id: '',
+        amount: '',
+        due_date: '',
+        description: '',
+        billing_type: 'one-time',
+        period: 'monthly'
+      });
       await fetchData();
       alert('חיוב נוצר בהצלחה');
     } catch {
@@ -168,6 +183,7 @@ export default function BillingPage() {
               {tenantSummaries.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
             <input className="border rounded px-3 py-2" type="number" step="0.01" min="0" placeholder="סכום" value={chargeForm.amount} onChange={(e) => setChargeForm((p) => ({ ...p, amount: e.target.value }))} required />
+
             <DatePicker
               selected={parseISODate(chargeForm.due_date)}
               onChange={(date) => {
@@ -181,7 +197,51 @@ export default function BillingPage() {
               className="border rounded px-3 py-2"
               required
             />
-            <input className="border rounded px-3 py-2" placeholder="תקופה (אופציונלי)" value={chargeForm.period} onChange={(e) => setChargeForm((p) => ({ ...p, period: e.target.value }))} />
+
+            <div className="border rounded px-3 py-2 flex items-center gap-4">
+              <label className="flex items-center gap-1 text-sm">
+                <input
+                  type="radio"
+                  name="billing_type"
+                  value="one-time"
+                  checked={chargeForm.billing_type === 'one-time'}
+                  onChange={(e) => setChargeForm((p) => ({ ...p, billing_type: e.target.value }))}
+                />
+                חד פעמית
+              </label>
+              <label className="flex items-center gap-1 text-sm">
+                <input
+                  type="radio"
+                  name="billing_type"
+                  value="recurring"
+                  checked={chargeForm.billing_type === 'recurring'}
+                  onChange={(e) => setChargeForm((p) => ({ ...p, billing_type: e.target.value }))}
+                />
+                חוזרת
+              </label>
+            </div>
+
+            {chargeForm.billing_type === 'recurring' && (
+              <select
+                className="border rounded px-3 py-2"
+                value={chargeForm.period}
+                onChange={(e) => setChargeForm((p) => ({ ...p, period: e.target.value }))}
+                required
+              >
+                <option value="monthly">חודשית</option>
+                <option value="semi-annual">חצי שנתית</option>
+                <option value="annual">שנתית</option>
+              </select>
+            )}
+
+            <textarea
+              className="border rounded px-3 py-2 col-span-2"
+              placeholder="תיאור הגבייה (על מה החיוב)"
+              value={chargeForm.description}
+              onChange={(e) => setChargeForm((p) => ({ ...p, description: e.target.value }))}
+              rows={2}
+              required
+            />
           </div>
           <button className="bg-primary text-white px-3 py-2 rounded hover:bg-orange-600">צור חיוב</button>
         </form>
