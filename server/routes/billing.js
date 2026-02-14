@@ -80,6 +80,7 @@ router.get('/dashboard', (req, res) => {
         SUM(amount) AS total_billed,
         SUM(paid_amount) AS total_paid,
         SUM(amount - paid_amount) AS total_open,
+        SUM(CASE WHEN status = 'overdue' THEN (amount - paid_amount) ELSE 0 END) AS overdue_balance,
         SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) AS overdue_charges
       FROM charges
     `).get();
@@ -124,6 +125,7 @@ router.get('/dashboard', (req, res) => {
         total_billed: Number(kpi?.total_billed || 0),
         total_paid: Number(kpi?.total_paid || 0),
         total_open: Number(kpi?.total_open || 0),
+        overdue_balance: Number(kpi?.overdue_balance || 0),
         overdue_charges: Number(kpi?.overdue_charges || 0)
       },
       overdue_tenants: overdueTenants,
@@ -158,6 +160,7 @@ router.get('/tenant-summaries', (req, res) => {
         t.phone,
         b.name AS building_name,
         COALESCE(SUM(CASE WHEN c.status != 'paid' THEN c.amount - c.paid_amount ELSE 0 END), 0) AS open_balance,
+        COALESCE(SUM(CASE WHEN c.status = 'overdue' THEN c.amount - c.paid_amount ELSE 0 END), 0) AS overdue_balance,
         COALESCE(SUM(CASE WHEN c.status = 'overdue' THEN 1 ELSE 0 END), 0) AS overdue_items,
         COALESCE(p.score, 75) AS credit_score,
         COALESCE(p.risk_level, 'normal') AS risk_level
@@ -167,7 +170,7 @@ router.get('/tenant-summaries', (req, res) => {
       LEFT JOIN tenant_credit_profile p ON p.tenant_id = t.id
       ${buildingId ? 'WHERE t.building_id = ?' : ''}
       GROUP BY t.id
-      ORDER BY open_balance DESC, t.name ASC
+      ORDER BY overdue_balance DESC, t.name ASC
     `).all(...(buildingId ? [buildingId] : []));
 
     res.json(summaries);

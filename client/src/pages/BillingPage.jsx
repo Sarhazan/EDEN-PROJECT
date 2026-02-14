@@ -183,7 +183,7 @@ export default function BillingPage() {
   const kpi = dashboard?.kpi || {
     total_billed: 0,
     total_paid: 0,
-    total_open: 0,
+    overdue_balance: 0,
     overdue_charges: 0
   };
 
@@ -300,7 +300,7 @@ export default function BillingPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard title="סה״כ לחיוב" value={`₪${Number(kpi.total_billed || 0).toLocaleString()}`} />
         <KpiCard title="סה״כ נגבה" value={`₪${Number(kpi.total_paid || 0).toLocaleString()}`} />
-        <KpiCard title="יתרה פתוחה" value={`₪${Number(kpi.total_open || 0).toLocaleString()}`} danger />
+        <KpiCard title="חוב באיחור" value={`₪${Number(kpi.overdue_balance || 0).toLocaleString()}`} danger />
         <KpiCard title="חיובים באיחור" value={Number(kpi.overdue_charges || 0)} danger />
       </div>
 
@@ -330,7 +330,7 @@ export default function BillingPage() {
               <tr>
                 <th className="text-right p-3">דייר</th>
                 <th className="text-right p-3">מבנה</th>
-                <th className="text-right p-3">יתרה פתוחה</th>
+                <th className="text-right p-3">חוב באיחור</th>
                 <th className="text-right p-3">באיחור</th>
                 <th className="text-right p-3">דירוג אשראי</th>
                 <th className="text-right p-3">פעולות</th>
@@ -346,7 +346,7 @@ export default function BillingPage() {
                     <tr className="border-t">
                       <td className="p-3 font-medium">{tenant.name}</td>
                       <td className="p-3">{tenant.building_name || '-'}</td>
-                      <td className="p-3">₪{Number(tenant.open_balance || 0).toLocaleString()}</td>
+                      <td className="p-3">₪{Number(tenant.overdue_balance || 0).toLocaleString()}</td>
                       <td className="p-3">{Number(tenant.overdue_items || 0)}</td>
                       <td className="p-3">
                         <span className={`px-2 py-1 rounded text-xs ${riskClass(tenant.risk_level)}`}>
