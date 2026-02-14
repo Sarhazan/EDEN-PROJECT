@@ -1118,7 +1118,7 @@ export default function MyDayPage() {
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setSelectedDate(new Date())}
-                      className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
+                      className="bg-white border border-gray-300 px-3 h-[40px] rounded-lg hover:bg-gray-50 text-sm"
                     >
                       היום
                     </button>
@@ -1131,7 +1131,7 @@ export default function MyDayPage() {
                       selected={selectedDate}
                       onChange={(date) => setSelectedDate(date)}
                       dateFormat="dd/MM/yyyy"
-                      className="border border-gray-300 px-3 py-1.5 rounded-lg w-36 text-sm"
+                      className="border border-gray-300 px-4 h-[40px] rounded-lg w-36 text-sm"
                       minDate={today}
                       popperPlacement="bottom-start"
                       popperModifiers={[
@@ -1141,7 +1141,7 @@ export default function MyDayPage() {
                     <button
                       onClick={handleSendAllTasks}
                       disabled={isSendingBulk}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 h-[40px] rounded-lg flex items-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <FaPaperPlane />
                       <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
@@ -1291,7 +1291,7 @@ export default function MyDayPage() {
                   </h2>
                   <button
                     onClick={() => setSelectedDate(new Date())}
-                    className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
+                    className="bg-white border border-gray-300 px-3 h-[40px] rounded-lg hover:bg-gray-50 text-sm"
                   >
                     היום
                   </button>
@@ -1301,7 +1301,7 @@ export default function MyDayPage() {
                     selected={selectedDate}
                     onChange={(date) => setSelectedDate(date)}
                     dateFormat="dd/MM/yyyy"
-                    className="border border-gray-300 px-3 py-1.5 rounded-lg w-32 text-sm"
+                    className="border border-gray-300 px-4 h-[40px] rounded-lg w-32 text-sm"
                     minDate={today}
                     popperPlacement="bottom-start"
                     popperModifiers={[
@@ -1311,7 +1311,7 @@ export default function MyDayPage() {
                   <button
                     onClick={handleSendAllTasks}
                     disabled={isSendingBulk}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 h-[40px] rounded-lg flex items-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FaPaperPlane />
                     <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
