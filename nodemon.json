@@ -1,0 +1,12 @@
+{
+  "watch": ["server"],
+  "ext": "js,mjs,cjs,json",
+  "ignore": [
+    "client/**",
+    ".wwebjs_auth_development/**",
+    ".wwebjs_auth_production/**",
+    "uploads/**",
+    "docs/**",
+    "maintenance.db*"
+  ]
+}
