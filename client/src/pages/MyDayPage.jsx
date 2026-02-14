@@ -348,6 +348,29 @@ export default function MyDayPage() {
     };
   }, [tasks, selectedDate, starFilter]);
 
+  const isSelectedDateToday = isSameDay(selectedDate, new Date());
+
+  // Dedicated open-task counters for the real current day (independent from selectedDate)
+  const todayOpenStats = useMemo(() => {
+    let todayOpenTasks = tasks.filter((t) =>
+      shouldTaskAppearOnDate(t, new Date()) &&
+      t.status !== 'completed'
+    );
+
+    if (starFilter) {
+      todayOpenTasks = todayOpenTasks.filter((t) => t.is_starred === 1);
+    }
+
+    return {
+      total: todayOpenTasks.length,
+      byPriority: {
+        urgent: todayOpenTasks.filter((t) => t.priority === 'urgent').length,
+        normal: todayOpenTasks.filter((t) => t.priority === 'normal').length,
+        optional: todayOpenTasks.filter((t) => t.priority === 'optional').length
+      }
+    };
+  }, [tasks, starFilter]);
+
   // Filter recurring tasks (all systems including general, selected date, not completed) and sort by time
   const recurringTasks = useMemo(() => {
     let filtered = tasks.filter(
@@ -498,13 +521,13 @@ export default function MyDayPage() {
       const normalCount = tasksForDay.filter((t) => t.priority === 'normal').length;
       const optionalCount = tasksForDay.filter((t) => t.priority === 'optional').length;
 
-      // Keep forecast's "today" fully aligned with the headline open-tasks counters
-      const dayCount = isTodayDate ? stats.total : tasksForDay.length;
+      // Keep forecast's "today" anchored to the real current day (not selectedDate)
+      const dayCount = isTodayDate ? todayOpenStats.total : tasksForDay.length;
       const dayPriority = isTodayDate
         ? {
-            urgent: stats.byPriority.urgent,
-            normal: stats.byPriority.normal,
-            optional: stats.byPriority.optional
+            urgent: todayOpenStats.byPriority.urgent,
+            normal: todayOpenStats.byPriority.normal,
+            optional: todayOpenStats.byPriority.optional
           }
         : {
             urgent: urgentCount,
@@ -525,7 +548,7 @@ export default function MyDayPage() {
     const maxCount = Math.max(...timeline.map(d => d.count), 1);
 
     return { timeline, maxCount };
-  }, [tasks, starFilter, timelineRangeDays, stats]);
+  }, [tasks, starFilter, timelineRangeDays, todayOpenStats]);
 
   return (
     <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
@@ -871,24 +894,26 @@ export default function MyDayPage() {
         </div>
       </div>
 
-      {/* Progress Bar - All Today's Tasks */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold">התקדמות משימות היום</h3>
-          <span className="text-sm text-gray-600">
-            {stats.completed} מתוך {stats.total} הושלמו
-          </span>
+      {/* Progress Bar - show only when selectedDate is today */}
+      {isSelectedDateToday && (
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold">התקדמות משימות היום</h3>
+            <span className="text-sm text-gray-600">
+              {stats.completed} מתוך {stats.total} הושלמו
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4">
+            <div
+              className="bg-green-500 h-4 rounded-full transition-all duration-300"
+              style={{ width: `${stats.completionRate}%` }}
+            />
+          </div>
+          <p className="text-center text-2xl font-bold text-green-600 mt-2">
+            {stats.completionRate}%
+          </p>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-4">
-          <div
-            className="bg-green-500 h-4 rounded-full transition-all duration-300"
-            style={{ width: `${stats.completionRate}%` }}
-          />
-        </div>
-        <p className="text-center text-2xl font-bold text-green-600 mt-2">
-          {stats.completionRate}%
-        </p>
-      </div>
+      )}
 
       {/* Data management buttons */}
       <div className="flex gap-2 mb-3">
