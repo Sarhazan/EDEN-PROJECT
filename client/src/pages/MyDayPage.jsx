@@ -27,6 +27,7 @@ export default function MyDayPage() {
   // Filter states
   const [filterCategory, setFilterCategory] = useState(''); // '' | 'priority' | 'system' | 'status' | 'employee'
   const [filterValue, setFilterValue] = useState(''); // The specific value within the selected category
+  const [taskSearch, setTaskSearch] = useState('');
 
   // Star filter state from localStorage
   const [starFilter, setStarFilter] = useState(() => {
@@ -409,6 +410,13 @@ export default function MyDayPage() {
   }, [tasks, selectedDate, starFilter]);
 
   const isSelectedDateToday = isSameDay(selectedDate, new Date());
+  const isTaskSearchActive = isSelectedDateToday && taskSearch.trim().length > 0;
+
+  useEffect(() => {
+    if (!isSelectedDateToday && taskSearch) {
+      setTaskSearch('');
+    }
+  }, [isSelectedDateToday, taskSearch]);
 
   // Dedicated open-task counters for the real current day (independent from selectedDate)
   const todayOpenStats = useMemo(() => {
@@ -433,12 +441,19 @@ export default function MyDayPage() {
 
   // Filter recurring tasks (all systems including general, selected date, not completed) and sort by time
   const recurringTasks = useMemo(() => {
-    let filtered = tasks.filter(
-      (t) =>
-        shouldTaskAppearOnDate(t, selectedDate) &&
-        t.status !== 'completed' &&
-        isRecurringTask(t) // Recurring tasks only
-    );
+    const searchTerm = taskSearch.trim().toLowerCase();
+    const isTodaySearch = isSameDay(selectedDate, new Date()) && searchTerm.length > 0;
+
+    let filtered = tasks.filter((t) => {
+      if (t.status === 'completed' || !isRecurringTask(t)) return false;
+
+      if (isTodaySearch) {
+        const haystack = `${t.title || ''} ${t.description || ''}`.toLowerCase();
+        return haystack.includes(searchTerm);
+      }
+
+      return shouldTaskAppearOnDate(t, selectedDate);
+    });
 
     // Apply star filter
     if (starFilter) {
@@ -475,16 +490,50 @@ export default function MyDayPage() {
       }
     }
 
+    if (isTodaySearch) {
+      const today = startOfDay(new Date());
+      const nearestBySeries = new Map();
+
+      filtered.forEach((task) => {
+        const taskDate = startOfDay(new Date(task.start_date));
+        if (isBefore(taskDate, today)) return;
+
+        const seriesKey = task.parent_task_id || `${task.title}|${task.frequency}|${task.start_time}|${task.employee_id || ''}|${task.system_id || ''}`;
+        const existing = nearestBySeries.get(seriesKey);
+
+        if (!existing) {
+          nearestBySeries.set(seriesKey, task);
+          return;
+        }
+
+        const existingDate = startOfDay(new Date(existing.start_date));
+        if (
+          isBefore(taskDate, existingDate) ||
+          (isSameDay(taskDate, existingDate) && (task.start_time || '00:00').localeCompare(existing.start_time || '00:00') < 0)
+        ) {
+          nearestBySeries.set(seriesKey, task);
+        }
+      });
+
+      filtered = Array.from(nearestBySeries.values());
+    }
+
     return filtered.sort((a, b) => {
-      // Sort by start_time chronologically
+      // Sort by date first, then by time
+      const dateCompare = new Date(a.start_date) - new Date(b.start_date);
+      if (dateCompare !== 0) return dateCompare;
+
       const timeA = a.start_time || '00:00';
       const timeB = b.start_time || '00:00';
       return timeA.localeCompare(timeB);
     });
-  }, [tasks, selectedDate, filterCategory, filterValue, starFilter]);
+  }, [tasks, selectedDate, filterCategory, filterValue, starFilter, taskSearch]);
 
   // Filter one-time tasks (selected date, not completed) and sort by time
   const oneTimeTasks = useMemo(() => {
+    const searchTerm = taskSearch.trim().toLowerCase();
+    const isTodaySearch = isSameDay(selectedDate, new Date()) && searchTerm.length > 0;
+
     let filtered = tasks
       .filter(
         (t) =>
@@ -492,6 +541,13 @@ export default function MyDayPage() {
           t.status !== 'completed' &&
           !isRecurringTask(t) // One-time tasks only
       );
+
+    if (isTodaySearch) {
+      filtered = filtered.filter((t) => {
+        const haystack = `${t.title || ''} ${t.description || ''}`.toLowerCase();
+        return haystack.includes(searchTerm);
+      });
+    }
 
     // Apply star filter
     if (starFilter) {
@@ -514,7 +570,7 @@ export default function MyDayPage() {
       const timeB = b.start_time || '00:00';
       return timeA.localeCompare(timeB);
     });
-  }, [tasks, selectedDate, filterCategory, filterValue, starFilter]);
+  }, [tasks, selectedDate, filterCategory, filterValue, starFilter, taskSearch]);
 
   // Filter late tasks (is_late = true, not completed) and sort by date and time
   const lateTasks = useMemo(() => {
@@ -1023,6 +1079,18 @@ export default function MyDayPage() {
         </div>
       )}
 
+      {isSelectedDateToday && (
+        <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+          <input
+            type="text"
+            value={taskSearch}
+            onChange={(e) => setTaskSearch(e.target.value)}
+            placeholder="חיפוש משימות..."
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+          />
+        </div>
+      )}
+
       {/* Main Content - Dynamic Layout */}
       {filterCategory === 'employee' && filterValue ? (
         /* Unified view when filtering by employee */
@@ -1348,7 +1416,7 @@ export default function MyDayPage() {
                   )}
                 </div>
 
-                {isSelectedDateToday && lateTasks.length > 0 && (
+                {isSelectedDateToday && !isTaskSearchActive && lateTasks.length > 0 && (
                   <>
                     <div className="my-4 border-t border-gray-300" />
                     <h3 className="text-lg font-semibold text-red-600 mb-3">
@@ -1516,7 +1584,7 @@ export default function MyDayPage() {
                 )}
               </div>
 
-              {isSelectedDateToday && lateTasks.length > 0 && (
+              {isSelectedDateToday && !isTaskSearchActive && lateTasks.length > 0 && (
                 <>
                   <div className="my-4 border-t border-gray-300" />
                   <h3 className="text-lg font-semibold text-red-600 mb-3">
