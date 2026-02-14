@@ -38,10 +38,12 @@ export default function TaskForm({ task, onClose }) {
     status: 'draft',
     is_recurring: false,
     weekly_days: [],
-    estimated_duration_minutes: 30
+    estimated_duration_minutes: 30,
+    due_date: ''
   });
 
   const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDueDate, setSelectedDueDate] = useState(null);
 
   const convertISOToDisplay = (isoDate) => {
     // Convert YYYY-MM-DD to DD/MM/YYYY
@@ -70,7 +72,8 @@ export default function TaskForm({ task, onClose }) {
         status: task.status || 'draft',
         is_recurring: task.is_recurring === 1,
         weekly_days: task.weekly_days ? JSON.parse(task.weekly_days) : [],
-        estimated_duration_minutes: task.estimated_duration_minutes || 30
+        estimated_duration_minutes: task.estimated_duration_minutes || 30,
+        due_date: task.due_date ? convertISOToDisplay(task.due_date) : ''
       });
 
       // Set selectedDate from task.start_date (YYYY-MM-DD format)
@@ -80,6 +83,16 @@ export default function TaskForm({ task, onClose }) {
           const [year, month, day] = parts;
           setSelectedDate(new Date(parseInt(year), parseInt(month) - 1, parseInt(day)));
         }
+      }
+
+      if (task.due_date) {
+        const parts = task.due_date.split('-');
+        if (parts.length === 3) {
+          const [year, month, day] = parts;
+          setSelectedDueDate(new Date(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+      } else {
+        setSelectedDueDate(null);
       }
     }
   }, [task]);
@@ -126,8 +139,32 @@ export default function TaskForm({ task, onClose }) {
       ...prev,
       frequency,
       is_recurring: frequency !== 'one-time',
-      weekly_days: frequency === 'daily' ? [] : prev.weekly_days
+      weekly_days: frequency === 'daily' ? [] : prev.weekly_days,
+      due_date: frequency === 'one-time' ? prev.due_date : ''
     }));
+
+    if (frequency !== 'one-time') {
+      setSelectedDueDate(null);
+    }
+  };
+
+  const handleDueDateChange = (date) => {
+    setSelectedDueDate(date);
+
+    if (date) {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      setFormData((prev) => ({
+        ...prev,
+        due_date: `${day}/${month}/${year}`
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        due_date: ''
+      }));
+    }
   };
 
   const handleDayToggle = (day) => {
@@ -191,6 +228,18 @@ export default function TaskForm({ task, onClose }) {
         alert('לא ניתן לבחור תאריך ושעה בעבר');
         return;
       }
+
+      // One-time only: due date cannot be before start date
+      if (formData.frequency === 'one-time' && formData.due_date) {
+        const [dueDay, dueMonth, dueYear] = formData.due_date.split('/');
+        const dueDateOnly = new Date(parseInt(dueYear), parseInt(dueMonth) - 1, parseInt(dueDay));
+        const startDateOnly = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+
+        if (dueDateOnly < startDateOnly) {
+          alert('תאריך "סיום עד" לא יכול להיות לפני תאריך ההתחלה');
+          return;
+        }
+      }
     }
     // For daily tasks, don't validate time - the task will start from the next occurrence of the selected day(s)
 
@@ -201,9 +250,13 @@ export default function TaskForm({ task, onClose }) {
       if (formData.frequency === 'daily') {
         const today = new Date();
         dataToSubmit.start_date = today.toISOString().split('T')[0];
+        dataToSubmit.due_date = null;
       } else {
         // Convert DD/MM/YYYY to YYYY-MM-DD for database
         dataToSubmit.start_date = convertDateToISO(formData.start_date);
+        dataToSubmit.due_date = formData.frequency === 'one-time' && formData.due_date
+          ? convertDateToISO(formData.due_date)
+          : null;
       }
 
       if (isEditing) {
@@ -316,7 +369,7 @@ export default function TaskForm({ task, onClose }) {
 
       {/* Date (non-daily) + Duration */}
       {formData.frequency !== 'daily' ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className={`grid gap-3 ${formData.frequency === 'one-time' ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <div>
             <label className="block text-sm font-medium mb-1">
               תאריך התחלה <span className="text-red-500">*</span>
@@ -331,6 +384,23 @@ export default function TaskForm({ task, onClose }) {
               required
             />
           </div>
+
+          {formData.frequency === 'one-time' && (
+            <div>
+              <label className="block text-sm font-medium mb-1">סיום עד (אופציונלי)</label>
+              <DatePicker
+                selected={selectedDueDate}
+                onChange={handleDueDateChange}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="ברירת מחדל: תאריך המשימה"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                minDate={selectedDate || new Date()}
+                isClearable
+              />
+              <p className="text-xs text-gray-500 mt-1">אם לא נבחר תאריך, האיחור יחושב לפי תאריך המשימה.</p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium mb-1">
               משך (דקות) <span className="text-red-500">*</span>

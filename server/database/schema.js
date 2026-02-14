@@ -320,6 +320,17 @@ function initializeDatabase() {
     }
   }
 
+  // Add due_date column for one-time tasks (optional deadline date)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN due_date DATE`);
+    console.log('Added due_date column to tasks table');
+  } catch (e) {
+    // Column already exists, ignore error
+    if (!e.message.includes('duplicate column name')) {
+      console.error('Error adding due_date column:', e.message);
+    }
+  }
+
   // Buildings table (maintenance buildings/structures)
   db.exec(`
     CREATE TABLE IF NOT EXISTS buildings (
@@ -655,6 +666,7 @@ function initializeDatabase() {
 
   // Active dashboard paths (today/pending/in-progress)
   createIndexIfNotExists('idx_tasks_status_start_date_start_time', 'tasks', 'status, start_date, start_time');
+  createIndexIfNotExists('idx_tasks_one_time_due_date', 'tasks', 'is_recurring, due_date, status');
 
   // Join/filter helpers
   createIndexIfNotExists('idx_systems_location_id', 'systems', 'location_id');
