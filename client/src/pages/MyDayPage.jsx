@@ -285,10 +285,11 @@ export default function MyDayPage() {
     }
 
     // Recurring tasks: check if they apply to this day
-    const taskStartDate = new Date(task.start_date);
+    const taskStartDate = startOfDay(new Date(task.start_date));
+    const selectedDay = startOfDay(date);
 
-    // Task hasn't started yet
-    if (date < taskStartDate) {
+    // Task hasn't started yet (day-based comparison to avoid timezone/time-of-day drift)
+    if (isBefore(selectedDay, taskStartDate)) {
       return false;
     }
 
