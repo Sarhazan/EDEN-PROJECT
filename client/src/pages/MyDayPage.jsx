@@ -1115,29 +1115,18 @@ export default function MyDayPage() {
             >
               <div className="bg-white rounded-lg shadow-md p-4 h-full">
                 <div className="flex items-start justify-between mb-4 gap-3">
-                  <h2 className="text-xl font-bold">
-                    משימות קבועות ({recurringTasks.length})
-                  </h2>
-                  <div className="flex items-start gap-3">
-                    <div className="flex flex-col items-start gap-2">
-                      <button
-                        onClick={() => setSelectedDate(new Date())}
-                        className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
-                      >
-                        היום
-                      </button>
-                      <DatePicker
-                        selected={selectedDate}
-                        onChange={(date) => setSelectedDate(date)}
-                        dateFormat="dd/MM/yyyy"
-                        className="border border-gray-300 px-3 py-1.5 rounded-lg w-36 text-sm"
-                        minDate={today}
-                        popperPlacement="bottom-start"
-                        popperModifiers={[
-                          { name: 'flip', enabled: false }
-                        ]}
-                      />
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-xl font-bold">
+                      משימות קבועות ({recurringTasks.length})
+                    </h2>
+                    <button
+                      onClick={() => setSelectedDate(new Date())}
+                      className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
+                    >
+                      היום
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={handleSendAllTasks}
                       disabled={isSendingBulk}
@@ -1146,6 +1135,17 @@ export default function MyDayPage() {
                       <FaPaperPlane />
                       <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
                     </button>
+                    <DatePicker
+                      selected={selectedDate}
+                      onChange={(date) => setSelectedDate(date)}
+                      dateFormat="dd/MM/yyyy"
+                      className="border border-gray-300 px-3 py-1.5 rounded-lg w-36 text-sm"
+                      minDate={today}
+                      popperPlacement="bottom-start"
+                      popperModifiers={[
+                        { name: 'flip', enabled: false }
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -1285,35 +1285,39 @@ export default function MyDayPage() {
             {/* Recurring Tasks */}
             <div className="bg-white rounded-lg shadow-md p-4">
               <div className="flex items-start justify-between mb-4 gap-3">
-                <h2 className="text-xl font-bold">
-                  משימות קבועות ({recurringTasks.length})
-                </h2>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold">
+                    משימות קבועות ({recurringTasks.length})
+                  </h2>
                   <button
                     onClick={() => setSelectedDate(new Date())}
                     className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
                   >
                     היום
                   </button>
-                  <DatePicker
-                    selected={selectedDate}
-                    onChange={(date) => setSelectedDate(date)}
-                    dateFormat="dd/MM/yyyy"
-                    className="border border-gray-300 px-3 py-1.5 rounded-lg w-32 text-sm"
-                    minDate={today}
-                    popperPlacement="bottom-start"
-                    popperModifiers={[
-                      { name: 'flip', enabled: false }
-                    ]}
-                  />
-                  <button
-                    onClick={handleSendAllTasks}
-                    disabled={isSendingBulk}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <FaPaperPlane />
-                    <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
-                  </button>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSendAllTasks}
+                      disabled={isSendingBulk}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FaPaperPlane />
+                      <span>{isSendingBulk ? 'שולח...' : 'שלח כל המשימות'}</span>
+                    </button>
+                    <DatePicker
+                      selected={selectedDate}
+                      onChange={(date) => setSelectedDate(date)}
+                      dateFormat="dd/MM/yyyy"
+                      className="border border-gray-300 px-3 py-1.5 rounded-lg w-32 text-sm"
+                      minDate={today}
+                      popperPlacement="bottom-start"
+                      popperModifiers={[
+                        { name: 'flip', enabled: false }
+                      ]}
+                    />
+                  </div>
                 </div>
               </div>
 
