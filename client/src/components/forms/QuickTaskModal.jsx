@@ -38,6 +38,8 @@ export default function QuickTaskModal({ isOpen, onClose }) {
   const [isSaving, setIsSaving] = useState(false);
   const [titleError, setTitleError] = useState(false);
   const [showRecurringAdvanced, setShowRecurringAdvanced] = useState(false);
+  const [quickDueEnabled, setQuickDueEnabled] = useState(false);
+  const [quickDueDate, setQuickDueDate] = useState(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -180,9 +182,14 @@ export default function QuickTaskModal({ isOpen, onClose }) {
       const day = String(selectedDate.getDate()).padStart(2, '0');
       const formattedDate = `${year}-${month}-${day}`;
 
+      const dueDateFormatted = quickDueEnabled && quickDueDate
+        ? `${quickDueDate.getFullYear()}-${String(quickDueDate.getMonth() + 1).padStart(2, '0')}-${String(quickDueDate.getDate()).padStart(2, '0')}`
+        : null;
+
       const taskData = {
         title: title.trim(),
         start_date: formattedDate,
+        due_date: dueDateFormatted,
         start_time: '09:00',
         frequency: 'one-time',
         is_recurring: false,
@@ -197,6 +204,8 @@ export default function QuickTaskModal({ isOpen, onClose }) {
       // Reset form
       setTitle('');
       setSelectedDate(new Date());
+      setQuickDueEnabled(false);
+      setQuickDueDate(null);
       setTaskMode('one-time');
     } catch {
       toast.error('שגיאה ביצירת משימה', {
@@ -250,6 +259,8 @@ export default function QuickTaskModal({ isOpen, onClose }) {
       // Reset form
       setTitle('');
       setSelectedDate(new Date());
+      setQuickDueEnabled(false);
+      setQuickDueDate(null);
       setTaskMode('one-time');
       setFormData({
         description: '',
@@ -343,7 +354,11 @@ export default function QuickTaskModal({ isOpen, onClose }) {
             </button>
             <button
               type="button"
-              onClick={() => setTaskMode('recurring')}
+              onClick={() => {
+                setTaskMode('recurring');
+                setQuickDueEnabled(false);
+                setQuickDueDate(null);
+              }}
               className={`flex-1 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 taskMode === 'recurring'
                   ? 'bg-gray-900 text-white'
@@ -353,6 +368,39 @@ export default function QuickTaskModal({ isOpen, onClose }) {
               חוזרת
             </button>
           </div>
+
+          {taskMode === 'one-time' && (
+            <div className="rounded-lg border border-gray-200 p-3 space-y-3">
+              <div className="flex items-center gap-3">
+                <input
+                  id="quick-due-toggle"
+                  type="checkbox"
+                  checked={quickDueEnabled}
+                  onChange={(e) => {
+                    setQuickDueEnabled(e.target.checked);
+                    if (!e.target.checked) setQuickDueDate(null);
+                  }}
+                  className="h-4 w-4"
+                />
+                <label htmlFor="quick-due-toggle" className="text-sm font-medium text-gray-700">
+                  תאריך סיום
+                </label>
+              </div>
+
+              {quickDueEnabled && (
+                <div>
+                  <DatePicker
+                    selected={quickDueDate}
+                    onChange={(date) => setQuickDueDate(date)}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="בחר תאריך סיום"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    minDate={selectedDate}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Expandable recurring section */}
           <div

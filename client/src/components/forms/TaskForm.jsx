@@ -224,7 +224,7 @@ export default function TaskForm({ task, onClose }) {
       );
       const now = new Date();
 
-      if (selectedDateTime < now) {
+      if (!isEditing && selectedDateTime < now) {
         alert('לא ניתן לבחור תאריך ושעה בעבר');
         return;
       }
