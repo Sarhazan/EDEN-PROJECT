@@ -20,6 +20,22 @@ const priorityOptions = [
   { value: 'optional', label: 'עדיפות נמוכה' }
 ];
 
+const extractTimeFromTitle = (rawTitle) => {
+  const text = (rawTitle || '').trim();
+  const match = text.match(/^(\d{1,2}:\d{2})\s+(.+)$/);
+  if (!match) return { title: text, startTime: '' };
+
+  const [, time, cleanTitle] = match;
+  const [h, m] = time.split(':').map(Number);
+  const valid = Number.isInteger(h) && Number.isInteger(m) && h >= 0 && h <= 23 && m >= 0 && m <= 59;
+  if (!valid) return { title: text, startTime: '' };
+
+  return {
+    title: cleanTitle.trim(),
+    startTime: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  };
+};
+
 export default function TaskForm({ task, onClose }) {
   const { addTask, updateTask, systems, employees, locations, buildings } = useApp();
   const isEditing = !!task;
@@ -191,7 +207,7 @@ export default function TaskForm({ task, onClose }) {
 
     // For daily tasks, validate only title and time
     // For other tasks, validate title, date, and time
-    if (!formData.title || !formData.start_time) {
+    if (!formData.title || (formData.frequency !== 'one-time' && !formData.start_time)) {
       alert('נא למלא את כל השדות החובה');
       return;
     }
@@ -212,21 +228,24 @@ export default function TaskForm({ task, onClose }) {
 
     // Validate that date and time are not in the past
     if (formData.frequency !== 'daily') {
-      // For non-daily tasks, validate date and time
+      // For non-daily tasks, validate date and time (one-time may be without time)
       const [day, month, year] = formData.start_date.split('/');
-      const [hours, minutes] = formData.start_time.split(':');
-      const selectedDateTime = new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes)
-      );
       const now = new Date();
 
-      if (!isEditing && selectedDateTime < now) {
-        alert('לא ניתן לבחור תאריך ושעה בעבר');
-        return;
+      if (formData.start_time) {
+        const [hours, minutes] = formData.start_time.split(':');
+        const selectedDateTime = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes)
+        );
+
+        if (!isEditing && selectedDateTime < now) {
+          alert('לא ניתן לבחור תאריך ושעה בעבר');
+          return;
+        }
       }
 
       // One-time only: due date cannot be before start date
@@ -245,6 +264,12 @@ export default function TaskForm({ task, onClose }) {
 
     try {
       const dataToSubmit = { ...formData };
+
+      if (dataToSubmit.frequency === 'one-time' && !dataToSubmit.start_time) {
+        const parsed = extractTimeFromTitle(dataToSubmit.title);
+        dataToSubmit.title = parsed.title;
+        dataToSubmit.start_time = parsed.startTime || '';
+      }
 
       // For daily tasks, automatically set start_date to today
       if (formData.frequency === 'daily') {
@@ -317,16 +342,16 @@ export default function TaskForm({ task, onClose }) {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">
-            שעת התחלה <span className="text-red-500">*</span>
+            שעת התחלה {formData.frequency !== 'one-time' && <span className="text-red-500">*</span>}
           </label>
           <input
             type="text"
             name="start_time"
             value={formData.start_time}
             onChange={handleChange}
-            placeholder="HH:MM (לדוגמא: 14:30)"
+            placeholder={formData.frequency === 'one-time' ? 'אופציונלי (HH:MM)' : 'HH:MM (לדוגמא: 14:30)'}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-            required
+            required={formData.frequency !== 'one-time'}
           />
         </div>
       </div>

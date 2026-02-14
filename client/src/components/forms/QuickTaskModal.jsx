@@ -30,6 +30,27 @@ const parseISODate = (value) => {
   return new Date(year, month - 1, day);
 };
 
+const extractTimeFromTitle = (rawTitle) => {
+  const text = (rawTitle || '').trim();
+  const match = text.match(/^(\d{1,2}:\d{2})\s+(.+)$/);
+  if (!match) {
+    return { title: text, startTime: '' };
+  }
+
+  const [, time, cleanTitle] = match;
+  const [h, m] = time.split(':').map(Number);
+  const valid = Number.isInteger(h) && Number.isInteger(m) && h >= 0 && h <= 23 && m >= 0 && m <= 59;
+
+  if (!valid) {
+    return { title: text, startTime: '' };
+  }
+
+  return {
+    title: cleanTitle.trim(),
+    startTime: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  };
+};
+
 export default function QuickTaskModal({ isOpen, onClose }) {
   const { addTask, systems, employees, buildings } = useApp();
   const [taskMode, setTaskMode] = useState('one-time');
@@ -186,11 +207,22 @@ export default function QuickTaskModal({ isOpen, onClose }) {
         ? `${quickDueDate.getFullYear()}-${String(quickDueDate.getMonth() + 1).padStart(2, '0')}-${String(quickDueDate.getDate()).padStart(2, '0')}`
         : null;
 
+      const parsed = extractTimeFromTitle(title);
+      if (!parsed.title) {
+        toast.error('נא להזין כותרת משימה תקינה', {
+          position: 'bottom-center',
+          autoClose: 2000,
+          hideProgressBar: true,
+          rtl: true
+        });
+        return;
+      }
+
       const taskData = {
-        title: title.trim(),
+        title: parsed.title,
         start_date: formattedDate,
         due_date: dueDateFormatted,
-        start_time: '09:00',
+        start_time: parsed.startTime,
         frequency: 'one-time',
         is_recurring: false,
         priority: 'normal',

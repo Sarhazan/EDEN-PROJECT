@@ -62,11 +62,20 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
 
   const isTaskInFuture = () => {
     const now = new Date();
+
     if (task.is_recurring === 1) {
       const today = now.toISOString().split('T')[0];
-      const taskStartDateTime = new Date(`${today}T${task.start_time}`);
+      const recurringTime = task.start_time || '00:00';
+      const taskStartDateTime = new Date(`${today}T${recurringTime}`);
       return taskStartDateTime > now;
     }
+
+    // One-time task without explicit hour is considered actionable until end of its day
+    if (!task.start_time) {
+      const endOfDay = new Date(`${task.start_date}T23:59`);
+      return endOfDay > now;
+    }
+
     const taskDateTime = new Date(`${task.start_date}T${task.start_time}`);
     return taskDateTime > now;
   };
@@ -103,7 +112,7 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
     }
     setIsSending(true);
     try {
-      const message = `${task.start_time}\n${task.title}\n${task.description || ''}`;
+      const message = `${task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}\n${task.title}\n${task.description || ''}`;
       await axios.post(`${API_URL}/whatsapp/send`, {
         phoneNumber: employee.phone,
         message: message
@@ -153,7 +162,22 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
   const handleTimeChange = async (e) => {
     e.stopPropagation();
     const newTime = e.target.value.trim();
-    if (!newTime) { setIsChangingTime(false); return; }
+
+    if (!newTime) {
+      if (task.is_recurring === 1) {
+        alert('למשימה קבועה חייבת להיות שעת התחלה');
+        return;
+      }
+
+      try {
+        await updateTask(task.id, { ...task, start_time: '' });
+        setIsChangingTime(false);
+      } catch (error) {
+        alert('שגיאה: ' + error.message);
+      }
+      return;
+    }
+
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(newTime)) {
       alert('פורמט שעה לא תקין. השתמש בפורמט HH:MM (לדוגמא 08:30, 23:45)');
       return;
@@ -247,13 +271,20 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
             `}
           />
 
-          {/* Col 2: Title */}
-          <span className={`
-            task-title text-sm font-medium text-gray-900 truncate
-            ${task.status === 'completed' ? 'line-through text-gray-500' : ''}
-          `}>
-            {task.title}
-          </span>
+          {/* Col 2: Title + optional time badge */}
+          <div className="flex items-center gap-2 min-w-0">
+            {task.start_time && (
+              <span className="text-xs font-semibold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md">
+                {task.start_time.slice(0, 5)}
+              </span>
+            )}
+            <span className={`
+              task-title text-sm font-medium text-gray-900 truncate
+              ${task.status === 'completed' ? 'line-through text-gray-500' : ''}
+            `}>
+              {task.title}
+            </span>
+          </div>
 
           {/* Col 3: Date */}
           <span className="text-xs text-gray-500 text-center">
@@ -348,7 +379,7 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
                 className="cursor-pointer hover:text-indigo-500 transition-colors"
                 title="שנה שעה"
               >
-                {task.start_time?.slice(0, 5)}
+                {task.start_time ? task.start_time.slice(0, 5) : 'ללא שעה'}
               </span>
             )}
 
@@ -453,7 +484,7 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
                 📅 {format(new Date(task.start_date), 'dd/MM/yyyy')}
               </span>
               <span className="flex items-center gap-1">
-                🕐 {task.start_time?.slice(0, 5)}
+                🕐 {task.start_time ? task.start_time.slice(0, 5) : 'ללא שעה'}
               </span>
 
               {/* Location with change */}
