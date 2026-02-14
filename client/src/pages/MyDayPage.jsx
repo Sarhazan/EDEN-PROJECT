@@ -1115,17 +1115,6 @@ export default function MyDayPage() {
             >
               <div className="bg-white rounded-lg shadow-md p-4 h-full">
                 <div className="flex items-start justify-between mb-4 gap-3">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-bold">
-                      משימות קבועות ({recurringTasks.length})
-                    </h2>
-                    <button
-                      onClick={() => setSelectedDate(new Date())}
-                      className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
-                    >
-                      היום
-                    </button>
-                  </div>
                   <div className="flex items-start gap-3">
                     <button
                       onClick={handleSendAllTasks}
@@ -1146,6 +1135,17 @@ export default function MyDayPage() {
                         { name: 'flip', enabled: false }
                       ]}
                     />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setSelectedDate(new Date())}
+                      className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-sm"
+                    >
+                      היום
+                    </button>
+                    <h2 className="text-xl font-bold">
+                      משימות קבועות ({recurringTasks.length})
+                    </h2>
                   </div>
                 </div>
 
