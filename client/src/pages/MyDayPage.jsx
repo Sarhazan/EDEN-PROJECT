@@ -296,16 +296,36 @@ export default function MyDayPage() {
       return true;
     }
 
-    // Weekly tasks: check weekly_days
-    if (task.frequency === 'weekly' && task.weekly_days) {
+    // Weekly tasks: check weekly_days (supports [] / numeric days / string day names)
+    if (task.frequency === 'weekly') {
+      const dayOfWeek = date.getDay(); // 0 = Sunday ... 6 = Saturday
+      const startDayOfWeek = taskStartDate.getDay();
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+      // If no weekly_days value, default weekly behavior = same weekday as start_date
+      if (!task.weekly_days) {
+        return dayOfWeek === startDayOfWeek;
+      }
+
       try {
         const weeklyDays = JSON.parse(task.weekly_days);
-        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+        // Empty config should behave like default weekly (same weekday as start_date)
+        if (!Array.isArray(weeklyDays) || weeklyDays.length === 0) {
+          return dayOfWeek === startDayOfWeek;
+        }
+
+        // Support numeric representation [0..6]
+        if (typeof weeklyDays[0] === 'number') {
+          return weeklyDays.includes(dayOfWeek);
+        }
+
+        // Support string representation ['monday', ...]
         return weeklyDays.includes(dayNames[dayOfWeek]);
       } catch (e) {
         console.error('Error parsing weekly_days:', e);
-        return false;
+        // Fail-safe fallback for weekly tasks
+        return dayOfWeek === startDayOfWeek;
       }
     }
 
