@@ -534,20 +534,20 @@ export default function MyDayPage() {
     const searchTerm = taskSearch.trim().toLowerCase();
     const isTodaySearch = isSameDay(selectedDate, new Date()) && searchTerm.length > 0;
 
-    let filtered = tasks
-      .filter(
-        (t) =>
-          shouldTaskAppearOnDate(t, selectedDate) &&
-          t.status !== 'completed' &&
-          !isRecurringTask(t) // One-time tasks only
-      );
+    let filtered = tasks.filter((t) => {
+      if (t.status === 'completed' || isRecurringTask(t)) return false;
 
-    if (isTodaySearch) {
-      filtered = filtered.filter((t) => {
+      if (isTodaySearch) {
+        const taskDate = startOfDay(new Date(t.start_date));
+        const today = startOfDay(new Date());
+        if (isBefore(taskDate, today)) return false;
+
         const haystack = `${t.title || ''} ${t.description || ''}`.toLowerCase();
         return haystack.includes(searchTerm);
-      });
-    }
+      }
+
+      return shouldTaskAppearOnDate(t, selectedDate);
+    });
 
     // Apply star filter
     if (starFilter) {
@@ -565,7 +565,10 @@ export default function MyDayPage() {
     }
 
     return filtered.sort((a, b) => {
-      // Sort by start_time chronologically
+      // Sort by date first, then by start_time
+      const dateCompare = new Date(a.start_date) - new Date(b.start_date);
+      if (dateCompare !== 0) return dateCompare;
+
       const timeA = a.start_time || '00:00';
       const timeB = b.start_time || '00:00';
       return timeA.localeCompare(timeB);
