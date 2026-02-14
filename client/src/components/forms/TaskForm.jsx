@@ -367,9 +367,9 @@ export default function TaskForm({ task, onClose }) {
         </div>
       )}
 
-      {/* Date (non-daily) + Duration */}
+      {/* Date section (non-daily) */}
       {formData.frequency !== 'daily' ? (
-        <div className={`grid gap-3 ${formData.frequency === 'one-time' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium mb-1">
               תאריך התחלה <span className="text-red-500">*</span>
@@ -401,24 +401,26 @@ export default function TaskForm({ task, onClose }) {
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              משך (דקות) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="estimated_duration_minutes"
-              value={formData.estimated_duration_minutes}
-              onChange={handleChange}
-              min="5"
-              step="5"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
-            </p>
-          </div>
+          {formData.frequency !== 'one-time' && (
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                משך (דקות) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="estimated_duration_minutes"
+                value={formData.estimated_duration_minutes}
+                onChange={handleChange}
+                min="5"
+                step="5"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         <div>
