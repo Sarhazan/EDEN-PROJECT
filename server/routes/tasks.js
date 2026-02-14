@@ -420,7 +420,7 @@ router.post('/', (req, res) => {
             const result = db.prepare(`
               INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, null, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+            `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, null, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
             createdTaskIds.push(result.lastInsertRowid);
           }
@@ -434,7 +434,7 @@ router.post('/', (req, res) => {
           const result = db.prepare(`
             INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, null, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, null, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
           createdTaskIds.push(result.lastInsertRowid);
         }
@@ -493,7 +493,7 @@ router.post('/', (req, res) => {
           const result = db.prepare(`
             INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, null, start_time, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, null, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
           createdTaskIds.push(result.lastInsertRowid);
         }
@@ -528,7 +528,7 @@ router.post('/', (req, res) => {
     const result = db.prepare(`
       INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(title, description, system_id || null, employee_id || null, frequency || 'one-time', start_date, due_date || null, start_time, priority || 'normal', status || 'draft', 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+    `).run(title, description, system_id || null, employee_id || null, frequency || 'one-time', start_date, start_time, due_date || null, priority || 'normal', status || 'draft', 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
     const newTask = db.prepare(`
       SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
