@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { format, isBefore, startOfDay, addDays, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -21,6 +21,8 @@ export default function MyDayPage() {
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const [timelineRangeDays, setTimelineRangeDays] = useState(7);
   const [highlightTaskId, setHighlightTaskId] = useState(null);
+  const [pendingNavigateTaskId, setPendingNavigateTaskId] = useState(null);
+  const navigateRetryRef = useRef(0);
 
   // Filter states
   const [filterCategory, setFilterCategory] = useState(''); // '' | 'priority' | 'system' | 'status' | 'employee'
@@ -82,21 +84,46 @@ export default function MyDayPage() {
       if (taskDate) setSelectedDate(taskDate);
 
       setHighlightTaskId(taskId);
-
-      // Try a few times to allow date-filtered lists to finish rendering before scrolling
-      [250, 500, 900].forEach((delay) => {
-        setTimeout(() => {
-          const el = document.getElementById(`task-${taskId}`);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, delay);
-      });
-
-      setTimeout(() => setHighlightTaskId(null), 4500);
+      setPendingNavigateTaskId(taskId);
+      navigateRetryRef.current = 0;
     };
 
     window.addEventListener('myday:navigate-to-task', handleNavigateToTask);
     return () => window.removeEventListener('myday:navigate-to-task', handleNavigateToTask);
   }, []);
+
+  // Robust navigation to created task: wait for filtered lists/data render
+  useEffect(() => {
+    if (!pendingNavigateTaskId) return;
+
+    const taskId = pendingNavigateTaskId;
+    const maxRetries = 20;
+    const retryDelayMs = 250;
+
+    const tryScroll = () => {
+      const el = document.getElementById(`task-${taskId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => setHighlightTaskId(null), 4500);
+        setPendingNavigateTaskId(null);
+        navigateRetryRef.current = 0;
+        return;
+      }
+
+      navigateRetryRef.current += 1;
+      if (navigateRetryRef.current >= maxRetries) {
+        // Stop retrying but keep date change
+        setTimeout(() => setHighlightTaskId(null), 2500);
+        setPendingNavigateTaskId(null);
+        navigateRetryRef.current = 0;
+        return;
+      }
+
+      setTimeout(tryScroll, retryDelayMs);
+    };
+
+    tryScroll();
+  }, [pendingNavigateTaskId, tasks, selectedDate, filterCategory, filterValue, starFilter]);
 
   // Debounced localStorage save for column widths
   useEffect(() => {
