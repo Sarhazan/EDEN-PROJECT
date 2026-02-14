@@ -105,9 +105,23 @@ export default function AllTasksPage() {
       });
   }, [baseTasks]);
 
-  // Last 5 created tasks (history strip)
+  // Last 5 created items (dedup recurring batches to a single row)
   const recentCreatedTasks = useMemo(() => {
-    return [...baseTasks]
+    const sorted = [...baseTasks].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+    const byCreatedItem = new Map();
+
+    sorted.forEach((task) => {
+      const isRecurring = Number(task.is_recurring) === 1;
+      const recurringKey = `${task.title}|${task.frequency}|${task.start_time}|${task.employee_id || ''}|${task.system_id || ''}|${task.created_at || ''}`;
+      const key = isRecurring ? `recurring:${task.parent_task_id || recurringKey}` : `one-time:${task.id}`;
+
+      if (!byCreatedItem.has(key)) {
+        byCreatedItem.set(key, task);
+      }
+    });
+
+    return Array.from(byCreatedItem.values())
       .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
       .slice(0, 5);
   }, [baseTasks]);
