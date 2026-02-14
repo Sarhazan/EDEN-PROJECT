@@ -262,9 +262,17 @@ export default function MyDayPage() {
         tasksByEmployee
       }, { timeout: 120000 }); // 2 minute timeout for bulk operations
 
-      // Update all tasks status to 'sent'
-      const taskIds = tasksToSend.map(t => t.id);
-      for (const taskId of taskIds) {
+      // Update status only for employees that were actually sent successfully
+      const successfulEmployeeIds = (response.data?.results || [])
+        .filter((r) => r.success)
+        .map((r) => String(r.employeeId));
+
+      const sentTaskIds = successfulEmployeeIds.flatMap((employeeId) => {
+        const group = tasksByEmployee[employeeId];
+        return group?.tasks?.map((t) => t.id) || [];
+      });
+
+      for (const taskId of sentTaskIds) {
         await updateTaskStatus(taskId, 'sent');
       }
 
