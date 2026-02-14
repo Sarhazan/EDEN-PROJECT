@@ -328,6 +328,16 @@ export default function TaskForm({ task, onClose }) {
               placeholderText="בחר תאריך"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
               minDate={new Date()}
+              portalId="root"
+              popperClassName="z-[9999]"
+              popperPlacement="bottom-end"
+              popperModifiers={[
+                { name: 'offset', options: { offset: [0, 8] } },
+                {
+                  name: 'preventOverflow',
+                  options: { rootBoundary: 'viewport', altAxis: true, tether: false }
+                }
+              ]}
               required
             />
           </div>
