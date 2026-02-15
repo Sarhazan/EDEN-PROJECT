@@ -412,9 +412,14 @@ router.post('/', (req, res) => {
       const createdTaskIds = [];
 
       if (frequency === 'daily' && weekly_days && weekly_days.length > 0) {
-        // Daily tasks with specific days - start from tomorrow (i=1) to avoid creating past instances
-        for (let i = 1; i <= 30; i++) {
-          const checkDate = addDays(today, i);
+        // Daily tasks with specific days
+        // Start from the later of today and the provided start_date,
+        // and include the start date itself when it matches selected weekdays.
+        const startDateObj = start_date ? new Date(start_date) : today;
+        const startAnchor = startDateObj > today ? startDateObj : today;
+
+        for (let i = 0; i <= 30; i++) {
+          const checkDate = addDays(startAnchor, i);
           const dayOfWeek = checkDate.getDay();
 
           if (weekly_days.includes(dayOfWeek)) {
@@ -429,9 +434,13 @@ router.post('/', (req, res) => {
           }
         }
       } else if (frequency === 'daily') {
-        // Daily tasks without specific days - every day, start from tomorrow (i=1)
-        for (let i = 1; i <= 30; i++) {
-          const checkDate = addDays(today, i);
+        // Daily tasks without specific days - every day
+        // Start from the later of today and the provided start_date, and include that day.
+        const startDateObj = start_date ? new Date(start_date) : today;
+        const startAnchor = startDateObj > today ? startDateObj : today;
+
+        for (let i = 0; i <= 30; i++) {
+          const checkDate = addDays(startAnchor, i);
           const dateStr = format(checkDate, 'yyyy-MM-dd');
 
           const result = db.prepare(`
