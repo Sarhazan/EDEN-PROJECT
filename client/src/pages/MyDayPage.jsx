@@ -11,6 +11,7 @@ import axios from 'axios';
 import { Resizable } from 're-resizable';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+const SHOW_DATA_CONTROLS = import.meta.env.DEV || import.meta.env.VITE_ENV === 'test' || import.meta.env.VITE_ENV === 'local';
 
 export default function MyDayPage() {
   const { tasks, systems, employees, locations, setIsTaskModalOpen, setEditingTask, updateTaskStatus, seedData, clearData } = useApp();
@@ -1042,41 +1043,43 @@ export default function MyDayPage() {
         </div>
       )}
 
-      {/* Data management buttons */}
-      <div className="flex gap-2 mb-3">
-        <button
-          onClick={async () => {
-            if (confirm('פעולה זו תמחק את כל הנתונים הקיימים ותטען נתוני דמה. להמשיך?')) {
-              try {
-                await seedData();
-                alert('נתוני דמה נטענו בהצלחה!');
-              } catch (error) {
-                alert('שגיאה: ' + error.message);
+      {/* Data management buttons (non-production only) */}
+      {SHOW_DATA_CONTROLS && (
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={async () => {
+              if (confirm('פעולה זו תמחק את כל הנתונים הקיימים ותטען נתוני דמה. להמשיך?')) {
+                try {
+                  await seedData();
+                  alert('נתוני דמה נטענו בהצלחה!');
+                } catch (error) {
+                  alert('שגיאה: ' + error.message);
+                }
               }
-            }
-          }}
-          className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center gap-1.5"
-        >
-          <FaDatabase size={12} />
-          טען נתוני דמה
-        </button>
-        <button
-          onClick={async () => {
-            if (confirm('אזהרה! פעולה זו תמחק את כל הנתונים. האם אתה בטוח?')) {
-              try {
-                await clearData();
-                alert('כל הנתונים נמחקו בהצלחה');
-              } catch (error) {
-                alert('שגיאה: ' + error.message);
+            }}
+            className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            <FaDatabase size={12} />
+            טען נתוני דמה
+          </button>
+          <button
+            onClick={async () => {
+              if (confirm('אזהרה! פעולה זו תמחק את כל הנתונים. האם אתה בטוח?')) {
+                try {
+                  await clearData();
+                  alert('כל הנתונים נמחקו בהצלחה');
+                } catch (error) {
+                  alert('שגיאה: ' + error.message);
+                }
               }
-            }
-          }}
-          className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center gap-1.5"
-        >
-          <FaTrash size={12} />
-          נקה נתונים
-        </button>
-      </div>
+            }}
+            className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            <FaTrash size={12} />
+            נקה נתונים
+          </button>
+        </div>
+      )}
 
       {/* Column width reset button - Desktop only */}
       {!(filterCategory === 'employee' && filterValue) && (

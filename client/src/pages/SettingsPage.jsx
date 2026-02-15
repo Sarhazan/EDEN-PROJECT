@@ -7,8 +7,9 @@ import { io } from 'socket.io-client';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 // Socket.IO connects to base URL without /api path
 const SOCKET_URL = API_URL.replace(/\/api$/, '');
-// Check if we're in test environment (allow dangerous operations only in test)
+// Environment flags
 const IS_TEST_ENV = import.meta.env.VITE_ENV === 'test';
+const IS_PRODUCTION_ENV = import.meta.env.PROD && import.meta.env.VITE_ENV !== 'test' && import.meta.env.VITE_ENV !== 'local';
 
 export default function SettingsPage() {
   const { seedData, clearData } = useApp();
@@ -680,78 +681,80 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Data Management Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-        <div className="flex items-center gap-3 mb-4">
-          <FaDatabase className="text-gray-500 text-3xl" />
-          <h2 className="text-2xl font-semibold">ניהול נתונים</h2>
-        </div>
+      {/* Data Management Section (hidden in production) */}
+      {!IS_PRODUCTION_ENV && (
+        <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+          <div className="flex items-center gap-3 mb-4">
+            <FaDatabase className="text-gray-500 text-3xl" />
+            <h2 className="text-2xl font-semibold">ניהול נתונים</h2>
+          </div>
 
-        <p className="text-gray-600 mb-4">
-          כלים לניהול נתוני המערכת. השתמש בזהירות - פעולות אלו משפיעות על כל הנתונים.
-        </p>
+          <p className="text-gray-600 mb-4">
+            כלים לניהול נתוני המערכת. השתמש בזהירות - פעולות אלו משפיעות על כל הנתונים.
+          </p>
 
-        <div className="flex gap-3">
-          <button
-            onClick={async () => {
-              if (confirm('פעולה זו תמחק את כל הנתונים הקיימים ותטען נתוני דמה. להמשיך?')) {
-                try {
-                  await seedData();
-                  alert('נתוני דמה נטענו בהצלחה!');
-                } catch (error) {
-                  alert('שגיאה: ' + error.message);
-                }
-              }
-            }}
-            disabled={!IS_TEST_ENV}
-            className={`flex-1 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-              IS_TEST_ENV
-                ? 'bg-blue-500 hover:bg-blue-600 text-white cursor-pointer'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            <FaDatabase />
-            טען נתוני דמה
-          </button>
-          <button
-            onClick={async () => {
-              if (confirm('אזהרה! פעולה זו תמחק את כל הנתונים ולא ניתן לשחזר. האם אתה בטוח?')) {
-                if (confirm('האם אתה בטוח לחלוטין? כל הנתונים יימחקו לצמיתות!')) {
+          <div className="flex gap-3">
+            <button
+              onClick={async () => {
+                if (confirm('פעולה זו תמחק את כל הנתונים הקיימים ותטען נתוני דמה. להמשיך?')) {
                   try {
-                    await clearData();
-                    alert('כל הנתונים נמחקו בהצלחה');
+                    await seedData();
+                    alert('נתוני דמה נטענו בהצלחה!');
                   } catch (error) {
                     alert('שגיאה: ' + error.message);
                   }
                 }
-              }
-            }}
-            disabled={!IS_TEST_ENV}
-            className={`flex-1 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-              IS_TEST_ENV
-                ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            <FaTrash />
-            נקה נתונים
-          </button>
-        </div>
+              }}
+              disabled={!IS_TEST_ENV}
+              className={`flex-1 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                IS_TEST_ENV
+                  ? 'bg-blue-500 hover:bg-blue-600 text-white cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <FaDatabase />
+              טען נתוני דמה
+            </button>
+            <button
+              onClick={async () => {
+                if (confirm('אזהרה! פעולה זו תמחק את כל הנתונים ולא ניתן לשחזר. האם אתה בטוח?')) {
+                  if (confirm('האם אתה בטוח לחלוטין? כל הנתונים יימחקו לצמיתות!')) {
+                    try {
+                      await clearData();
+                      alert('כל הנתונים נמחקו בהצלחה');
+                    } catch (error) {
+                      alert('שגיאה: ' + error.message);
+                    }
+                  }
+                }
+              }}
+              disabled={!IS_TEST_ENV}
+              className={`flex-1 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                IS_TEST_ENV
+                  ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <FaTrash />
+              נקה נתונים
+            </button>
+          </div>
 
-        {/* Warning Box */}
-        <div className="mt-6 p-4 bg-yellow-50 rounded-lg text-sm text-gray-700 border border-yellow-200">
-          <p className="font-semibold mb-2">⚠️ אזהרה:</p>
-          <ul className="list-disc list-inside space-y-1">
-            <li><strong>טען נתוני דמה</strong> - מוחק את כל הנתונים הקיימים ומחליף אותם בנתוני דמה לבדיקות</li>
-            <li><strong>נקה נתונים</strong> - מוחק את כל הנתונים לצמיתות. פעולה זו אינה הפיכה!</li>
-          </ul>
-          {!IS_TEST_ENV && (
-            <p className="mt-3 text-red-600 font-semibold">
-              🔒 פעולות אלו מושבתות בסביבת הפרודקשן למניעת מחיקת נתונים בטעות
-            </p>
-          )}
+          {/* Warning Box */}
+          <div className="mt-6 p-4 bg-yellow-50 rounded-lg text-sm text-gray-700 border border-yellow-200">
+            <p className="font-semibold mb-2">⚠️ אזהרה:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li><strong>טען נתוני דמה</strong> - מוחק את כל הנתונים הקיימים ומחליף אותם בנתוני דמה לבדיקות</li>
+              <li><strong>נקה נתונים</strong> - מוחק את כל הנתונים לצמיתות. פעולה זו אינה הפיכה!</li>
+            </ul>
+            {!IS_TEST_ENV && (
+              <p className="mt-3 text-red-600 font-semibold">
+                🔒 פעולות אלו מושבתות בסביבת הפרודקשן למניעת מחיקת נתונים בטעות
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
