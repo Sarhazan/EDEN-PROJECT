@@ -1,0 +1,14 @@
+node_modules
+.git
+.wwebjs_auth
+.wwebjs_cache
+server
+client
+*.db
+*.sqlite
+*.log
+.env
+.claude
+package.json
+package-lock.json
+README.md

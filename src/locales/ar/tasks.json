@@ -1,0 +1,34 @@
+{
+  "pageTitle": "المهام المطلوب إكمالها",
+  "greeting": "مرحبا {{name}}",
+  "acknowledgeButton": "تأكيد استلام جميع المهام",
+  "acknowledgeDescription": "النقر على هذا الزر يؤكد أنك استلمت جميع المهام وسيتم إخطار المدير",
+  "acknowledgeRequired": "يجب النقر على زر «تأكيد استلام جميع المهام» أولاً قبل تنفيذ مهام فردية",
+  "completeButton": "إرسال الإكمال",
+  "addNoteLabel": "ملاحظات (اختياري)",
+  "addNotePlaceholder": "أضف ملاحظات حول المهمة...",
+  "uploadImageLabel": "تحميل صورة",
+  "uploadImageHint": "حتى 5 ميجابايت، JPG أو PNG فقط",
+  "taskCompleted": "تم إكمال المهمة بنجاح!",
+  "acknowledgedAtText": "تم تأكيد المهام في ",
+  "loading": "جارٍ التحميل...",
+  "footerText": "نظام إدارة الصيانة - Eden",
+  "completionDetails": "تفاصيل الإكمال",
+  "sending": "جارٍ الإرسال...",
+  "error": "خطأ",
+  "errorUnknown": "خطأ غير معروف",
+  "errorSending": "خطأ في إرسال البيانات",
+  "acknowledging": "جارٍ التأكيد...",
+  "acknowledgeSuccess": "تم تأكيد المهام بنجاح!",
+  "acknowledgeError": "خطأ في تأكيد المهام",
+  "priority": {
+    "urgent": "عاجل",
+    "normal": "عادي",
+    "optional": "اختياري"
+  },
+  "badge": {
+    "time": "الوقت",
+    "duration": "{{minutes}} دقائق",
+    "completed": "مكتمل"
+  }
+}

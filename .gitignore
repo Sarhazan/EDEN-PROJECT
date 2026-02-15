@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+client/node_modules/
+
+# Build outputs
+client/dist/
+dist/
+
+# Environment files (keep .env.production for deployment config)
+.env
+.env.local
+
+# Database (ignore locally, but Railway will persist it)
+# For local development, we ignore DB files
+# On Railway, they will be stored in persistent volume
+*.db
+*.sqlite
+*.sqlite3
+database.sqlite
+
+# WhatsApp session data (environment-specific folders)
+# Each environment (production, development) has its own session folder
+.wwebjs_auth/
+.wwebjs_auth_*/
+.wwebjs_cache/
+
+# Uploaded files
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+nul
+--help
+=
+
+# Database shared memory and WAL files (SQLite)
+*.db-shm
+*.db-wal
+
+# Generated HTML task confirmation pages (auto-cleaned after 30 days)
+docs/task-*.html
+
+.vercel
+
+# Auto Claude data directory
+.auto-claude/
+
+# Local test artifacts
+.playwright-mcp/
+uploads/

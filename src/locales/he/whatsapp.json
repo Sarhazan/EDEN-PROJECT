@@ -1,0 +1,7 @@
+{
+  "greeting": "שלום {{name}}",
+  "taskListHeader": "משימות ליום {{date}}",
+  "time": "שעה",
+  "description": "תיאור",
+  "clickToView": "לחץ על הקישור למטה כדי לצפות ולאשר"
+}

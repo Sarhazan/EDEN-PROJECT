@@ -1,0 +1,34 @@
+{
+  "pageTitle": "Задачи для выполнения",
+  "greeting": "Привет {{name}}",
+  "acknowledgeButton": "Подтвердить получение всех задач",
+  "acknowledgeDescription": "Нажатие этой кнопки подтвердит, что вы получили все задачи и уведомит менеджера",
+  "acknowledgeRequired": "Сначала нажмите кнопку «Подтвердить получение всех задач», прежде чем выполнять отдельные задачи",
+  "completeButton": "Отправить выполнение",
+  "addNoteLabel": "Примечания (необязательно)",
+  "addNotePlaceholder": "Добавьте примечания к задаче...",
+  "uploadImageLabel": "Загрузить изображение",
+  "uploadImageHint": "До 5 МБ, только JPG или PNG",
+  "taskCompleted": "Задача успешно выполнена!",
+  "acknowledgedAtText": "Задачи подтверждены в ",
+  "loading": "Загрузка...",
+  "footerText": "Система управления техническим обслуживанием - Eden",
+  "completionDetails": "Детали выполнения",
+  "sending": "Отправка...",
+  "error": "Ошибка",
+  "errorUnknown": "Неизвестная ошибка",
+  "errorSending": "Ошибка отправки данных",
+  "acknowledging": "Подтверждение...",
+  "acknowledgeSuccess": "Задачи успешно подтверждены!",
+  "acknowledgeError": "Ошибка подтверждения задач",
+  "priority": {
+    "urgent": "Срочно",
+    "normal": "Обычный",
+    "optional": "Необязательный"
+  },
+  "badge": {
+    "time": "Время",
+    "duration": "{{minutes}} минут",
+    "completed": "Завершено"
+  }
+}
