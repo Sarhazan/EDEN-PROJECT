@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './datepicker-custom.css';
@@ -9,6 +9,14 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+
+// Returns today's date as YYYY-MM-DD in LOCAL timezone (not UTC)
+const localDateStr = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `--`;
+};
 
 const frequencyOptions = [
   { value: 'one-time', label: 'חד-פעמי' },
@@ -66,7 +74,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
   const [quickDueDate, setQuickDueDate] = useState(null);
   const [managerEmployeeId, setManagerEmployeeId] = useState('');
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateStr();
 
   const [formData, setFormData] = useState({
     description: '',
@@ -321,7 +329,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
         description: '',
         frequency: 'weekly',
         weekly_days: [],
-        start_date: new Date().toISOString().split('T')[0],
+        start_date: localDateStr(),
         start_time: '',
         system_id: '',
         employee_id: '',
