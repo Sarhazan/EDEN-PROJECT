@@ -502,7 +502,7 @@ export default function MyDayPage() {
     const isTodaySearch = isSameDay(selectedDate, new Date()) && searchTerm.length > 0;
 
     let filtered = tasks.filter((t) => {
-      if (isTaskClosed(t) || !isRecurringTask(t)) return false;
+      if (t.status === 'completed' || !isRecurringTask(t)) return false;
 
       // Manager filter: show only recurring tasks assigned to the manager
       if (filterCategory === 'manager' && managerEmployeeId) {
@@ -519,8 +519,8 @@ export default function MyDayPage() {
 
     // Apply star filter
     if (starFilter) {
-      // Show only starred tasks, exclude completed/not completed
-      filtered = filtered.filter((t) => t.is_starred === 1 && !isTaskClosed(t));
+      // Show only starred tasks, exclude completed
+      filtered = filtered.filter((t) => t.is_starred === 1 && t.status !== 'completed');
     }
 
     // Apply filters based on selected category and value
@@ -605,7 +605,7 @@ export default function MyDayPage() {
         if (t.employee_id && Number(t.employee_id) !== Number(managerEmployeeId)) return false;
       }
 
-      if (isTaskClosed(t)) return false;
+      if (t.status === 'completed') return false;
 
       if (isTodaySearch) {
         const taskDate = startOfDay(new Date(t.start_date));
@@ -621,8 +621,8 @@ export default function MyDayPage() {
 
     // Apply star filter
     if (starFilter) {
-      // Show only starred tasks, exclude completed/not completed
-      filtered = filtered.filter((t) => t.is_starred === 1 && !isTaskClosed(t));
+      // Show only starred tasks, exclude completed
+      filtered = filtered.filter((t) => t.is_starred === 1 && t.status !== 'completed');
     }
 
     // Apply employee filter (same logic as recurring tasks)
