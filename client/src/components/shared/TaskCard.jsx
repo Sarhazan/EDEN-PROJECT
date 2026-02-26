@@ -310,6 +310,9 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
             {task.status === 'pending_approval' && (
               <span className="bg-orange-100 text-orange-600 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">ממתין</span>
             )}
+            {task.status === 'not_completed' && (
+              <span className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">לא בוצע</span>
+            )}
           </span>
 
           {/* Col 5: Send button */}
@@ -457,7 +460,7 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
               <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${priorityColors[task.priority]}`}>
                 {priorityLabels[task.priority]}
               </span>
-              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-700">
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${task.status === 'not_completed' ? 'bg-red-100 text-red-700' : 'bg-slate-50 text-slate-700'}`}>
                 {statusLabels[task.status]}
               </span>
               {task.system_name && (
