@@ -246,6 +246,13 @@ export default function SettingsPage() {
     setManagerSaved(false);
     try {
       await axios.put(`${API_URL}/accounts/settings/manager_employee_id`, { value: newValue });
+      // Sync to localStorage so MyDay picks it up immediately (even without remount)
+      if (newValue) {
+        localStorage.setItem('manager_employee_id', newValue);
+      } else {
+        localStorage.removeItem('manager_employee_id');
+      }
+      window.dispatchEvent(new CustomEvent('manager:changed', { detail: { id: newValue } }));
       setManagerSaved(true);
       setTimeout(() => setManagerSaved(false), 2000);
     } catch (err) {

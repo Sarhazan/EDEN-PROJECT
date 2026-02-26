@@ -144,13 +144,30 @@ export default function MyDayPage() {
     return () => clearTimeout(timeoutId);
   }, [columnWidths]);
 
-  // Load manager employee ID from settings
+  // Load manager employee ID — from localStorage first (instant), then sync from DB
   useEffect(() => {
+    // Instant load from localStorage
+    const cached = localStorage.getItem('manager_employee_id');
+    if (cached) setManagerEmployeeId(parseInt(cached, 10));
+
+    // Sync from DB (source of truth)
     axios.get(`${API_URL}/accounts/settings/manager_employee_id`)
       .then(res => {
-        if (res.data.value) setManagerEmployeeId(parseInt(res.data.value, 10));
+        if (res.data.value) {
+          const id = parseInt(res.data.value, 10);
+          setManagerEmployeeId(id);
+          localStorage.setItem('manager_employee_id', res.data.value);
+        }
       })
       .catch(() => {});
+
+    // Listen for real-time manager changes from Settings page
+    const handleManagerChanged = (e) => {
+      const newId = e.detail?.id ? parseInt(e.detail.id, 10) : null;
+      setManagerEmployeeId(newId);
+    };
+    window.addEventListener('manager:changed', handleManagerChanged);
+    return () => window.removeEventListener('manager:changed', handleManagerChanged);
   }, []);
 
   // Persist manager filter state

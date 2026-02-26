@@ -66,9 +66,18 @@ export default function EmployeesPage() {
   const [managerEmployeeId, setManagerEmployeeId] = useState(null);
 
   useEffect(() => {
+    const cached = localStorage.getItem('manager_employee_id');
+    if (cached) setManagerEmployeeId(Number(cached));
+
     axios.get(`${API_URL}/accounts/settings/manager_employee_id`)
       .then(res => { if (res.data.value) setManagerEmployeeId(Number(res.data.value)); })
       .catch(() => {});
+
+    const handleManagerChanged = (e) => {
+      setManagerEmployeeId(e.detail?.id ? Number(e.detail.id) : null);
+    };
+    window.addEventListener('manager:changed', handleManagerChanged);
+    return () => window.removeEventListener('manager:changed', handleManagerChanged);
   }, []);
 
   // Debug: Log employees when they change
