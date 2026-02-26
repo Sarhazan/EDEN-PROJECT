@@ -593,23 +593,13 @@ export default function MyDayPage() {
     let filtered = tasks.filter((t) => {
       if (isRecurringTask(t)) return false;
 
-      // Manager filter visibility rules for one-time tasks:
-      // - Manager's own tasks: always show (unless completed)
-      // - Tasks assigned to other employees: show until completed
+      // Manager filter: show only tasks assigned to the current manager (or unassigned)
       if (filterCategory === 'manager' && managerEmployeeId) {
-        const isManagerTask = Number(t.employee_id) === Number(managerEmployeeId);
-        const isOtherEmployeeTask = t.employee_id && Number(t.employee_id) !== Number(managerEmployeeId);
-        if (isManagerTask) {
-          if (t.status === 'completed') return false;
-        } else if (isOtherEmployeeTask) {
-          if (t.status === 'completed') return false;
-        } else {
-          // No employee assigned - show unless completed
-          if (t.status === 'completed') return false;
-        }
-      } else {
-        if (t.status === 'completed') return false;
+        // Hide tasks assigned to OTHER employees
+        if (t.employee_id && Number(t.employee_id) !== Number(managerEmployeeId)) return false;
       }
+
+      if (t.status === 'completed') return false;
 
       if (isTodaySearch) {
         const taskDate = startOfDay(new Date(t.start_date));
