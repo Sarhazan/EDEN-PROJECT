@@ -93,6 +93,41 @@ function formatMinutesToHebrew(totalMinutes) {
   return parts.join(', ');
 }
 
+function getIsraelDateParts(now = new Date()) {
+  const dateStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now);
+
+  const hhmm = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(now);
+
+  return { dateStr, hhmm };
+}
+
+function resolveCreateStatusForDate(targetDate, requestedStatus = 'draft') {
+  const status = requestedStatus || 'draft';
+
+  // Don't override terminal/manual statuses
+  if (['completed', 'pending_approval', 'not_completed'].includes(status)) {
+    return status;
+  }
+
+  const { dateStr: todayIsrael, hhmm: nowIsrael } = getIsraelDateParts(new Date());
+  if (targetDate !== todayIsrael) return status;
+
+  const endTimeSetting = db.prepare(`SELECT value FROM settings WHERE key = 'workday_end_time'`).get();
+  const workdayEnd = endTimeSetting?.value || '18:00';
+
+  return nowIsrael >= workdayEnd ? 'not_completed' : status;
+}
+
 /**
  * Calculate time delta for completed tasks (early/on-time/late)
  * @param {Object} task - Completed task with completed_at timestamp
@@ -428,7 +463,7 @@ router.post('/', (req, res) => {
             const result = db.prepare(`
               INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, null, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+            `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, null, priority || 'normal', resolveCreateStatusForDate(dateStr, status), 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
             createdTaskIds.push(result.lastInsertRowid);
           }
@@ -446,7 +481,7 @@ router.post('/', (req, res) => {
           const result = db.prepare(`
             INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, null, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, null, priority || 'normal', resolveCreateStatusForDate(dateStr, status), 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
           createdTaskIds.push(result.lastInsertRowid);
         }
@@ -505,7 +540,7 @@ router.post('/', (req, res) => {
           const result = db.prepare(`
             INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, null, priority || 'normal', status || 'draft', 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+          `).run(title, description, system_id || null, employee_id || null, frequency, dateStr, start_time, null, priority || 'normal', resolveCreateStatusForDate(dateStr, status), 1, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
           createdTaskIds.push(result.lastInsertRowid);
         }
@@ -540,7 +575,7 @@ router.post('/', (req, res) => {
     const result = db.prepare(`
       INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(title, description, system_id || null, employee_id || null, frequency || 'one-time', start_date, normalizedStartTime || '', due_date || null, priority || 'normal', status || 'draft', 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+    `).run(title, description, system_id || null, employee_id || null, frequency || 'one-time', start_date, normalizedStartTime || '', due_date || null, priority || 'normal', resolveCreateStatusForDate(start_date, status), 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
 
     const newTask = db.prepare(`
       SELECT t.*, s.name as system_name, e.name as employee_name, l.name as location_name, b.name as building_name
