@@ -332,6 +332,19 @@ class WhatsAppService {
         throw new Error('WhatsApp is not ready. Please authenticate first.');
       }
 
+      // ─── DEV MODE SAFEGUARD ───────────────────────────────────────────────
+      // In non-production, only allow messages to DEV_ONLY_PHONE
+      if (process.env.NODE_ENV !== 'production' && process.env.DEV_ONLY_PHONE) {
+        const normalize = (p) => p.replace(/\D/g, '').replace(/^972/, '').replace(/^0+/, '');
+        const targetNorm = normalize(phoneNumber);
+        const allowedNorm = normalize(process.env.DEV_ONLY_PHONE);
+        if (targetNorm !== allowedNorm) {
+          console.warn(`[DEV BLOCKED] Message to ${phoneNumber} blocked — only ${process.env.DEV_ONLY_PHONE} is allowed in dev mode`);
+          return { success: true, blocked: true };
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
       // Format phone number for WhatsApp (Israel country code)
       let formattedNumber = phoneNumber.replace(/\D/g, '');
 
@@ -473,6 +486,15 @@ class WhatsAppService {
 
     for (const { phoneNumber, message } of messages) {
       try {
+        // DEV MODE SAFEGUARD
+        if (process.env.NODE_ENV !== 'production' && process.env.DEV_ONLY_PHONE) {
+          const normalize = (p) => p.replace(/\D/g, '').replace(/^972/, '').replace(/^0+/, '');
+          if (normalize(phoneNumber) !== normalize(process.env.DEV_ONLY_PHONE)) {
+            console.warn('[DEV BLOCKED] Bulk message to ' + phoneNumber + ' blocked');
+            results.push({ phoneNumber, success: true, blocked: true });
+            continue;
+          }
+        }
         let formattedNumber = phoneNumber.replace(/\D/g, '');
         if (!formattedNumber.startsWith('972')) {
           formattedNumber = '972' + formattedNumber.replace(/^0+/, '');
