@@ -6,6 +6,23 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { initializeDatabase, checkAndSeedDatabase } = require('./database/schema');
 
+// ─── Global crash guards ───────────────────────────────────────────────────
+// Prevent WhatsApp/Puppeteer crashes from killing the whole server process
+process.on('uncaughtException', (err) => {
+  console.error('[Server] Uncaught exception (server stays alive):', err?.message || err);
+  console.error(err?.stack || '');
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Server] Unhandled promise rejection (server stays alive):', reason?.message || reason);
+});
+process.on('exit', (code) => {
+  if (code !== 0) console.error('[Server] Process exiting with code:', code);
+});
+// keepAlive: prevent Puppeteer/Chrome crash from draining the Node.js event loop
+// This interval keeps the event loop alive even if Puppeteer's browser process exits
+const _keepAlive = setInterval(() => {}, 10000);
+// ──────────────────────────────────────────────────────────────────────────
+
 // Load environment variables from .env file if it exists
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {

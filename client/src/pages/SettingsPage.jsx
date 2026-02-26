@@ -42,6 +42,12 @@ export default function SettingsPage() {
   const [workdayEndTimeSaving, setWorkdayEndTimeSaving] = useState(false);
   const [workdayEndTimeSaved, setWorkdayEndTimeSaved] = useState(false);
 
+  // Manager selection setting
+  const [managerEmployeeId, setManagerEmployeeId] = useState('');
+  const [managerSaving, setManagerSaving] = useState(false);
+  const [managerSaved, setManagerSaved] = useState(false);
+  const [employeesList, setEmployeesList] = useState([]);
+
   // Set up Socket.IO connection for real-time WhatsApp updates
   useEffect(() => {
     const newSocket = io(SOCKET_URL);
@@ -214,6 +220,40 @@ export default function SettingsPage() {
     };
     fetchWorkdayEndTime();
   }, []);
+
+  // Fetch employees list and manager setting on mount
+  useEffect(() => {
+    const fetchManagerData = async () => {
+      try {
+        const [empRes, settingRes] = await Promise.all([
+          axios.get(`${API_URL}/employees`),
+          axios.get(`${API_URL}/accounts/settings/manager_employee_id`).catch(() => ({ data: { value: '' } }))
+        ]);
+        setEmployeesList(empRes.data || []);
+        if (settingRes.data.value) {
+          setManagerEmployeeId(settingRes.data.value);
+        }
+      } catch (err) {
+        console.error('Error fetching manager data:', err);
+      }
+    };
+    fetchManagerData();
+  }, []);
+
+  const handleManagerChange = async (newValue) => {
+    setManagerEmployeeId(newValue);
+    setManagerSaving(true);
+    setManagerSaved(false);
+    try {
+      await axios.put(`${API_URL}/accounts/settings/manager_employee_id`, { value: newValue });
+      setManagerSaved(true);
+      setTimeout(() => setManagerSaved(false), 2000);
+    } catch (err) {
+      console.error('Error saving manager setting:', err);
+    } finally {
+      setManagerSaving(false);
+    }
+  };
 
   const handleWorkdayEndTimeChange = async (newValue) => {
     setWorkdayEndTime(newValue);
@@ -677,6 +717,49 @@ export default function SettingsPage() {
           </div>
           <p className="text-xs text-gray-500 mt-2">
             ברירת מחדל: 18:00
+          </p>
+        </div>
+      </div>
+
+      {/* Manager Selection Section */}
+      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <FaCog className="text-indigo-500 text-3xl" />
+          <h2 className="text-2xl font-semibold">הגדרות מנהל</h2>
+        </div>
+        <p className="text-gray-600 mb-4">
+          בחר את העובד שמשמש כמנהל. הפילטר "משימות מנהל" ביום שלי יציג רק משימות המשויכות אליו.
+        </p>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            המנהל
+          </label>
+          <div className="flex items-center gap-4">
+            <select
+              value={managerEmployeeId}
+              onChange={(e) => handleManagerChange(e.target.value)}
+              className="w-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">— ללא מנהל —</option>
+              {employeesList.map((emp) => (
+                <option key={emp.id} value={String(emp.id)}>
+                  {emp.name} {emp.position ? `(${emp.position})` : ''}
+                </option>
+              ))}
+            </select>
+            {managerSaving && (
+              <span className="text-blue-500 flex items-center gap-1">
+                <FaSpinner className="animate-spin" /> שומר...
+              </span>
+            )}
+            {managerSaved && (
+              <span className="text-green-500 flex items-center gap-1">
+                <FaCheck /> נשמר!
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            המנהל הנבחר יהיה ברירת המחדל בעת הוספת משימה מ"היום שלי"
           </p>
         </div>
       </div>

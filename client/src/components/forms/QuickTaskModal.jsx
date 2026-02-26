@@ -6,6 +6,9 @@ import { useApp } from '../../context/AppContext';
 import { FaTimes } from 'react-icons/fa';
 import DateChip from './DateChip';
 import { toast } from 'react-toastify';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 const frequencyOptions = [
   { value: 'one-time', label: 'חד-פעמי' },
@@ -61,6 +64,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
   const [showRecurringAdvanced, setShowRecurringAdvanced] = useState(false);
   const [quickDueEnabled, setQuickDueEnabled] = useState(false);
   const [quickDueDate, setQuickDueDate] = useState(null);
+  const [managerEmployeeId, setManagerEmployeeId] = useState('');
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -76,6 +80,24 @@ export default function QuickTaskModal({ isOpen, onClose }) {
     priority: 'normal',
     estimated_duration_minutes: 30
   });
+
+  // Load manager employee ID from settings
+  useEffect(() => {
+    axios.get(`${API_URL}/accounts/settings/manager_employee_id`)
+      .then(res => {
+        if (res.data.value) {
+          setManagerEmployeeId(res.data.value);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Set manager as default employee when modal opens
+  useEffect(() => {
+    if (isOpen && managerEmployeeId) {
+      setFormData(prev => ({ ...prev, employee_id: managerEmployeeId }));
+    }
+  }, [isOpen, managerEmployeeId]);
 
   // Scroll lock
   useEffect(() => {

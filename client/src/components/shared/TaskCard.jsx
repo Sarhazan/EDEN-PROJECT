@@ -70,12 +70,12 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
       return taskStartDateTime > now;
     }
 
-    // One-time task without explicit hour is considered actionable until end of its day
+    // One-time task without time → always sendable (no time restriction)
     if (!task.start_time) {
-      const endOfDay = new Date(`${task.start_date}T23:59`);
-      return endOfDay > now;
+      return true;
     }
 
+    // One-time task with time → sendable only if start_date+start_time > now
     const taskDateTime = new Date(`${task.start_date}T${task.start_time}`);
     return taskDateTime > now;
   };

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+﻿import { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { format, isBefore, startOfDay, addDays, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -34,6 +34,12 @@ export default function MyDayPage() {
   const [starFilter, setStarFilter] = useState(() => {
     return localStorage.getItem('starFilter') === 'true';
   });
+
+  // Manager filter state
+  const [managerFilter, setManagerFilter] = useState(() => {
+    return localStorage.getItem('myDayManagerFilter') === 'true';
+  });
+  const [managerEmployeeId, setManagerEmployeeId] = useState(null);
 
   // Column widths state with localStorage initialization
   const [columnWidths, setColumnWidths] = useState(() => {
@@ -136,6 +142,24 @@ export default function MyDayPage() {
 
     return () => clearTimeout(timeoutId);
   }, [columnWidths]);
+
+  // Load manager employee ID from settings
+  useEffect(() => {
+    axios.get(`${API_URL}/accounts/settings/manager_employee_id`)
+      .then(res => {
+        if (res.data.value) setManagerEmployeeId(parseInt(res.data.value, 10));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Persist manager filter state
+  const toggleManagerFilter = () => {
+    setManagerFilter(prev => {
+      const next = !prev;
+      localStorage.setItem('myDayManagerFilter', String(next));
+      return next;
+    });
+  };
 
   // Update current time every minute to refresh countdown displays
   useEffect(() => {
@@ -456,6 +480,11 @@ export default function MyDayPage() {
     let filtered = tasks.filter((t) => {
       if (t.status === 'completed' || !isRecurringTask(t)) return false;
 
+      // Manager filter: show only recurring tasks assigned to the manager
+      if (managerFilter && managerEmployeeId) {
+        if (t.employee_id !== managerEmployeeId) return false;
+      }
+
       if (isTodaySearch) {
         const haystack = `${t.title || ''} ${t.description || ''}`.toLowerCase();
         return haystack.includes(searchTerm);
@@ -544,7 +573,25 @@ export default function MyDayPage() {
     const isTodaySearch = isSameDay(selectedDate, new Date()) && searchTerm.length > 0;
 
     let filtered = tasks.filter((t) => {
-      if (t.status === 'completed' || isRecurringTask(t)) return false;
+      if (isRecurringTask(t)) return false;
+
+      // Manager filter visibility rules for one-time tasks:
+      // - Manager's own tasks: always show (unless completed)
+      // - Tasks assigned to other employees: show until completed
+      if (managerFilter && managerEmployeeId) {
+        const isManagerTask = t.employee_id === managerEmployeeId;
+        const isOtherEmployeeTask = t.employee_id && t.employee_id !== managerEmployeeId;
+        if (isManagerTask) {
+          if (t.status === 'completed') return false;
+        } else if (isOtherEmployeeTask) {
+          if (t.status === 'completed') return false;
+        } else {
+          // No employee assigned - show unless completed
+          if (t.status === 'completed') return false;
+        }
+      } else {
+        if (t.status === 'completed') return false;
+      }
 
       if (isTodaySearch) {
         const taskDate = startOfDay(new Date(t.start_date));
@@ -701,7 +748,18 @@ export default function MyDayPage() {
       </div>
 
       {/* Stats Bar */}
-      <div className="flex items-center justify-end mb-2">
+      <div className="flex items-center justify-between mb-2">
+        {/* Manager filter toggle */}
+        <button
+          onClick={toggleManagerFilter}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+            managerFilter
+              ? 'bg-indigo-600 text-white border-indigo-600'
+              : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+          }`}
+        >
+          {managerFilter ? '👔 משימות מנהל ✓' : '👔 משימות מנהל'}
+        </button>
         <button
           onClick={() => setShowAdvancedStats((v) => !v)}
           className="text-xs text-gray-600 hover:text-indigo-600 underline"
