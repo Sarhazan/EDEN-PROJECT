@@ -18,6 +18,7 @@ router.get('/', (req, res) => {
         SELECT
           COUNT(*) as total_tasks,
           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
+          SUM(CASE WHEN status = 'not_completed' THEN 1 ELSE 0 END) as not_completed_tasks,
           SUM(CASE
             WHEN status = 'completed' AND completed_at IS NOT NULL THEN
               CASE
@@ -53,6 +54,7 @@ router.get('/', (req, res) => {
         stats: {
           total_tasks: stats.total_tasks || 0,
           completed_tasks: stats.completed_tasks || 0,
+          not_completed_tasks: stats.not_completed_tasks || 0,
           completed_on_time: stats.completed_on_time || 0,
           completed_late: stats.completed_late || 0,
           on_time_percentage: stats.on_time_percentage || 0

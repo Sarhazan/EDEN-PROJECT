@@ -201,7 +201,7 @@ export default function EmployeesPage() {
                 </div>
 
                 {/* Task Statistics */}
-                <div className="grid grid-cols-2 gap-2 text-center text-sm">
+                <div className="grid grid-cols-3 gap-2 text-center text-sm">
                   <div className="bg-gray-50 rounded-lg p-2">
                     <div className="text-2xl font-bold text-green-600">
                       {employee.stats?.completed_on_time || 0}
@@ -213,6 +213,12 @@ export default function EmployeesPage() {
                       {employee.stats?.completed_late || 0}
                     </div>
                     <div className="text-xs text-gray-600">באיחור</div>
+                  </div>
+                  <div className="bg-red-50 rounded-lg p-2 border border-red-100">
+                    <div className="text-2xl font-bold text-red-700">
+                      {employee.stats?.not_completed_tasks || 0}
+                    </div>
+                    <div className="text-xs text-red-700">לא בוצע</div>
                   </div>
                 </div>
 
