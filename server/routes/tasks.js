@@ -439,6 +439,14 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'שדות חובה חסרים' });
     }
 
+    // Server-side guard: recurring tasks can start only today (Israel) or later
+    if (!isOneTimeTask) {
+      const { dateStr: todayIsrael } = getIsraelDateParts(new Date());
+      if (start_date < todayIsrael) {
+        return res.status(400).json({ error: 'במשימה חוזרת ניתן לבחור תאריך התחלה מהיום והלאה בלבד' });
+      }
+    }
+
     const weeklyDaysJson = weekly_days && weekly_days.length > 0 ? JSON.stringify(weekly_days) : null;
 
     // For recurring tasks, create instances for the next 30 days

@@ -36,6 +36,21 @@ const extractTimeFromTitle = (rawTitle) => {
   };
 };
 
+const getTodayIsraelStart = () => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+
+  const year = Number(parts.find((p) => p.type === 'year')?.value);
+  const month = Number(parts.find((p) => p.type === 'month')?.value);
+  const day = Number(parts.find((p) => p.type === 'day')?.value);
+
+  return new Date(year, month - 1, day);
+};
+
 export default function TaskForm({ task, onClose }) {
   const { addTask, updateTask, systems, employees, locations, buildings } = useApp();
   const isEditing = !!task;
@@ -60,6 +75,7 @@ export default function TaskForm({ task, onClose }) {
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDueDate, setSelectedDueDate] = useState(null);
+  const todayIsraelStart = getTodayIsraelStart();
 
   const convertISOToDisplay = (isoDate) => {
     // Convert YYYY-MM-DD to DD/MM/YYYY
@@ -231,7 +247,7 @@ export default function TaskForm({ task, onClose }) {
       // For non-daily tasks, validate date and time (one-time may be without time)
       const [day, month, year] = formData.start_date.split('/');
       const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayStart = getTodayIsraelStart();
       const startDateOnly = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
 
       // Recurring tasks: start date can be only today or future (regardless of current clock time)
@@ -415,13 +431,11 @@ export default function TaskForm({ task, onClose }) {
               dateFormat="dd/MM/yyyy"
               placeholderText="בחר תאריך"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-              minDate={new Date()}
+              minDate={todayIsraelStart}
               filterDate={(date) => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
                 const d = new Date(date);
                 d.setHours(0, 0, 0, 0);
-                return d >= today;
+                return d >= todayIsraelStart;
               }}
               required
             />
