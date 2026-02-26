@@ -35,9 +35,10 @@ export default function MyDayPage() {
     return localStorage.getItem('starFilter') === 'true';
   });
 
-  // Manager filter state
+  // Manager filter state — default ON
   const [managerFilter, setManagerFilter] = useState(() => {
-    return localStorage.getItem('myDayManagerFilter') === 'true';
+    const stored = localStorage.getItem('myDayManagerFilter');
+    return stored === null ? true : stored === 'true'; // default true for new users
   });
   const [managerEmployeeId, setManagerEmployeeId] = useState(null);
 
@@ -482,7 +483,7 @@ export default function MyDayPage() {
 
       // Manager filter: show only recurring tasks assigned to the manager
       if (managerFilter && managerEmployeeId) {
-        if (t.employee_id !== managerEmployeeId) return false;
+        if (Number(t.employee_id) !== Number(managerEmployeeId)) return false;
       }
 
       if (isTodaySearch) {
@@ -579,8 +580,8 @@ export default function MyDayPage() {
       // - Manager's own tasks: always show (unless completed)
       // - Tasks assigned to other employees: show until completed
       if (managerFilter && managerEmployeeId) {
-        const isManagerTask = t.employee_id === managerEmployeeId;
-        const isOtherEmployeeTask = t.employee_id && t.employee_id !== managerEmployeeId;
+        const isManagerTask = Number(t.employee_id) === Number(managerEmployeeId);
+        const isOtherEmployeeTask = t.employee_id && Number(t.employee_id) !== Number(managerEmployeeId);
         if (isManagerTask) {
           if (t.status === 'completed') return false;
         } else if (isOtherEmployeeTask) {
