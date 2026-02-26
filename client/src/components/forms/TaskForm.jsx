@@ -426,8 +426,7 @@ export default function TaskForm({ task, onClose }) {
             <DatePicker
               selected={selectedDate}
               onChange={handleDateChange}
-              onChangeRaw={(e) => e.preventDefault()}
-              readOnly
+              onKeyDown={(e) => e.preventDefault()}
               dateFormat="dd/MM/yyyy"
               placeholderText="בחר תאריך"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"

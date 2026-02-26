@@ -538,8 +538,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
                         const day = String(date.getDate()).padStart(2, '0');
                         setFormData((prev) => ({ ...prev, start_date: `${year}-${month}-${day}` }));
                       }}
-                      onChangeRaw={(e) => e.preventDefault()}
-                      readOnly
+                      onKeyDown={(e) => e.preventDefault()}
                       dateFormat="dd/MM/yyyy"
                       minDate={todayIsraelStart}
                       filterDate={(date) => {
