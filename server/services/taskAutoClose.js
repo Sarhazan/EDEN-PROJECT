@@ -30,7 +30,7 @@ function autoCloseOpenTasksForDate(dateStr) {
     SET status = 'not_completed',
         updated_at = CURRENT_TIMESTAMP
     WHERE start_date = ?
-      AND status IN ('sent', 'received', 'in_progress')
+      AND status IN ('draft', 'sent', 'received', 'in_progress')
   `).run(dateStr);
 
   return result.changes || 0;
