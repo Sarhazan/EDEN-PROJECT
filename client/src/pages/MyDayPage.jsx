@@ -26,7 +26,7 @@ export default function MyDayPage() {
   const navigateRetryRef = useRef(0);
 
   // Filter states
-  const [filterCategory, setFilterCategory] = useState(''); // '' | 'priority' | 'system' | 'status' | 'employee'
+  const [filterCategory, setFilterCategory] = useState('manager'); // default: manager view
   const [filterValue, setFilterValue] = useState(''); // The specific value within the selected category
   const [taskSearch, setTaskSearch] = useState('');
 
@@ -482,7 +482,7 @@ export default function MyDayPage() {
       if (t.status === 'completed' || !isRecurringTask(t)) return false;
 
       // Manager filter: show only recurring tasks assigned to the manager
-      if (managerFilter && managerEmployeeId) {
+      if (filterCategory === 'manager' && managerEmployeeId) {
         if (Number(t.employee_id) !== Number(managerEmployeeId)) return false;
       }
 
@@ -579,7 +579,7 @@ export default function MyDayPage() {
       // Manager filter visibility rules for one-time tasks:
       // - Manager's own tasks: always show (unless completed)
       // - Tasks assigned to other employees: show until completed
-      if (managerFilter && managerEmployeeId) {
+      if (filterCategory === 'manager' && managerEmployeeId) {
         const isManagerTask = Number(t.employee_id) === Number(managerEmployeeId);
         const isOtherEmployeeTask = t.employee_id && Number(t.employee_id) !== Number(managerEmployeeId);
         if (isManagerTask) {
@@ -749,26 +749,15 @@ export default function MyDayPage() {
       </div>
 
       {/* Stats Bar */}
-      <div className="flex items-center justify-between mb-2">
-        {/* Manager filter toggle */}
-        <button
-          onClick={toggleManagerFilter}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-            managerFilter
-              ? 'bg-indigo-600 text-white border-indigo-600'
-              : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
-          }`}
-        >
-          {managerFilter ? '👔 משימות מנהל ✓' : '👔 משימות מנהל'}
-        </button>
+      {/* Stats Bar */}
+      <div className="flex items-center justify-end mb-2">
         <button
           onClick={() => setShowAdvancedStats((v) => !v)}
           className="text-xs text-gray-600 hover:text-indigo-600 underline"
         >
           {showAdvancedStats ? 'הסתר נתונים מתקדמים' : 'הצג נתונים מתקדמים'}
         </button>
-      </div>
-      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 ${showAdvancedStats ? 'lg:grid-cols-5' : 'lg:grid-cols-3'}`}>
+      </div>      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 ${showAdvancedStats ? 'lg:grid-cols-5' : 'lg:grid-cols-3'}`}>
         {/* 1. Total tasks for today */}
         <div className="bg-blue-50 border-r-4 border-blue-500 rounded-lg p-4">
           <div className="flex items-center gap-3">
@@ -1190,6 +1179,7 @@ export default function MyDayPage() {
               onChange={(e) => handleCategoryChange(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
             >
+              <option value="manager">משימות מנהל</option>
               <option value="">כל המשימות</option>
               <option value="priority">סנן לפי עדיפות</option>
               <option value="system">סנן לפי מערכת</option>
@@ -1383,7 +1373,8 @@ export default function MyDayPage() {
                     onChange={(e) => handleCategoryChange(e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                   >
-                    <option value="">כל המשימות</option>
+                    <option value="manager">משימות מנהל</option>
+              <option value="">כל המשימות</option>
                     <option value="priority">סנן לפי עדיפות</option>
                     <option value="system">סנן לפי מערכת</option>
                     <option value="status">סנן לפי סטטוס</option>
@@ -1553,7 +1544,8 @@ export default function MyDayPage() {
                   onChange={(e) => handleCategoryChange(e.target.value)}
                   className="border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                 >
-                  <option value="">כל המשימות</option>
+                  <option value="manager">משימות מנהל</option>
+              <option value="">כל המשימות</option>
                   <option value="priority">סנן לפי עדיפות</option>
                   <option value="system">סנן לפי מערכת</option>
                   <option value="status">סנן לפי סטטוס</option>
@@ -1677,5 +1669,4 @@ export default function MyDayPage() {
     </div>
   );
 }
-
 
