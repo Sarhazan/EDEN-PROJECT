@@ -1,5 +1,8 @@
-import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 import { FaPlus, FaEdit, FaTrash, FaUserTie, FaUserShield } from 'react-icons/fa';
 import Modal from '../components/shared/Modal';
 import EmployeeForm from '../components/forms/EmployeeForm';
@@ -60,6 +63,13 @@ export default function EmployeesPage() {
   const { employees, deleteEmployee } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  const [managerEmployeeId, setManagerEmployeeId] = useState(null);
+
+  useEffect(() => {
+    axios.get(`${API_URL}/accounts/settings/manager_employee_id`)
+      .then(res => { if (res.data.value) setManagerEmployeeId(Number(res.data.value)); })
+      .catch(() => {});
+  }, []);
 
   // Debug: Log employees when they change
   console.log('[DEBUG EmployeesPage] Rendering with employees:', employees);
@@ -86,11 +96,8 @@ export default function EmployeesPage() {
   };
 
   const isManagerEmployee = (employee) => {
-    const roleText = `${employee?.position || ''} ${employee?.role || ''}`;
-    if (/מנהל|manager/i.test(roleText)) return true;
-
-    // MVP: explicit manager name from site context
-    return (employee?.name || '').trim() === 'עדן קנדי';
+    if (!managerEmployeeId) return false;
+    return Number(employee.id) === managerEmployeeId;
   };
 
   return (
