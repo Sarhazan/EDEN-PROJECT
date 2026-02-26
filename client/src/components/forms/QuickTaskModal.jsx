@@ -249,7 +249,8 @@ export default function QuickTaskModal({ isOpen, onClose }) {
         is_recurring: false,
         priority: 'normal',
         estimated_duration_minutes: 30,
-        status: 'draft'
+        status: 'draft',
+        employee_id: formData.employee_id || null
       };
 
       const createdTask = await addTask(taskData);
