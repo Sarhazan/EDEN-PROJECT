@@ -410,10 +410,19 @@ export default function TaskForm({ task, onClose }) {
             <DatePicker
               selected={selectedDate}
               onChange={handleDateChange}
+              onChangeRaw={(e) => e.preventDefault()}
+              readOnly
               dateFormat="dd/MM/yyyy"
               placeholderText="בחר תאריך"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
               minDate={new Date()}
+              filterDate={(date) => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const d = new Date(date);
+                d.setHours(0, 0, 0, 0);
+                return d >= today;
+              }}
               required
             />
           </div>
