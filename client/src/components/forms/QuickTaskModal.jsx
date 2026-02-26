@@ -10,12 +10,30 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
-// Returns today's date as YYYY-MM-DD in LOCAL timezone (not UTC)
+const getIsraelDateParts = (d = new Date()) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(d);
+
+  const year = Number(parts.find((p) => p.type === 'year')?.value);
+  const month = Number(parts.find((p) => p.type === 'month')?.value);
+  const day = Number(parts.find((p) => p.type === 'day')?.value);
+
+  return { year, month, day };
+};
+
+// Returns today's date as YYYY-MM-DD in Israel timezone
 const localDateStr = (d = new Date()) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `--`;
+  const { year, month, day } = getIsraelDateParts(d);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
+const getIsraelStartOfToday = () => {
+  const { year, month, day } = getIsraelDateParts(new Date());
+  return new Date(year, month - 1, day);
 };
 
 const frequencyOptions = [
@@ -75,6 +93,7 @@ export default function QuickTaskModal({ isOpen, onClose }) {
   const [managerEmployeeId, setManagerEmployeeId] = useState('');
 
   const todayStr = localDateStr();
+  const todayIsraelStart = getIsraelStartOfToday();
 
   const [formData, setFormData] = useState({
     description: '',
@@ -286,6 +305,19 @@ export default function QuickTaskModal({ isOpen, onClose }) {
     // Validate
     if (!title.trim() || !formData.start_time) {
       alert('נא למלא את כל השדות החובה');
+      return;
+    }
+
+    // Validate recurring start date is today or future (Israel timezone)
+    const selectedStart = parseISODate(formData.start_date);
+    if (!selectedStart) {
+      alert('נא לבחור תאריך התחלה תקין');
+      return;
+    }
+    const selectedStartDay = new Date(selectedStart);
+    selectedStartDay.setHours(0, 0, 0, 0);
+    if (selectedStartDay < todayIsraelStart) {
+      alert('במשימה חוזרת ניתן לבחור תאריך התחלה מהיום והלאה בלבד');
       return;
     }
 
@@ -506,7 +538,15 @@ export default function QuickTaskModal({ isOpen, onClose }) {
                         const day = String(date.getDate()).padStart(2, '0');
                         setFormData((prev) => ({ ...prev, start_date: `${year}-${month}-${day}` }));
                       }}
+                      onChangeRaw={(e) => e.preventDefault()}
+                      readOnly
                       dateFormat="dd/MM/yyyy"
+                      minDate={todayIsraelStart}
+                      filterDate={(date) => {
+                        const d = new Date(date);
+                        d.setHours(0, 0, 0, 0);
+                        return d >= todayIsraelStart;
+                      }}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
