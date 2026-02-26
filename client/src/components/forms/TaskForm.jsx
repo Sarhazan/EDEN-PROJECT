@@ -231,8 +231,17 @@ export default function TaskForm({ task, onClose }) {
       // For non-daily tasks, validate date and time (one-time may be without time)
       const [day, month, year] = formData.start_date.split('/');
       const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startDateOnly = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
 
-      if (formData.start_time) {
+      // Recurring tasks: start date can be only today or future (regardless of current clock time)
+      if (!isEditing && formData.frequency !== 'one-time' && startDateOnly < todayStart) {
+        alert('במשימה חוזרת ניתן לבחור תאריך התחלה מהיום והלאה בלבד');
+        return;
+      }
+
+      // One-time tasks: if time is provided, prevent past date+time
+      if (formData.frequency === 'one-time' && formData.start_time) {
         const [hours, minutes] = formData.start_time.split(':');
         const selectedDateTime = new Date(
           parseInt(year),
@@ -252,7 +261,6 @@ export default function TaskForm({ task, onClose }) {
       if (formData.frequency === 'one-time' && formData.due_date) {
         const [dueDay, dueMonth, dueYear] = formData.due_date.split('/');
         const dueDateOnly = new Date(parseInt(dueYear), parseInt(dueMonth) - 1, parseInt(dueDay));
-        const startDateOnly = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
 
         if (dueDateOnly < startDateOnly) {
           alert('תאריך "סיום עד" לא יכול להיות לפני תאריך ההתחלה');
