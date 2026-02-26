@@ -58,7 +58,9 @@ function checkAndRunAutoClose(now = new Date()) {
   const { dateStr, hhmm } = getIsraelDateParts(now);
 
   const configuredEndTime = getWorkdayEndTime();
-  if (hhmm !== configuredEndTime) return null;
+  // Run as soon as we've reached (or passed) the configured end time.
+  // This makes the job resilient if the server restarts or misses the exact minute.
+  if (hhmm < configuredEndTime) return null;
 
   const lastRunDate = getLastRunDate();
   if (lastRunDate === dateStr) return null;
