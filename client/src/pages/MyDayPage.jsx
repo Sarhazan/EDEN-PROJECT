@@ -328,9 +328,15 @@ export default function MyDayPage() {
   };
 
   const isRecurringTask = (task) => Number(task?.is_recurring) === 1;
+  const isTaskClosed = (task) => ['completed', 'not_completed'].includes(task?.status);
 
   // Helper function to check if a task should appear on the selected date
   const shouldTaskAppearOnDate = (task, date) => {
+    // Closed tasks should stay on their original day only
+    if (isTaskClosed(task)) {
+      return isSameDay(new Date(task.start_date), date);
+    }
+
     // One-time tasks: check exact date match
     if (!isRecurringTask(task)) {
       return isSameDay(new Date(task.start_date), date);
@@ -392,7 +398,7 @@ export default function MyDayPage() {
     // Filter tasks for selected date (excluding completed tasks)
     let todayTasks = tasks.filter((t) =>
       shouldTaskAppearOnDate(t, selectedDate) &&
-      t.status !== 'completed'
+      !isTaskClosed(t)
     );
 
     // Apply star filter to statistics if active
@@ -426,7 +432,7 @@ export default function MyDayPage() {
     // 5. Count completed tasks separately for completion rate
     let completedTasks = tasks.filter((t) =>
       shouldTaskAppearOnDate(t, selectedDate) &&
-      t.status === 'completed'
+      isTaskClosed(t)
     );
     // Apply star filter to completed tasks too
     if (starFilter) {
@@ -473,7 +479,7 @@ export default function MyDayPage() {
   const todayOpenStats = useMemo(() => {
     let todayOpenTasks = tasks.filter((t) =>
       shouldTaskAppearOnDate(t, new Date()) &&
-      t.status !== 'completed'
+      !isTaskClosed(t)
     );
 
     if (starFilter) {
@@ -496,7 +502,7 @@ export default function MyDayPage() {
     const isTodaySearch = isSameDay(selectedDate, new Date()) && searchTerm.length > 0;
 
     let filtered = tasks.filter((t) => {
-      if (t.status === 'completed' || !isRecurringTask(t)) return false;
+      if (isTaskClosed(t) || !isRecurringTask(t)) return false;
 
       // Manager filter: show only recurring tasks assigned to the manager
       if (filterCategory === 'manager' && managerEmployeeId) {
@@ -513,8 +519,8 @@ export default function MyDayPage() {
 
     // Apply star filter
     if (starFilter) {
-      // Show only starred tasks, exclude completed
-      filtered = filtered.filter((t) => t.is_starred === 1 && t.status !== 'completed');
+      // Show only starred tasks, exclude completed/not completed
+      filtered = filtered.filter((t) => t.is_starred === 1 && !isTaskClosed(t));
     }
 
     // Apply filters based on selected category and value
@@ -583,7 +589,7 @@ export default function MyDayPage() {
       const timeB = b.start_time || '00:00';
       return timeA.localeCompare(timeB);
     });
-  }, [tasks, selectedDate, filterCategory, filterValue, starFilter, taskSearch]);
+  }, [tasks, selectedDate, filterCategory, filterValue, starFilter, taskSearch, managerEmployeeId]);
 
   // Filter one-time tasks (selected date, not completed) and sort by time
   const oneTimeTasks = useMemo(() => {
@@ -599,7 +605,7 @@ export default function MyDayPage() {
         if (t.employee_id && Number(t.employee_id) !== Number(managerEmployeeId)) return false;
       }
 
-      if (t.status === 'completed') return false;
+      if (isTaskClosed(t)) return false;
 
       if (isTodaySearch) {
         const taskDate = startOfDay(new Date(t.start_date));
@@ -615,8 +621,8 @@ export default function MyDayPage() {
 
     // Apply star filter
     if (starFilter) {
-      // Show only starred tasks, exclude completed
-      filtered = filtered.filter((t) => t.is_starred === 1 && t.status !== 'completed');
+      // Show only starred tasks, exclude completed/not completed
+      filtered = filtered.filter((t) => t.is_starred === 1 && !isTaskClosed(t));
     }
 
     // Apply employee filter (same logic as recurring tasks)
@@ -637,14 +643,14 @@ export default function MyDayPage() {
       const timeB = b.start_time || '00:00';
       return timeA.localeCompare(timeB);
     });
-  }, [tasks, selectedDate, filterCategory, filterValue, starFilter, taskSearch]);
+  }, [tasks, selectedDate, filterCategory, filterValue, starFilter, taskSearch, managerEmployeeId]);
 
   // Filter late tasks (is_late = true, not completed) and sort by date and time
   const lateTasks = useMemo(() => {
     let filtered = tasks.filter(
       (t) =>
         t.is_late === true &&
-        t.status !== 'completed'
+        !isTaskClosed(t)
     );
 
     // Apply star filter
@@ -669,7 +675,7 @@ export default function MyDayPage() {
     let filtered = tasks.filter(
       (t) =>
         shouldTaskAppearOnDate(t, tomorrow) &&
-        t.status !== 'completed'
+        !isTaskClosed(t)
     );
     // Apply star filter
     if (starFilter) {
@@ -692,7 +698,7 @@ export default function MyDayPage() {
       const currentDate = addDays(startDate, i);
       let tasksForDay = tasks.filter((task) =>
         shouldTaskAppearOnDate(task, currentDate) &&
-        task.status !== 'completed'
+        !isTaskClosed(task)
       );
       // Apply star filter
       if (starFilter) {
@@ -1196,7 +1202,7 @@ export default function MyDayPage() {
             </select>
 
             {/* Secondary filter - Value selection based on category */}
-            {filterCategory && (
+            {filterCategory && filterCategory !== 'manager' && (
               <select
                 value={filterValue}
                 onChange={(e) => setFilterValue(e.target.value)}
@@ -1225,6 +1231,7 @@ export default function MyDayPage() {
                     <option value="draft">חדש</option>
                     <option value="sent">נשלח</option>
                     <option value="in_progress">בביצוע</option>
+                    <option value="not_completed">לא בוצע</option>
                   </>
                 )}
 
@@ -1390,7 +1397,7 @@ export default function MyDayPage() {
                   </select>
 
                   {/* Secondary filter - Value selection based on category */}
-                  {filterCategory && (
+                  {filterCategory && filterCategory !== 'manager' && (
                     <select
                       value={filterValue}
                       onChange={(e) => setFilterValue(e.target.value)}
@@ -1419,6 +1426,7 @@ export default function MyDayPage() {
                           <option value="draft">חדש</option>
                           <option value="sent">נשלח</option>
                           <option value="in_progress">בביצוע</option>
+                          <option value="not_completed">לא בוצע</option>
                         </>
                       )}
 
@@ -1561,7 +1569,7 @@ export default function MyDayPage() {
                 </select>
 
                 {/* Secondary filter - Value selection based on category */}
-                {filterCategory && (
+                {filterCategory && filterCategory !== 'manager' && (
                   <select
                     value={filterValue}
                     onChange={(e) => setFilterValue(e.target.value)}
@@ -1590,6 +1598,7 @@ export default function MyDayPage() {
                         <option value="draft">חדש</option>
                         <option value="sent">נשלח</option>
                         <option value="in_progress">בביצוע</option>
+                        <option value="not_completed">לא בוצע</option>
                       </>
                     )}
 

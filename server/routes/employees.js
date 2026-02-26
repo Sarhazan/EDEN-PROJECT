@@ -7,7 +7,7 @@ router.get('/', (req, res) => {
   try {
     const employees = db.prepare(`
       SELECT e.*,
-        (SELECT COUNT(*) FROM tasks WHERE employee_id = e.id AND status != 'completed') as active_tasks_count
+        (SELECT COUNT(*) FROM tasks WHERE employee_id = e.id AND status NOT IN ('completed', 'not_completed')) as active_tasks_count
       FROM employees e
       ORDER BY e.name ASC
     `).all();
@@ -76,7 +76,7 @@ router.get('/:id', (req, res) => {
     }
 
     const activeTasks = db.prepare(`
-      SELECT COUNT(*) as count FROM tasks WHERE employee_id = ? AND status != 'completed'
+      SELECT COUNT(*) as count FROM tasks WHERE employee_id = ? AND status NOT IN ('completed', 'not_completed')
     `).get(req.params.id);
 
     res.json({ ...employee, active_tasks_count: activeTasks.count });

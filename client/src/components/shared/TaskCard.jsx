@@ -31,7 +31,8 @@ const statusLabels = {
   received: 'התקבל',
   in_progress: 'בביצוע',
   pending_approval: 'ממתין לאישור',
-  completed: 'הושלם'
+  completed: 'הושלם',
+  not_completed: 'לא בוצע'
 };
 
 const frequencyLabels = {

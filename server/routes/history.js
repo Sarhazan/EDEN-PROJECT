@@ -73,7 +73,7 @@ router.get('/hq-summary', (req, res) => {
     const baseFilters = buildCommonFilters(req.query, { includeCompletedOnly: false, tableAlias: 't' });
     const completedFilters = buildCommonFilters(req.query, { includeCompletedOnly: true, tableAlias: 't' });
 
-    const activeWhereParts = [...baseFilters.conditions, "t.status != 'completed'"];
+    const activeWhereParts = [...baseFilters.conditions, "t.status NOT IN ('completed', 'not_completed')"];
     const activeWhere = activeWhereParts.length ? `WHERE ${activeWhereParts.join(' AND ')}` : '';
 
     const overdueWhereParts = [...activeWhereParts,
@@ -136,11 +136,11 @@ router.get('/hq-summary', (req, res) => {
         e.name AS employee_name,
         COALESCE(e.position, 'N/A') AS manager_name,
         COUNT(t.id) AS total_tasks,
-        SUM(CASE WHEN t.status != 'completed' THEN 1 ELSE 0 END) AS active_tasks,
+        SUM(CASE WHEN t.status NOT IN ('completed', 'not_completed') THEN 1 ELSE 0 END) AS active_tasks,
         SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS completed_tasks,
         SUM(
           CASE
-            WHEN t.status != 'completed'
+            WHEN t.status NOT IN ('completed', 'not_completed')
               AND datetime(t.start_date || ' ' || t.start_time, '+' || COALESCE(t.estimated_duration_minutes, 30) || ' minutes') < datetime('now')
             THEN 1 ELSE 0
           END
@@ -203,7 +203,7 @@ router.get('/hq-summary', (req, res) => {
       LEFT JOIN buildings b ON b.id = t.building_id
       ${drilldownWhere}
       ORDER BY
-        CASE WHEN t.status != 'completed' THEN 0 ELSE 1 END ASC,
+        CASE WHEN t.status NOT IN ('completed', 'not_completed') THEN 0 ELSE 1 END ASC,
         t.start_date DESC,
         t.start_time DESC
       LIMIT ? OFFSET ?

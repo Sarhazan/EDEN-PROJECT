@@ -57,7 +57,7 @@ function initializeDatabase() {
       start_date DATE NOT NULL,
       start_time TIME NOT NULL,
       priority TEXT CHECK(priority IN ('urgent', 'normal', 'optional')) DEFAULT 'normal',
-      status TEXT CHECK(status IN ('draft', 'sent', 'received', 'in_progress', 'pending_approval', 'completed')) DEFAULT 'draft',
+      status TEXT CHECK(status IN ('draft', 'sent', 'received', 'in_progress', 'pending_approval', 'completed', 'not_completed')) DEFAULT 'draft',
       is_recurring BOOLEAN DEFAULT 0,
       parent_task_id INTEGER,
       weekly_days TEXT,
@@ -134,8 +134,8 @@ function initializeDatabase() {
   // So we need to check if the constraint needs updating and recreate table if needed
   try {
     const tableInfo = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'`).get();
-    if (tableInfo && tableInfo.sql && (!tableInfo.sql.includes("'received'") || !tableInfo.sql.includes("'pending_approval'"))) {
-      console.log('Migrating tasks table to add "received" and "pending_approval" statuses...');
+    if (tableInfo && tableInfo.sql && (!tableInfo.sql.includes("'received'") || !tableInfo.sql.includes("'pending_approval'") || !tableInfo.sql.includes("'not_completed'"))) {
+      console.log('Migrating tasks table to add "received", "pending_approval" and "not_completed" statuses...');
 
       // Begin transaction
       db.exec('BEGIN TRANSACTION');
@@ -152,7 +152,7 @@ function initializeDatabase() {
           start_date DATE NOT NULL,
           start_time TIME NOT NULL,
           priority TEXT CHECK(priority IN ('urgent', 'normal', 'optional')) DEFAULT 'normal',
-          status TEXT CHECK(status IN ('draft', 'sent', 'received', 'in_progress', 'pending_approval', 'completed')) DEFAULT 'draft',
+          status TEXT CHECK(status IN ('draft', 'sent', 'received', 'in_progress', 'pending_approval', 'completed', 'not_completed')) DEFAULT 'draft',
           is_recurring BOOLEAN DEFAULT 0,
           parent_task_id INTEGER,
           weekly_days TEXT,
@@ -189,7 +189,7 @@ function initializeDatabase() {
       // Commit transaction
       db.exec('COMMIT');
 
-      console.log('Migration complete: "received" and "pending_approval" statuses added to tasks table');
+      console.log('Migration complete: "received", "pending_approval" and "not_completed" statuses added to tasks table');
     }
   } catch (e) {
     console.error('Error during status migration:', e);

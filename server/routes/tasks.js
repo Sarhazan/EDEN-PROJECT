@@ -39,8 +39,8 @@ function calculateEstimatedEnd(task) {
  * @returns {Object} Task with added timing fields
  */
 function enrichTaskWithTiming(task) {
-  // Skip timing logic for completed tasks (calculate delta instead)
-  if (task.status === 'completed') {
+  // Skip timing logic for closed tasks (calculate delta for completed)
+  if (task.status === 'completed' || task.status === 'not_completed') {
     return {
       ...task,
       ...calculateTimeDelta(task)
@@ -339,7 +339,7 @@ router.get('/overdue', (req, res) => {
       LEFT JOIN employees e ON t.employee_id = e.id
       LEFT JOIN locations l ON t.location_id = l.id
       LEFT JOIN buildings b ON t.building_id = b.id
-      WHERE t.start_date < ? AND t.status != 'completed' AND t.is_recurring = 0
+      WHERE t.start_date < ? AND t.status NOT IN ('completed', 'not_completed') AND t.is_recurring = 0
       ORDER BY t.start_date ASC, t.start_time ASC
     `).all(today);
 

@@ -63,6 +63,10 @@ checkAndSeedDatabase();
 const { initializeDataRetention } = require('./services/dataRetention');
 initializeDataRetention();
 
+// Initialize automatic end-of-day task closing
+const { initializeTaskAutoClose } = require('./services/taskAutoClose');
+initializeTaskAutoClose();
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
