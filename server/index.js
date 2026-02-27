@@ -193,7 +193,16 @@ app.get('/docs/task-:token.html', async (req, res) => {
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from the React app build directory
   const clientPath = path.join(__dirname, '..', 'client', 'dist');
-  app.use(express.static(clientPath));
+  app.use(express.static(clientPath, {
+    setHeaders: (res, filePath) => {
+      // Prevent stale app shell after deploy (fixes first-load login/connect issues)
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
+  }));
 
   // Handle React routing - return index.html for all non-API routes
   // This must come after all API routes
@@ -201,6 +210,9 @@ if (process.env.NODE_ENV === 'production') {
     // Only handle GET requests for HTML (not API calls, static assets, etc.)
     // Skip /docs paths as they're handled by the dynamic route above
     if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/docs')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.sendFile(path.join(clientPath, 'index.html'));
     } else {
       next();

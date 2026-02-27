@@ -38,6 +38,9 @@ async function waitForUrlAvailable(url, maxAttempts = 30, intervalMs = 4000) {
 router.get('/status', async (req, res) => {
   try {
     const status = whatsappService.getStatus();
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.json(status);
   } catch (error) {
     res.status(500).json({ error: error.message });
