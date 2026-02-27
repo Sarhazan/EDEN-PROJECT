@@ -108,6 +108,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const anchorDateRef = useRef(anchorDate);
   const weekDaysRef = useRef(null);
   const employeeTasksRef = useRef([]);
+  const didResizeRef = useRef(false);
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const employeeTasks = useMemo(() => {
@@ -252,6 +253,12 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       setDragging(null);
 
       if (!state.hasMoved) {
+        // If a resize drag just happened, suppress click-to-edit
+        if (didResizeRef.current) {
+          didResizeRef.current = false;
+          return;
+        }
+
         // Treat as click → open edit modal
         setEditingTask(state.task);
         return;
@@ -317,6 +324,11 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       const deltaY = e.clientY - s.resizeY;
       const steps = Math.round(deltaY / (HOUR_HEIGHT / 4)); // 1 step = 15 min
       const next = Math.max(15, s.resizeInitialDuration + steps * 15);
+
+      if (next !== s.resizeInitialDuration) {
+        didResizeRef.current = true;
+      }
+
       setResizeState((prev) => {
         if (!prev || prev.resizeCurrentDuration === next) return prev;
         return { ...prev, resizeCurrentDuration: next };
@@ -326,6 +338,12 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     const onMouseUp = async () => {
       const s = resizeStateRef.current;
       if (!s) return;
+
+      // Resized via drag: keep suppression flag so click-to-edit is skipped.
+      // No resize: clear it so normal click-to-edit behavior remains.
+      if (!didResizeRef.current) {
+        didResizeRef.current = false;
+      }
 
       if (s.resizeCurrentDuration !== s.resizeInitialDuration) {
         // Past-end guard
@@ -500,6 +518,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           onMouseDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
+            didResizeRef.current = false;
             setResizeState({
               resizingTaskId: task.id,
               resizeY: e.clientY,
