@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import axios from 'axios';
 import Modal from '../shared/Modal';
 import TaskForm from '../forms/TaskForm';
 import QuickTaskModal from '../forms/QuickTaskModal';
@@ -9,6 +10,7 @@ import { useApp } from '../../context/AppContext';
 import { toast } from 'react-toastify';
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00 - 21:00
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 const STATUS_COLORS = {
   draft: 'bg-slate-500',
@@ -38,6 +40,8 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [view, setView] = useState('week');
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [dragTaskId, setDragTaskId] = useState(null);
+  const [resizeState, setResizeState] = useState(null);
+  const resizeStateRef = useRef(null);
   const [quickCreateDefaults, setQuickCreateDefaults] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
 
@@ -69,6 +73,93 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   }, [anchorDate]);
 
   const tasksForDate = (date) => employeeTasks.filter((t) => isSameDay(parseISO(t.start_date), date));
+
+  const durationForTask = (task) => Number(task?.estimated_duration_minutes) > 0 ? Number(task.estimated_duration_minutes) : 60;
+
+  const taskHeightPx = (durationMinutes) => Math.max(11, (durationMinutes / 60) * 42);
+
+  const timeToMinutes = (timeStr) => {
+    const [h, m] = (timeStr || '00:00').split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
+  const hasDayOverlap = (taskId, startDate, startTime, durationMinutes) => {
+    const currentStart = timeToMinutes(startTime);
+    const currentEnd = currentStart + durationMinutes;
+    const sameDayTasks = employeeTasks.filter(
+      (t) => Number(t.id) !== Number(taskId) && t.start_date === startDate
+    );
+
+    return sameDayTasks.some((t) => {
+      const otherStart = timeToMinutes(t.start_time || '00:00');
+      const otherEnd = otherStart + durationForTask(t);
+      return currentStart < otherEnd && otherStart < currentEnd;
+    });
+  };
+
+  useEffect(() => {
+    resizeStateRef.current = resizeState;
+  }, [resizeState]);
+
+  useEffect(() => {
+    if (!resizeState?.resizingTaskId) return undefined;
+
+    const onMouseMove = (e) => {
+      const currentState = resizeStateRef.current;
+      if (!currentState) return;
+
+      const deltaY = e.clientY - currentState.resizeY;
+      const snappedSteps = Math.round(deltaY / 10.5); // 15-minute steps
+      const nextDuration = Math.max(15, currentState.resizeInitialDuration + (snappedSteps * 15));
+
+      setResizeState((prev) => {
+        if (!prev) return prev;
+        if (prev.resizeCurrentDuration === nextDuration) return prev;
+        return { ...prev, resizeCurrentDuration: nextDuration };
+      });
+    };
+
+    const onMouseUp = async () => {
+      const finalState = resizeStateRef.current;
+      if (!finalState) return;
+
+      if (finalState.resizeCurrentDuration !== finalState.resizeInitialDuration) {
+        if (hasDayOverlap(finalState.resizingTaskId, finalState.startDate, finalState.startTime, finalState.resizeCurrentDuration)) {
+          toast.error('לא ניתן לשנות משך זמן בגלל חפיפה עם משימה אחרת', {
+            position: 'bottom-center',
+            autoClose: 2000,
+            hideProgressBar: true,
+            rtl: true
+          });
+          setResizeState(null);
+          return;
+        }
+
+        try {
+          await axios.patch(`${API_URL}/tasks/${finalState.resizingTaskId}`, {
+            estimated_duration_minutes: finalState.resizeCurrentDuration
+          });
+          await refreshData();
+        } catch (error) {
+          toast.error('שמירת משך הזמן נכשלה', {
+            position: 'bottom-center',
+            autoClose: 2000,
+            hideProgressBar: true,
+            rtl: true
+          });
+        }
+      }
+
+      setResizeState(null);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [resizeState?.resizingTaskId, refreshData]);
 
   const handleDrop = async (date, hour = null) => {
     if (!dragTaskId) return;
@@ -225,22 +316,50 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                       return (
                         <div
                           key={`${day.toISOString()}-${hour}`}
-                          className="min-h-[42px] p-1 border-r"
+                          className="h-[42px] border-r relative"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={() => handleDrop(day, hour)}
                           onClick={() => openCreateForm(day, hour)}
                         >
-                          <div className="space-y-1">
+                          <div className="absolute inset-0">
                             {cellTasks.map((task) => (
                               <button
                                 key={task.id}
                                 draggable
                                 onDragStart={(e) => { e.stopPropagation(); setDragTaskId(task.id); }}
                                 onClick={(e) => { e.stopPropagation(); setEditingTask(task); }}
-                                className={`w-full text-right text-[10px] text-white px-1 py-0.5 rounded truncate ${STATUS_COLORS[task.status] || 'bg-slate-500'}`}
+                                className={`absolute top-0 left-0 w-full text-right text-[10px] text-white px-1 py-0.5 rounded truncate ${STATUS_COLORS[task.status] || 'bg-slate-500'}`}
                                 title={titleWithTime(task)}
+                                style={{
+                                  height: `${taskHeightPx(
+                                    resizeState?.resizingTaskId === task.id
+                                      ? resizeState.resizeCurrentDuration
+                                      : durationForTask(task)
+                                  )}px`,
+                                  minHeight: '11px'
+                                }}
                               >
-                                {titleWithTime(task)}
+                                <div className="pr-1">{titleWithTime(task)}</div>
+                                {resizeState?.resizingTaskId === task.id && (
+                                  <div className="absolute top-0 left-0 m-1 px-1 py-0.5 rounded bg-black/70 text-white text-[9px] leading-none">
+                                    {resizeState.resizeCurrentDuration} דקות
+                                  </div>
+                                )}
+                                <div
+                                  className="absolute bottom-0 left-0 w-full h-2 cursor-ns-resize bg-black/20"
+                                  onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    const resizeInitialDuration = durationForTask(task);
+                                    setResizeState({
+                                      resizingTaskId: task.id,
+                                      resizeY: e.clientY,
+                                      resizeInitialDuration,
+                                      resizeCurrentDuration: resizeInitialDuration,
+                                      startDate: task.start_date,
+                                      startTime: task.start_time || '00:00'
+                                    });
+                                  }}
+                                />
                               </button>
                             ))}
                           </div>
