@@ -263,6 +263,36 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
       return;
     }
 
+    // Validate date is today or future (Israel timezone)
+    const selectedDay = new Date(selectedDate);
+    selectedDay.setHours(0, 0, 0, 0);
+    if (selectedDay < todayIsraelStart) {
+      toast.error('לא ניתן ליצור משימה בתאריך שעבר', {
+        position: 'bottom-center',
+        autoClose: 2000,
+        hideProgressBar: true,
+        rtl: true
+      });
+      return;
+    }
+
+    // If today - validate time is not in the past
+    const parsedForValidation = extractTimeFromTitle(title);
+    const effectiveTime = parsedForValidation.startTime || formData.start_time || '';
+    if (effectiveTime && selectedDay.getTime() === todayIsraelStart.getTime()) {
+      const [h, m] = effectiveTime.split(':').map(Number);
+      const nowInIsrael = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+      if (h < nowInIsrael.getHours() || (h === nowInIsrael.getHours() && m < nowInIsrael.getMinutes())) {
+        toast.error('לא ניתן ליצור משימה בשעה שכבר עברה', {
+          position: 'bottom-center',
+          autoClose: 2000,
+          hideProgressBar: true,
+          rtl: true
+        });
+        return;
+      }
+    }
+
     if (isSaving) return;
     setIsSaving(true);
 

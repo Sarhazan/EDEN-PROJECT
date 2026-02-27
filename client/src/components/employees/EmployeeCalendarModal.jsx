@@ -6,6 +6,7 @@ import Modal from '../shared/Modal';
 import TaskForm from '../forms/TaskForm';
 import QuickTaskModal from '../forms/QuickTaskModal';
 import { useApp } from '../../context/AppContext';
+import { toast } from 'react-toastify';
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00 - 21:00
 
@@ -89,6 +90,36 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   };
 
   const openCreateForm = (date, hour = 9) => {
+    // Block creating tasks in the past
+    const clickedDay = new Date(date);
+    clickedDay.setHours(0, 0, 0, 0);
+    const todayStart = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+    todayStart.setHours(0, 0, 0, 0);
+
+    if (clickedDay < todayStart) {
+      toast.error('לא ניתן ליצור משימה בתאריך שעבר', {
+        position: 'bottom-center',
+        autoClose: 2000,
+        hideProgressBar: true,
+        rtl: true
+      });
+      return;
+    }
+
+    // Block creating tasks in a past hour today
+    if (clickedDay.getTime() === todayStart.getTime()) {
+      const nowInIsrael = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+      if (hour < nowInIsrael.getHours()) {
+        toast.error('לא ניתן ליצור משימה בשעה שכבר עברה', {
+          position: 'bottom-center',
+          autoClose: 2000,
+          hideProgressBar: true,
+          rtl: true
+        });
+        return;
+      }
+    }
+
     setEditingTask(null);
     setQuickCreateDefaults({
       title: '',
