@@ -96,7 +96,6 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [view, setView] = useState('week');
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [dragging, setDragging] = useState(null);   // drag-to-move state
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [resizeState, setResizeState] = useState(null); // drag-to-resize state
   const [quickCreateDefaults, setQuickCreateDefaults] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
@@ -250,17 +249,18 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         : (weekDaysRef.current || []);
       const currentDay = days[dayIndex] || state.currentDay;
 
-      setDragging((prev) => {
-        if (!prev) return prev;
-        if (
-          prev.hasMoved &&
-          prev.currentHour === hour &&
-          prev.currentMinute === minute &&
-          prev.currentDay === currentDay
-        ) return prev;
-        return { ...prev, hasMoved: true, currentHour: hour, currentMinute: minute, currentDay };
-      });
-      setMousePos({ x: e.clientX, y: e.clientY });
+      // Update ref immediately so rapid moves read fresh data
+      const updated = {
+        ...state,
+        hasMoved: true,
+        currentHour: hour,
+        currentMinute: minute,
+        currentDay,
+        ghostX: e.clientX,
+        ghostY: e.clientY,
+      };
+      draggingRef.current = updated;
+      setDragging(updated);
     };
 
     const onMouseUp = async () => {
@@ -723,8 +723,8 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         <div
           style={{
             position: 'fixed',
-            left: mousePos.x - (dragging.clickOffsetX || 0),
-            top: mousePos.y - (dragging.clickOffsetY || 0),
+            left: (dragging.ghostX ?? dragging.startClientX) - (dragging.clickOffsetX || 0),
+            top: (dragging.ghostY ?? dragging.startClientY) - (dragging.clickOffsetY || 0),
             width: dragging.taskWidth || 120,
             height: taskHeightPx(durationForTask(dragging.task)),
             zIndex: 9999,
