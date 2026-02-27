@@ -104,6 +104,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const draggingRef = useRef(null);
   const resizeStateRef = useRef(null);
   const gridBodyRef = useRef(null);
+  const hoursBodyRef = useRef(null);
   const viewRef = useRef(view);
   const anchorDateRef = useRef(anchorDate);
   const weekDaysRef = useRef(null);
@@ -220,8 +221,9 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       const dy = Math.abs(e.clientY - state.startClientY);
       if (dx < 5 && dy < 5 && !state.hasMoved) return; // dead zone
 
-      if (!gridBodyRef.current) return;
+      if (!gridBodyRef.current || !hoursBodyRef.current) return;
       const rect = gridBodyRef.current.getBoundingClientRect();
+      const hoursRect = hoursBodyRef.current.getBoundingClientRect();
       const currentView = viewRef.current;
       const numDays = currentView === 'day' ? 1 : 7;
       const dayColWidth = (rect.width - TIME_COL_WIDTH) / numDays;
@@ -229,7 +231,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       const adjustedX = e.clientX - (state.clickOffsetX || 0);
       const adjustedY = e.clientY - (state.clickOffsetY || 0);
       const relX = adjustedX - rect.left - TIME_COL_WIDTH;
-      const relY = adjustedY - rect.top;
+      const relY = adjustedY - hoursRect.top;
 
       const dayIndex = Math.max(0, Math.min(numDays - 1, Math.floor(relX / dayColWidth)));
 
@@ -663,67 +665,69 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                 </div>
 
                 {/* Hour rows */}
-                {HOURS.map((hour) => (
-                  <div
-                    key={hour}
-                    className={`grid border-b last:border-b-0 ${
-                      view === 'day'
-                        ? 'grid-cols-[80px_1fr]'
-                        : 'grid-cols-[80px_repeat(7,minmax(0,1fr))]'
-                    }`}
-                  >
-                    {/* Time label */}
-                    <div className="text-xs p-2 bg-gray-50 border-r text-gray-500">
-                      {String(hour).padStart(2, '0')}:00
+                <div ref={hoursBodyRef}>
+                  {HOURS.map((hour) => (
+                    <div
+                      key={hour}
+                      className={`grid border-b last:border-b-0 ${
+                        view === 'day'
+                          ? 'grid-cols-[80px_1fr]'
+                          : 'grid-cols-[80px_repeat(7,minmax(0,1fr))]'
+                      }`}
+                    >
+                      {/* Time label */}
+                      <div className="text-xs p-2 bg-gray-50 border-r text-gray-500">
+                        {String(hour).padStart(2, '0')}:00
+                      </div>
+
+                      {/* Day cells */}
+                      {(view === 'day' ? [anchorDate] : weekDays).map((day) => {
+                        const cellTasks = tasksForDate(day).filter(
+                          (t) => Number((t.start_time || '00:00').split(':')[0]) === hour
+                        );
+
+                        // Ghost drag-move preview
+                        const isGhostCell =
+                          dragging?.hasMoved &&
+                          dragging.currentDay &&
+                          isSameDay(day, dragging.currentDay) &&
+                          hour === dragging.currentHour;
+
+                        const ghostTopOffset = isGhostCell
+                          ? ((dragging.currentMinute || 0) / 60) * HOUR_HEIGHT
+                          : 0;
+                        const ghostHeight = isGhostCell
+                          ? taskHeightPx(durationForTask(dragging.task))
+                          : 0;
+
+                        return (
+                          <div
+                            key={`${day.toISOString()}-${hour}`}
+                            className="border-r last:border-r-0 relative hover:bg-blue-50/30 transition-colors"
+                            style={{ height: `${HOUR_HEIGHT}px` }}
+                            onClick={() => {
+                              if (!dragging) openCreateForm(day, hour);
+                            }}
+                          >
+                            {/* Ghost preview overlay */}
+                            {isGhostCell && (
+                              <div
+                                className="absolute left-0 right-0 bg-blue-400/40 border-2 border-blue-500 rounded-md z-20 pointer-events-none"
+                                style={{
+                                  top: `${ghostTopOffset}px`,
+                                  height: `${ghostHeight}px`,
+                                }}
+                              />
+                            )}
+
+                            {/* Task blocks */}
+                            {cellTasks.map((task) => renderTaskBlock(task))}
+                          </div>
+                        );
+                      })}
                     </div>
-
-                    {/* Day cells */}
-                    {(view === 'day' ? [anchorDate] : weekDays).map((day) => {
-                      const cellTasks = tasksForDate(day).filter(
-                        (t) => Number((t.start_time || '00:00').split(':')[0]) === hour
-                      );
-
-                      // Ghost drag-move preview
-                      const isGhostCell =
-                        dragging?.hasMoved &&
-                        dragging.currentDay &&
-                        isSameDay(day, dragging.currentDay) &&
-                        hour === dragging.currentHour;
-
-                      const ghostTopOffset = isGhostCell
-                        ? ((dragging.currentMinute || 0) / 60) * HOUR_HEIGHT
-                        : 0;
-                      const ghostHeight = isGhostCell
-                        ? taskHeightPx(durationForTask(dragging.task))
-                        : 0;
-
-                      return (
-                        <div
-                          key={`${day.toISOString()}-${hour}`}
-                          className="border-r last:border-r-0 relative hover:bg-blue-50/30 transition-colors"
-                          style={{ height: `${HOUR_HEIGHT}px` }}
-                          onClick={() => {
-                            if (!dragging) openCreateForm(day, hour);
-                          }}
-                        >
-                          {/* Ghost preview overlay */}
-                          {isGhostCell && (
-                            <div
-                              className="absolute left-0 right-0 bg-blue-400/40 border-2 border-blue-500 rounded-md z-20 pointer-events-none"
-                              style={{
-                                top: `${ghostTopOffset}px`,
-                                height: `${ghostHeight}px`,
-                              }}
-                            />
-                          )}
-
-                          {/* Task blocks */}
-                          {cellTasks.map((task) => renderTaskBlock(task))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
