@@ -38,6 +38,7 @@ import SiteFormsPage from './pages/SiteFormsPage';
 import FormFillPage from './pages/FormFillPage';
 import { FaHome, FaTasks, FaHistory, FaCog, FaTruck, FaUsers, FaMapMarkerAlt, FaBuilding, FaWrench, FaPlus, FaFileAlt, FaMoneyBillWave } from 'react-icons/fa';
 import { useMediaQuery } from './hooks/useMediaQuery';
+import { useVersionCheck } from './hooks/useVersionCheck';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -57,6 +58,7 @@ function MainContent() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 1023px)');
   const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const { updateAvailable, doUpdate } = useVersionCheck();
 
   // Navigation items for mobile drawer
   const navItems = [
@@ -178,6 +180,19 @@ function MainContent() {
         >
           <FaPlus className="text-xl" />
         </button>
+      )}
+
+      {/* New version banner */}
+      {!isPublicRoute && updateAvailable && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40 bg-amber-50 border border-amber-300 text-amber-900 px-4 py-2 rounded-lg shadow-lg flex items-center gap-3">
+          <span className="text-sm font-medium">גרסה חדשה זמינה</span>
+          <button
+            onClick={doUpdate}
+            className="px-3 py-1 rounded bg-amber-500 text-white text-sm hover:bg-amber-600"
+          >
+            רענן עכשיו
+          </button>
+        </div>
       )}
 
       <main className={isPublicRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1 w-full overflow-x-hidden')}>
