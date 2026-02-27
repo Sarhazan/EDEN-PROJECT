@@ -298,7 +298,9 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       }
 
       try {
-        await axios.patch(`${API_URL}/tasks/${task.id}`, {
+        const currentTask = tasks.find((t) => t.id === state.task.id);
+        await axios.put(`${API_URL}/tasks/${state.task.id}`, {
+          ...currentTask,
           start_date: newDate,
           start_time: newTime,
         });
@@ -374,7 +376,9 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         }
 
         try {
-          await axios.patch(`${API_URL}/tasks/${s.resizingTaskId}`, {
+          const currentTask = tasks.find((t) => t.id === s.resizingTaskId);
+          await axios.put(`${API_URL}/tasks/${s.resizingTaskId}`, {
+            ...currentTask,
             estimated_duration_minutes: s.resizeCurrentDuration,
           });
           await refreshData();
