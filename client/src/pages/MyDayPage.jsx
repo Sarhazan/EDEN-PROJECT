@@ -1011,8 +1011,11 @@ export default function MyDayPage() {
               return (
                 <div
                   key={index}
-                  title={`${day.dateLabel} · ${day.count} משימות`}
-                  className="flex-1 flex flex-col items-center gap-1 sm:gap-2 min-w-[32px] sm:min-w-[44px]"
+                  title={`${day.dateLabel} · ${day.count} משימות — לחץ לניווט`}
+                  className={`flex-1 flex flex-col items-center gap-1 sm:gap-2 min-w-[32px] sm:min-w-[44px] cursor-pointer rounded-lg transition-all duration-150 hover:bg-blue-50 px-0.5 ${
+                    isSameDay(day.date, selectedDate) && !day.isToday ? 'ring-2 ring-blue-400 ring-offset-1 bg-blue-50/60' : ''
+                  }`}
+                  onClick={() => setSelectedDate(day.date)}
                 >
                 {/* Bar */}
                 <div className="w-full flex flex-col justify-end h-28">
