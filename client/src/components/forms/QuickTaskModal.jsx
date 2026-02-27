@@ -80,7 +80,7 @@ const extractTimeFromTitle = (rawTitle) => {
   };
 };
 
-export default function QuickTaskModal({ isOpen, onClose }) {
+export default function QuickTaskModal({ isOpen, onClose, initialValues = null }) {
   const { addTask, systems, employees, buildings } = useApp();
   const [taskMode, setTaskMode] = useState('one-time');
   const [title, setTitle] = useState('');
@@ -119,12 +119,33 @@ export default function QuickTaskModal({ isOpen, onClose }) {
       .catch(() => {});
   }, []);
 
-  // Set manager as default employee when modal opens
+  // Initialize defaults when modal opens (calendar prefill + manager fallback)
   useEffect(() => {
-    if (isOpen && managerEmployeeId) {
-      setFormData(prev => ({ ...prev, employee_id: managerEmployeeId }));
-    }
-  }, [isOpen, managerEmployeeId]);
+    if (!isOpen) return;
+
+    const defaultDate = initialValues?.start_date ? parseISODate(initialValues.start_date) : new Date();
+    const safeDate = defaultDate || new Date();
+
+    setTaskMode('one-time');
+    setTitle(initialValues?.title || '');
+    setSelectedDate(safeDate);
+    setQuickDueEnabled(false);
+    setQuickDueDate(null);
+
+    setFormData((prev) => ({
+      ...prev,
+      description: initialValues?.description || '',
+      frequency: initialValues?.frequency || 'weekly',
+      weekly_days: initialValues?.weekly_days || [],
+      start_date: initialValues?.start_date || localDateStr(safeDate),
+      start_time: initialValues?.start_time || '',
+      system_id: initialValues?.system_id || '',
+      employee_id: initialValues?.employee_id || managerEmployeeId || prev.employee_id || '',
+      building_id: initialValues?.building_id || '',
+      priority: initialValues?.priority || 'normal',
+      estimated_duration_minutes: initialValues?.estimated_duration_minutes || 30
+    }));
+  }, [isOpen, initialValues, managerEmployeeId]);
 
   // Scroll lock
   useEffect(() => {

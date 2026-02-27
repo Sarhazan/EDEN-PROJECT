@@ -4,6 +4,7 @@ import { he } from 'date-fns/locale';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import Modal from '../shared/Modal';
 import TaskForm from '../forms/TaskForm';
+import QuickTaskModal from '../forms/QuickTaskModal';
 import { useApp } from '../../context/AppContext';
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00 - 21:00
@@ -36,7 +37,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [view, setView] = useState('week');
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [dragTaskId, setDragTaskId] = useState(null);
-  const [createDefaults, setCreateDefaults] = useState(null);
+  const [quickCreateDefaults, setQuickCreateDefaults] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
 
   const employeeTasks = useMemo(() => {
@@ -89,13 +90,12 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
   const openCreateForm = (date, hour = 9) => {
     setEditingTask(null);
-    setCreateDefaults({
+    setQuickCreateDefaults({
       title: '',
       employee_id: String(employee.id),
-      start_date: toDisplayDate(date),
+      start_date: toIsoDate(date),
       start_time: `${String(hour).padStart(2, '0')}:00`,
-      frequency: 'one-time',
-      status: 'draft'
+      frequency: 'weekly'
     });
   };
 
@@ -150,7 +150,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                     className={`min-h-[110px] p-1 border ${isSameMonth(date, anchorDate) ? 'bg-white' : 'bg-gray-50'}`}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => handleDrop(date)}
-                    onDoubleClick={() => openCreateForm(date)}
+                    onClick={() => openCreateForm(date)}
                   >
                     <div className="text-[11px] mb-1">{format(date, 'dd')}</div>
                     <div className="space-y-1">
@@ -197,7 +197,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                           className="min-h-[42px] p-1 border-r"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={() => handleDrop(day, hour)}
-                          onDoubleClick={() => openCreateForm(day, hour)}
+                          onClick={() => openCreateForm(day, hour)}
                         >
                           <div className="space-y-1">
                             {cellTasks.map((task) => (
@@ -228,9 +228,13 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         {editingTask && <TaskForm task={editingTask} onClose={() => setEditingTask(null)} />}
       </Modal>
 
-      <Modal isOpen={!!createDefaults} onClose={() => setCreateDefaults(null)} title="משימה חדשה">
-        {createDefaults && <TaskForm initialValues={createDefaults} onClose={() => setCreateDefaults(null)} />}
-      </Modal>
+      {quickCreateDefaults && (
+        <QuickTaskModal
+          isOpen={!!quickCreateDefaults}
+          initialValues={quickCreateDefaults}
+          onClose={() => setQuickCreateDefaults(null)}
+        />
+      )}
     </>
   );
 }
