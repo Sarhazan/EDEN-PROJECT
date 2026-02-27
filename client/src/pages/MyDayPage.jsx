@@ -795,30 +795,6 @@ export default function MyDayPage() {
         </p>
       </div>
 
-      {pendingApprovalTasks.length > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-orange-600 font-bold text-sm">⏳ ממתינות לאישור ({pendingApprovalTasks.length})</span>
-          </div>
-          <div className="space-y-2">
-            {pendingApprovalTasks.map(task => (
-              <div key={task.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm">
-                <div className="text-right">
-                  <div className="text-sm font-semibold">{task.title}</div>
-                  <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>
-                </div>
-                <button
-                  onClick={() => handleApproveTask(task.id)}
-                  className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors font-medium flex-shrink-0 mr-2"
-                >
-                  ✓ אשר
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Stats Bar */}
       {/* Stats Bar */}
       <div className="flex items-center justify-end mb-2">
@@ -1742,6 +1718,31 @@ export default function MyDayPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Pending approval — below all task lists */}
+      {pendingApprovalTasks.length > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-orange-600 font-bold text-sm">⏳ ממתינות לאישור ({pendingApprovalTasks.length})</span>
+          </div>
+          <div className="space-y-2">
+            {pendingApprovalTasks.map(task => (
+              <div key={task.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm">
+                <div className="text-right">
+                  <div className="text-sm font-semibold">{task.title}</div>
+                  <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>
+                </div>
+                <button
+                  onClick={() => handleApproveTask(task.id)}
+                  className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors font-medium flex-shrink-0 mr-2"
+                >
+                  ✓ אשר
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
