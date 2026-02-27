@@ -13,7 +13,6 @@ import { useApp } from '../../context/AppContext';
 import { toast } from 'react-toastify';
 
 const DEFAULT_HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00–21:00
-const HOUR_HEIGHT = 64; // px per hour row (+52% — better readability for short tasks)
 const TIME_COL_WIDTH = 80; // px for left time label column
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
@@ -100,10 +99,12 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [quickCreateDefaults, setQuickCreateDefaults] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [hours, setHours] = useState(DEFAULT_HOURS);
+  const [measuredHourHeight, setMeasuredHourHeight] = useState(64);
 
   // Refs for stale-closure-safe access inside document event handlers
   const draggingRef = useRef(null);
   const resizeStateRef = useRef(null);
+  const hourRowRef = useRef(null);
   const gridBodyRef = useRef(null);
   const hoursBodyRef = useRef(null);
   const viewRef = useRef(view);
@@ -112,6 +113,13 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const employeeTasksRef = useRef([]);
   const didResizeRef = useRef(false);
   const suppressNextClickRef = useRef(false);
+  
+  const ghostRef = useRef(null);
+  const measuredHourHeightRef = useRef(measuredHourHeight);
+
+  useEffect(() => {
+    measuredHourHeightRef.current = measuredHourHeight;
+  }, [measuredHourHeight]);
 
   useEffect(() => {
     const fetchWorkdayHours = async () => {
@@ -140,6 +148,16 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     fetchWorkdayHours();
   }, []);
 
+  useEffect(() => {
+    if (!hourRowRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const h = entry.contentRect.height;
+      if (h > 0) setMeasuredHourHeight(h);
+    });
+    ro.observe(hourRowRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   // ── Derived data ────────────────────────────────────────────────────────────
   const employeeTasks = useMemo(() => {
     return tasks
@@ -152,7 +170,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   }, [tasks, employee?.id]);
 
   const monthDays = useMemo(() => {
-    const start = startOfWeek(startOfMonth(anchorDate), { weekStartsOn: 0 });
+    const start = startOfWeek(startOfMonth(anchorDate), { weekStartsOn: 0 }); // Sunday
     const end = endOfWeek(endOfMonth(anchorDate), { weekStartsOn: 0 });
     const days = [];
     let curr = start;
@@ -162,7 +180,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(anchorDate, { weekStartsOn: 0 });
-    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    return Array.from({ length: 5 }, (_, i) => addDays(start, i)); // Sun Mon Tue Wed Thu
   }, [anchorDate]);
 
   // Keep refs up-to-date every render
@@ -179,7 +197,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       ? Number(task.estimated_duration_minutes)
       : 60;
 
-  const taskHeightPx = (dur) => Math.max(36, (dur / 60) * HOUR_HEIGHT);
+  const taskHeightPx = (dur) => Math.max(36, (dur / 60) * measuredHourHeight);
 
   const tasksForDate = (date) =>
     employeeTasks.filter((t) => isSameDay(parseISO(t.start_date), date));
@@ -249,13 +267,13 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
       const dx = Math.abs(e.clientX - state.startClientX);
       const dy = Math.abs(e.clientY - state.startClientY);
-      if (dx < 5 && dy < 5 && !state.hasMoved) return; // dead zone
+      if (dx < 3 && dy < 3 && !state.hasMoved) return; // dead zone
 
       if (!gridBodyRef.current || !hoursBodyRef.current) return;
       const rect = gridBodyRef.current.getBoundingClientRect();
       const hoursRect = hoursBodyRef.current.getBoundingClientRect();
       const currentView = viewRef.current;
-      const numDays = currentView === 'day' ? 1 : 7;
+      const numDays = currentView === 'day' ? 1 : 5;
       const dayColWidth = (rect.width - TIME_COL_WIDTH) / numDays;
 
       const adjustedX = e.clientX - (state.clickOffsetX || 0);
@@ -268,7 +286,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       // Convert relY to time, snapping to 15-min grid
       const firstHour = hours[0] ?? DEFAULT_HOURS[0];
       const lastHour = hours[hours.length - 1] ?? DEFAULT_HOURS[DEFAULT_HOURS.length - 1];
-      const rawMinutes = (relY / HOUR_HEIGHT) * 60 + firstHour * 60;
+      const rawMinutes = (relY / measuredHourHeightRef.current) * 60 + firstHour * 60;
       const snappedMin = Math.round(rawMinutes / 15) * 15;
       const clamped = Math.max(firstHour * 60, Math.min(lastHour * 60, snappedMin));
       const hour = Math.floor(clamped / 60);
@@ -278,6 +296,22 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         ? [anchorDateRef.current]
         : (weekDaysRef.current || []);
       const currentDay = days[dayIndex] || state.currentDay;
+      
+      // Update ghost DOM directly — 60fps, no React render
+      if (ghostRef.current) {
+        ghostRef.current.style.display = 'block';
+        ghostRef.current.style.left = (e.clientX - (state.clickOffsetX || 0)) + 'px';
+        ghostRef.current.style.top = (e.clientY - (state.clickOffsetY || 0)) + 'px';
+        ghostRef.current.style.width = (state.taskWidth || 120) + 'px';
+        ghostRef.current.style.height = Math.max(36, (durationForTask(state.task) / 60) * measuredHourHeightRef.current) + 'px';
+        ghostRef.current.style.backgroundColor = STATUS_BG[state.task?.status] || '#bfdbfe';
+        ghostRef.current.style.borderLeft = `3px solid ${STATUS_BORDER[state.task?.status] || '#2563eb'}`;
+        // Update title and time
+        const titleEl = ghostRef.current.querySelector('#ghost-title');
+        const timeEl = ghostRef.current.querySelector('#ghost-time');
+        if (titleEl) { titleEl.style.color = STATUS_TEXT[state.task?.status] || '#1e3a8a'; titleEl.textContent = state.task?.title || 'משימה'; }
+        if (timeEl) { timeEl.style.color = STATUS_TEXT[state.task?.status] || '#1e3a8a'; timeEl.textContent = String(hour).padStart(2,'0') + ':' + String(minute).padStart(2,'0'); }
+      }
 
       // Update ref immediately so rapid moves read fresh data
       const updated = {
@@ -285,9 +319,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         hasMoved: true,
         currentHour: hour,
         currentMinute: minute,
-        currentDay,
-        ghostX: e.clientX,
-        ghostY: e.clientY,
+        currentDay
       };
       draggingRef.current = updated;
       setDragging(updated);
@@ -297,6 +329,10 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       const state = draggingRef.current;
       if (!state) return;
       setDragging(null);
+
+      if (ghostRef.current) {
+        ghostRef.current.style.display = 'none';
+      }
 
       if (!state.hasMoved) {
         return;
@@ -365,7 +401,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       const s = resizeStateRef.current;
       if (!s) return;
       const deltaY = e.clientY - s.resizeY;
-      const steps = Math.round(deltaY / (HOUR_HEIGHT / 4)); // 1 step = 15 min
+      const steps = Math.round(deltaY / (measuredHourHeightRef.current / 4)); // 1 step = 15 min
       const next = Math.max(15, s.resizeInitialDuration + steps * 15);
 
       if (next !== s.resizeInitialDuration) {
@@ -478,7 +514,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     view === 'month'
       ? format(anchorDate, 'MMMM yyyy', { locale: he })
       : view === 'week'
-      ? `${format(weekDays[0], 'dd/MM')} – ${format(weekDays[6], 'dd/MM')}`
+      ? `${format(weekDays[0], 'dd/MM')} – ${format(weekDays[4], 'dd/MM')}`
       : format(anchorDate, 'EEEE dd/MM', { locale: he });
 
   const shift = (dir) => {
@@ -505,7 +541,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
     // Minute offset within the hour cell
     const minutePart = Number((task.start_time || '00:00').split(':')[1] || 0);
-    const topOffset = (minutePart / 60) * HOUR_HEIGHT;
+    const topOffset = (minutePart / 60) * measuredHourHeight;
 
     return (
       <div
@@ -597,10 +633,10 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title={`יומן - ${employee?.name || ''}`}>
-        <div className="space-y-3">
+        <div className="flex flex-col h-full" style={{ minHeight: 0 }}>
 
           {/* Navigation bar */}
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 flex-shrink-0 mb-3">
             <div className="flex items-center gap-2">
               {['day', 'week', 'month'].map((v) => (
                 <button
@@ -624,7 +660,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           </div>
 
           {/* Status legend */}
-          <div className="flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3 text-xs flex-shrink-0 mb-3">
             {Object.entries(STATUS_COLORS).map(([k, cls]) => (
               <div key={k} className="flex items-center gap-1">
                 <span className={`inline-block w-2 h-2 rounded-full ${cls}`} />
@@ -673,19 +709,19 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
           {/* ── WEEK / DAY VIEW ────────────────────────────────────────────────── */}
           {(view === 'week' || view === 'day') && (
-            <div className="border rounded overflow-hidden">
+            <div className="flex flex-col border rounded" style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
               <div
                 ref={gridBodyRef}
-                className="w-full"
+                className="flex flex-col"
                 // Prevent browser text selection while dragging
-                style={{ userSelect: dragging?.hasMoved ? 'none' : undefined }}
+                style={{ flex: 1, minHeight: 0, userSelect: dragging?.hasMoved ? 'none' : undefined }}
               >
                 {/* Day header row */}
                 <div
-                  className={`grid bg-gray-50 border-b ${
+                  className={`grid bg-gray-50 border-b flex-shrink-0 ${
                     view === 'day'
                       ? 'grid-cols-[80px_1fr]'
-                      : 'grid-cols-[80px_repeat(7,minmax(0,1fr))]'
+                      : 'grid-cols-[80px_repeat(5,minmax(0,1fr))]'
                   }`}
                 >
                   <div className="p-2 text-xs" />
@@ -700,14 +736,12 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                 </div>
 
                 {/* Hour rows */}
-                <div ref={hoursBodyRef}>
-                  {hours.map((hour) => (
-                    <div
-                      key={hour}
-                      className={`grid border-b last:border-b-0 ${
+                <div ref={hoursBodyRef} className="flex flex-col" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                  {hours.map((hour, idx) => (
+                    <div key={hour} ref={idx === 0 ? hourRowRef : undefined} className={`grid border-b last:border-b-0 flex-1 ${
                         view === 'day'
                           ? 'grid-cols-[80px_1fr]'
-                          : 'grid-cols-[80px_repeat(7,minmax(0,1fr))]'
+                          : 'grid-cols-[80px_repeat(5,minmax(0,1fr))]'
                       }`}
                     >
                       {/* Time label */}
@@ -731,7 +765,6 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                           <div
                             key={`${day.toISOString()}-${hour}`}
                             className={`border-r last:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''}`}
-                            style={{ height: `${HOUR_HEIGHT}px` }}
                             onClick={() => {
                               if (!dragging) openCreateForm(day, hour);
                             }}
@@ -741,7 +774,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                               <div
                                 style={{
                                   position: 'absolute',
-                                  top: `${((dragging?.currentMinute || 0) / 60) * HOUR_HEIGHT}px`,
+                                  top: `${((dragging?.currentMinute || 0) / 60) * measuredHourHeight}px`,
                                   left: 2, right: 2,
                                   height: `${taskHeightPx(durationForTask(dragging?.task))}px`,
                                   backgroundColor: STATUS_BG[dragging?.task?.status] || '#bfdbfe',
@@ -766,36 +799,28 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         </div>
       </Modal>
 
-      {dragging?.hasMoved && (
-        <div
-          style={{
-            position: 'fixed',
-            left: (dragging.ghostX ?? dragging.startClientX) - (dragging.clickOffsetX || 0),
-            top: (dragging.ghostY ?? dragging.startClientY) - (dragging.clickOffsetY || 0),
-            width: dragging.taskWidth || 120,
-            height: taskHeightPx(durationForTask(dragging.task)),
-            zIndex: 9999,
-            pointerEvents: 'none',
-            willChange: 'transform',
-            transform: 'rotate(1.5deg) scale(1.05)',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.25), 0 8px 16px rgba(0,0,0,0.15)',
-            backgroundColor: STATUS_BG[dragging.task?.status] || '#bfdbfe',
-            borderLeft: `3px solid ${STATUS_BORDER[dragging.task?.status] || '#2563eb'}`,
-            borderRadius: '6px',
-            overflow: 'hidden',
-            opacity: 0.92,
-          }}
-        >
-          <div style={{ padding: '4px 8px', fontSize: '10px', color: STATUS_TEXT[dragging.task?.status] || '#1e3a8a' }}>
-            <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {dragging.task?.title || 'משימה'}
-            </div>
-            <div style={{ opacity: 0.75 }}>
-              {String(dragging.currentHour).padStart(2,'0')}:{String(dragging.currentMinute || 0).padStart(2,'0')}
-            </div>
-          </div>
+      {/* Ghost — always in DOM, hidden when not dragging */}
+      <div
+        ref={ghostRef}
+        style={{
+          position: 'fixed',
+          display: 'none',
+          pointerEvents: 'none',
+          zIndex: 9999,
+          willChange: 'transform',
+          transform: 'rotate(1.5deg) scale(1.05)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+          borderRadius: '6px',
+          overflow: 'hidden',
+          opacity: 0.92,
+          transition: 'none',
+        }}
+      >
+        <div id="ghost-inner" style={{padding:'4px 8px', fontSize:'11px'}}>
+          <div id="ghost-title" style={{fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}} />
+          <div id="ghost-time" style={{opacity:0.75, fontSize:'10px'}} />
         </div>
-      )}
+      </div>
 
       {/* Edit task modal */}
       <Modal isOpen={!!editingTask} onClose={() => setEditingTask(null)} title="ערוך משימה">
