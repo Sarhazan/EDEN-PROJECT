@@ -732,7 +732,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   {(view === 'day' ? [anchorDate] : weekDays).map((d) => (
                     <div
                       key={d.toISOString()}
-                      className="p-2 text-xs font-semibold text-center border-r last:border-r-0"
+                      className="p-2 text-xs font-semibold text-center border-r first:border-r-0"
                     >
                       {format(d, 'EEE dd/MM', { locale: he })}
                     </div>
@@ -768,7 +768,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                         return (
                           <div
                             key={`${day.toISOString()}-${hour}`}
-                            className={`border-r last:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''}`}
+                            className={`border-r first:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''}`}
                             onClick={() => {
                               if (!dragging) openCreateForm(day, hour);
                             }}
