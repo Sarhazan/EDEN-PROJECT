@@ -177,7 +177,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           {(view === 'week' || view === 'day') && (
             <div className="border rounded">
               <div className="w-full">
-                <div className={`grid ${view === 'day' ? 'grid-cols-[80px_1fr]' : 'grid-cols-[80px_repeat(7,minmax(120px,1fr))]'} bg-gray-50 border-b`}>
+                <div className={`grid ${view === 'day' ? 'grid-cols-[80px_1fr]' : 'grid-cols-[80px_repeat(7,minmax(0,1fr))]'} bg-gray-50 border-b`}>
                   <div className="p-2 text-xs"></div>
                   {(view === 'day' ? [anchorDate] : weekDays).map((d) => (
                     <div key={d.toISOString()} className="p-2 text-xs font-semibold text-center border-r last:border-r-0">
@@ -187,7 +187,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                 </div>
 
                 {HOURS.map((hour) => (
-                  <div key={hour} className={`grid ${view === 'day' ? 'grid-cols-[80px_1fr]' : 'grid-cols-[80px_repeat(7,minmax(120px,1fr))]'} border-b`}>
+                  <div key={hour} className={`grid ${view === 'day' ? 'grid-cols-[80px_1fr]' : 'grid-cols-[80px_repeat(7,minmax(0,1fr))]'} border-b`}>
                     <div className="text-xs p-2 bg-gray-50 border-r">{String(hour).padStart(2, '0')}:00</div>
                     {(view === 'day' ? [anchorDate] : weekDays).map((day) => {
                       const cellTasks = tasksForDate(day).filter((t) => Number((t.start_time || '00:00').split(':')[0]) === hour);
