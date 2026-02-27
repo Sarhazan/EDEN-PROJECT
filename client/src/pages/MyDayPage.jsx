@@ -221,6 +221,14 @@ export default function MyDayPage() {
   };
 
   // Handle bulk send all tasks
+  const handleApproveTask = async (taskId) => {
+    try {
+      await updateTaskStatus(taskId, 'completed');
+    } catch (error) {
+      alert('שגיאה: ' + error.message);
+    }
+  };
+
   const handleSendAllTasks = async () => {
     // Get current time
     const now = new Date();
@@ -290,6 +298,27 @@ export default function MyDayPage() {
         status: task.status
       });
     });
+
+    // Add extra tasks (one-time, no start_time) for each employee
+    const extraTasks = tasks.filter(t =>
+      t.employee_id &&
+      t.start_date === format(selectedDate, 'yyyy-MM-dd') &&
+      (!t.start_time || t.start_time === '' || t.start_time === '00:00') &&
+      Number(t.is_recurring) === 0 &&
+      !['not_completed', 'cancelled', 'completed', 'sent'].includes(t.status)
+    );
+
+    for (const task of extraTasks) {
+      if (!task.employee_id || !tasksByEmployee[task.employee_id]) continue;
+      if (!tasksByEmployee[task.employee_id].extraTasks) {
+        tasksByEmployee[task.employee_id].extraTasks = [];
+      }
+      tasksByEmployee[task.employee_id].extraTasks.push({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+      });
+    }
 
     const employeeCount = Object.keys(tasksByEmployee).length;
     const confirmMessage = filterCategory === 'employee' && filterValue
@@ -495,6 +524,11 @@ export default function MyDayPage() {
       }
     };
   }, [tasks, starFilter]);
+
+  const pendingApprovalTasks = useMemo(() =>
+    tasks.filter(t => t.status === 'pending_approval'),
+    [tasks]
+  );
 
   // Filter recurring tasks (all systems including general, selected date, not completed) and sort by time
   const recurringTasks = useMemo(() => {
@@ -760,6 +794,30 @@ export default function MyDayPage() {
           {format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: he })}
         </p>
       </div>
+
+      {pendingApprovalTasks.length > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-orange-600 font-bold text-sm">⏳ ממתינות לאישור ({pendingApprovalTasks.length})</span>
+          </div>
+          <div className="space-y-2">
+            {pendingApprovalTasks.map(task => (
+              <div key={task.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm">
+                <div className="text-right">
+                  <div className="text-sm font-semibold">{task.title}</div>
+                  <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>
+                </div>
+                <button
+                  onClick={() => handleApproveTask(task.id)}
+                  className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors font-medium flex-shrink-0 mr-2"
+                >
+                  ✓ אשר
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats Bar */}
       {/* Stats Bar */}
