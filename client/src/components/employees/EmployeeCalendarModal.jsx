@@ -96,6 +96,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [view, setView] = useState('week');
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [dragging, setDragging] = useState(null);   // drag-to-move state
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [resizeState, setResizeState] = useState(null); // drag-to-resize state
   const [quickCreateDefaults, setQuickCreateDefaults] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
@@ -194,6 +195,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     const taskRect = e.currentTarget.getBoundingClientRect();
     const clickOffsetY = e.clientY - taskRect.top;
     const clickOffsetX = e.clientX - taskRect.left;
+    const taskWidth = taskRect.width;
     const newDragState = {
       taskId: task.id,
       task,
@@ -201,6 +203,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       startClientY: e.clientY,
       clickOffsetY,
       clickOffsetX,
+      taskWidth,
       hasMoved: false,
       currentHour: Number(hStr) || 6,
       currentMinute: Math.round((Number(mStr) || 0) / 15) * 15,
@@ -257,6 +260,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         ) return prev;
         return { ...prev, hasMoved: true, currentHour: hour, currentMinute: minute, currentDay };
       });
+      setMousePos({ x: e.clientX, y: e.clientY });
     };
 
     const onMouseUp = async () => {
@@ -686,40 +690,21 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                           (t) => Number((t.start_time || '00:00').split(':')[0]) === hour
                         );
 
-                        // Ghost drag-move preview
-                        const isGhostCell =
+                        const isTargetCell =
                           dragging?.hasMoved &&
                           dragging.currentDay &&
                           isSameDay(day, dragging.currentDay) &&
                           hour === dragging.currentHour;
 
-                        const ghostTopOffset = isGhostCell
-                          ? ((dragging.currentMinute || 0) / 60) * HOUR_HEIGHT
-                          : 0;
-                        const ghostHeight = isGhostCell
-                          ? taskHeightPx(durationForTask(dragging.task))
-                          : 0;
-
                         return (
                           <div
                             key={`${day.toISOString()}-${hour}`}
-                            className="border-r last:border-r-0 relative hover:bg-blue-50/30 transition-colors"
+                            className={`border-r last:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? 'bg-blue-100' : ''}`}
                             style={{ height: `${HOUR_HEIGHT}px` }}
                             onClick={() => {
                               if (!dragging) openCreateForm(day, hour);
                             }}
                           >
-                            {/* Ghost preview overlay */}
-                            {isGhostCell && (
-                              <div
-                                className="absolute left-0 right-0 bg-blue-400/40 border-2 border-blue-500 rounded-md z-20 pointer-events-none"
-                                style={{
-                                  top: `${ghostTopOffset}px`,
-                                  height: `${ghostHeight}px`,
-                                }}
-                              />
-                            )}
-
                             {/* Task blocks */}
                             {cellTasks.map((task) => renderTaskBlock(task))}
                           </div>
@@ -733,6 +718,25 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           )}
         </div>
       </Modal>
+
+      {dragging?.hasMoved && (
+        <div
+          style={{
+            position: 'fixed',
+            left: mousePos.x - (dragging.clickOffsetX || 0),
+            top: mousePos.y - (dragging.clickOffsetY || 0),
+            width: dragging.taskWidth || 120,
+            height: taskHeightPx(durationForTask(dragging.task)),
+            zIndex: 9999,
+            pointerEvents: 'none',
+          }}
+          className="bg-blue-400/60 border-2 border-blue-500 rounded-md shadow-lg"
+        >
+          <div className="p-1 text-xs text-white font-semibold truncate">
+            {dragging.task?.title}
+          </div>
+        </div>
+      )}
 
       {/* Edit task modal */}
       <Modal isOpen={!!editingTask} onClose={() => setEditingTask(null)} title="ערוך משימה">
