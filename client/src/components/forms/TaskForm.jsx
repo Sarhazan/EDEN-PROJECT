@@ -51,7 +51,7 @@ const getTodayIsraelStart = () => {
   return new Date(year, month - 1, day);
 };
 
-export default function TaskForm({ task, onClose }) {
+export default function TaskForm({ task, initialValues = null, onClose }) {
   const { addTask, updateTask, systems, employees, locations, buildings } = useApp();
   const isEditing = !!task;
 
@@ -126,8 +126,26 @@ export default function TaskForm({ task, onClose }) {
       } else {
         setSelectedDueDate(null);
       }
+      return;
     }
-  }, [task]);
+
+    if (initialValues) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialValues,
+        is_recurring: (initialValues.frequency || prev.frequency) !== 'one-time'
+      }));
+
+      const dateStr = initialValues.start_date;
+      if (dateStr) {
+        const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-').reverse();
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          setSelectedDate(new Date(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+      }
+    }
+  }, [task, initialValues]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

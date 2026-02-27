@@ -3,9 +3,10 @@ import { useApp } from '../context/AppContext';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
-import { FaPlus, FaEdit, FaTrash, FaUserTie, FaUserShield } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaUserTie, FaUserShield, FaCalendarAlt } from 'react-icons/fa';
 import Modal from '../components/shared/Modal';
 import EmployeeForm from '../components/forms/EmployeeForm';
+import EmployeeCalendarModal from '../components/employees/EmployeeCalendarModal';
 
 // Circular Progress Component
 function CircularProgress({ percentage = 0, size = 120 }) {
@@ -64,6 +65,7 @@ export default function EmployeesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [managerEmployeeId, setManagerEmployeeId] = useState(null);
+  const [calendarEmployee, setCalendarEmployee] = useState(null);
 
   useEffect(() => {
     const cached = localStorage.getItem('manager_employee_id');
@@ -146,6 +148,13 @@ export default function EmployeesPage() {
                 </div>
 
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => setCalendarEmployee(employee)}
+                    className="text-indigo-500 hover:text-indigo-600 p-1"
+                    title="יומן עובד"
+                  >
+                    <FaCalendarAlt />
+                  </button>
                   <button
                     onClick={() => handleEdit(employee)}
                     className="text-blue-500 hover:text-blue-600 p-1"
@@ -240,6 +249,14 @@ export default function EmployeesPage() {
       >
         <EmployeeForm employee={editingEmployee} onClose={handleCloseModal} />
       </Modal>
+
+      {calendarEmployee && (
+        <EmployeeCalendarModal
+          employee={calendarEmployee}
+          isOpen={!!calendarEmployee}
+          onClose={() => setCalendarEmployee(null)}
+        />
+      )}
     </div>
   );
 }
