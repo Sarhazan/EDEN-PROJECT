@@ -33,7 +33,7 @@ function titleWithTime(task) {
 }
 
 export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
-  const { tasks, updateTask } = useApp();
+  const { tasks, updateTask, refreshData } = useApp();
   const [view, setView] = useState('week');
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [dragTaskId, setDragTaskId] = useState(null);
@@ -158,8 +158,8 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                         <button
                           key={task.id}
                           draggable
-                          onDragStart={() => setDragTaskId(task.id)}
-                          onClick={() => setEditingTask(task)}
+                          onDragStart={(e) => { e.stopPropagation(); setDragTaskId(task.id); }}
+                          onClick={(e) => { e.stopPropagation(); setEditingTask(task); }}
                           className={`w-full text-right text-[10px] text-white px-1 py-0.5 rounded truncate ${STATUS_COLORS[task.status] || 'bg-slate-500'}`}
                           title={titleWithTime(task)}
                         >
@@ -204,8 +204,8 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                               <button
                                 key={task.id}
                                 draggable
-                                onDragStart={() => setDragTaskId(task.id)}
-                                onClick={() => setEditingTask(task)}
+                                onDragStart={(e) => { e.stopPropagation(); setDragTaskId(task.id); }}
+                                onClick={(e) => { e.stopPropagation(); setEditingTask(task); }}
                                 className={`w-full text-right text-[10px] text-white px-1 py-0.5 rounded truncate ${STATUS_COLORS[task.status] || 'bg-slate-500'}`}
                                 title={titleWithTime(task)}
                               >
@@ -232,7 +232,10 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         <QuickTaskModal
           isOpen={!!quickCreateDefaults}
           initialValues={quickCreateDefaults}
-          onClose={() => setQuickCreateDefaults(null)}
+          onClose={() => {
+            setQuickCreateDefaults(null);
+            refreshData();
+          }}
         />
       )}
     </>
