@@ -109,6 +109,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const weekDaysRef = useRef(null);
   const employeeTasksRef = useRef([]);
   const didResizeRef = useRef(false);
+  const suppressNextClickRef = useRef(false);
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const employeeTasks = useMemo(() => {
@@ -260,16 +261,11 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       setDragging(null);
 
       if (!state.hasMoved) {
-        // If a resize drag just happened, suppress click-to-edit
-        if (didResizeRef.current) {
-          didResizeRef.current = false;
-          return;
-        }
-
-        // Treat as click → open edit modal
-        setEditingTask(state.task);
         return;
       }
+
+      // prevent synthetic click after drag-drop from opening edit modal
+      suppressNextClickRef.current = true;
 
       const task = state.task;
       const newDate = toIsoDate(state.currentDay);
@@ -338,19 +334,20 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
       setResizeState((prev) => {
         if (!prev || prev.resizeCurrentDuration === next) return prev;
-        return { ...prev, resizeCurrentDuration: next };
+        const updated = { ...prev, resizeCurrentDuration: next };
+        // Keep ref in sync immediately so mouseup reads latest duration
+        resizeStateRef.current = updated;
+        return updated;
       });
     };
 
-    const onMouseUp = async () => {
+    const onMouseUp = async (e) => {
       const s = resizeStateRef.current;
       if (!s) return;
 
-      // Resized via drag: keep suppression flag so click-to-edit is skipped.
-      // No resize: clear it so normal click-to-edit behavior remains.
-      if (!didResizeRef.current) {
-        didResizeRef.current = false;
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      suppressNextClickRef.current = true;
 
       if (s.resizeCurrentDuration !== s.resizeInitialDuration) {
         // Past-end guard
@@ -491,6 +488,15 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           if (resizeState) return;
           handleTaskMouseDown(e, task);
         }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (suppressNextClickRef.current) {
+            suppressNextClickRef.current = false;
+            return;
+          }
+          if (dragging?.hasMoved || resizeState?.resizingTaskId) return;
+          setEditingTask(task);
+        }}
       >
         {/* Task content */}
         <div className="px-1.5 py-0.5 leading-tight overflow-hidden pointer-events-none" style={{ fontSize: '10px' }}>
@@ -526,14 +532,16 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
             e.stopPropagation();
             e.preventDefault();
             didResizeRef.current = false;
-            setResizeState({
+            const initialResizeState = {
               resizingTaskId: task.id,
               resizeY: e.clientY,
               resizeInitialDuration: durationForTask(task),
               resizeCurrentDuration: durationForTask(task),
               startDate: task.start_date,
               startTime: task.start_time || '00:00',
-            });
+            };
+            resizeStateRef.current = initialResizeState;
+            setResizeState(initialResizeState);
           }}
         >
           <div className="w-8 h-0.5 rounded-full" style={{ background: borderColor }} />
