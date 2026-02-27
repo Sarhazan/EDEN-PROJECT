@@ -739,6 +739,38 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   ))}
                 </div>
 
+                {/* All-day tasks (one-time, no time) — day view only */}
+                {view === 'day' && (() => {
+                  const allDayTasks = employeeTasks.filter(t =>
+                    isSameDay(parseISO(t.start_date), anchorDate) &&
+                    (!t.start_time || t.start_time === '' || t.start_time === '00:00') &&
+                    Number(t.is_recurring) === 0 &&
+                    t.status !== 'not_completed' && t.status !== 'cancelled'
+                  );
+                  if (allDayTasks.length === 0) return null;
+                  return (
+                    <div className="border-b bg-blue-50/40 px-2 py-1 flex-shrink-0">
+                      <div className="text-xs text-gray-500 mb-1 font-medium">כל היום</div>
+                      <div className="flex flex-wrap gap-1">
+                        {allDayTasks.map(task => (
+                          <div
+                            key={task.id}
+                            className="text-xs px-2 py-0.5 rounded-full cursor-pointer hover:opacity-80"
+                            style={{
+                              backgroundColor: STATUS_BG[task.status] || '#bfdbfe',
+                              color: STATUS_TEXT[task.status] || '#1e3a8a',
+                              border: `1px solid ${STATUS_BORDER[task.status] || '#2563eb'}`,
+                            }}
+                            onClick={() => setEditingTask(task)}
+                          >
+                            {task.title || 'ללא כותרת'}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Hour rows */}
                 <div ref={hoursBodyRef} className="flex flex-col" style={{ flex: 1, minHeight: 0, overflowY: 'hidden' }}>
                   {hours.map((hour, idx) => (

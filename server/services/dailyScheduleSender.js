@@ -84,8 +84,8 @@ function checkAndSendDailySchedule(now = new Date(), whatsappService) {
       message = `שלום ${employee.name}! אין לך משימות מיוחדות להיום. 😊`;
     } else {
       const taskLines = tasks.map((t) => {
-        const time = t.start_time ? t.start_time.substring(0, 5) : '';
-        return `• ${time} ${t.title || 'משימה'}`;
+        const time = (t.start_time && t.start_time !== '00:00') ? `${t.start_time.substring(0, 5)} ` : '';
+        return `• ${time}${t.title || 'משימה'}`;
       }).join('\n');
       message = `שלום ${employee.name}! 👋\nהמשימות שלך להיום:\n${taskLines}\nבהצלחה! 🌟`;
     }
