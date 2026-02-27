@@ -65,7 +65,7 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
     const now = new Date();
 
     if (task.is_recurring === 1) {
-      const today = now.toISOString().split('T')[0];
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(now);
       const recurringTime = task.start_time || '00:00';
       const taskStartDateTime = new Date(`${today}T${recurringTime}`);
       return taskStartDateTime > now;
