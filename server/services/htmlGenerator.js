@@ -166,15 +166,30 @@ class HtmlGeneratorService {
       // await this.pushToGitHub(filename);
 
       // Return React app URL instead of static HTML file
-      // The React app at /confirm/{token} has full camera upload support
-      // Priority:
-      // 1) PUBLIC_CLIENT_URL (best for WhatsApp links / external devices)
-      // 2) CLIENT_URL (local LAN/dev)
-      // 3) apiUrl fallback
+      // The React app at /confirm/{token} has full camera upload support.
+      // URL selection rules:
+      // - Web/production: prefer PUBLIC_CLIENT_URL, otherwise PUBLIC_API_URL (same Railway domain)
+      // - Local/dev: use CLIENT_URL when available
+      const isProduction = process.env.NODE_ENV === 'production';
       const publicClientUrl = process.env.PUBLIC_CLIENT_URL;
-      const clientUrl = publicClientUrl || process.env.CLIENT_URL || apiUrl;
-      const publicUrl = `${clientUrl}/confirm/${data.token}`;
-      console.log('Generated URL (React app):', publicUrl);
+      const publicApiUrl = process.env.PUBLIC_API_URL;
+      const localClientUrl = process.env.CLIENT_URL;
+
+      let baseUrl;
+      if (isProduction) {
+        baseUrl = publicClientUrl || publicApiUrl || localClientUrl || apiUrl;
+      } else {
+        baseUrl = publicClientUrl || localClientUrl || publicApiUrl || apiUrl;
+      }
+
+      const publicUrl = `${baseUrl.replace(/\/$/, '')}/confirm/${data.token}`;
+      console.log('Generated URL (React app):', publicUrl, {
+        env: process.env.NODE_ENV,
+        isProduction,
+        publicClientUrl,
+        publicApiUrl,
+        localClientUrl
+      });
       return publicUrl;
     } catch (error) {
       console.error('Error generating HTML:', error);
