@@ -189,11 +189,16 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     e.stopPropagation();
     e.preventDefault();
     const [hStr, mStr] = (task.start_time || '06:00').split(':');
+    const taskRect = e.currentTarget.getBoundingClientRect();
+    const clickOffsetY = e.clientY - taskRect.top;
+    const clickOffsetX = e.clientX - taskRect.left;
     setDragging({
       taskId: task.id,
       task,
       startClientX: e.clientX,
       startClientY: e.clientY,
+      clickOffsetY,
+      clickOffsetX,
       hasMoved: false,
       currentHour: Number(hStr) || 6,
       currentMinute: Math.round((Number(mStr) || 0) / 15) * 15,
@@ -218,8 +223,10 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       const numDays = currentView === 'day' ? 1 : 7;
       const dayColWidth = (rect.width - TIME_COL_WIDTH) / numDays;
 
-      const relX = e.clientX - rect.left - TIME_COL_WIDTH;
-      const relY = e.clientY - rect.top;
+      const adjustedX = e.clientX - (state.clickOffsetX || 0);
+      const adjustedY = e.clientY - (state.clickOffsetY || 0);
+      const relX = adjustedX - rect.left - TIME_COL_WIDTH;
+      const relY = adjustedY - rect.top;
 
       const dayIndex = Math.max(0, Math.min(numDays - 1, Math.floor(relX / dayColWidth)));
 
