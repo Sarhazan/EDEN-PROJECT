@@ -599,10 +599,10 @@ export default function MyDayPage() {
     let filtered = tasks.filter((t) => {
       if (isRecurringTask(t)) return false;
 
-      // Manager filter: show only tasks assigned to the current manager (or unassigned)
+      // Manager filter (one-time): keep all one-time tasks visible on My Day,
+      // even after assigning them to another employee, so manager can send/follow/approve.
       if (filterCategory === 'manager' && managerEmployeeId) {
-        // Hide tasks assigned to OTHER employees
-        if (t.employee_id && Number(t.employee_id) !== Number(managerEmployeeId)) return false;
+        // Intentionally no employee_id exclusion here.
       }
 
       if (t.status === 'completed') return false;
