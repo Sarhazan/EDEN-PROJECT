@@ -175,8 +175,8 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           )}
 
           {(view === 'week' || view === 'day') && (
-            <div className="overflow-auto border rounded">
-              <div className="min-w-[900px]">
+            <div className="border rounded">
+              <div className="w-full">
                 <div className={`grid ${view === 'day' ? 'grid-cols-[80px_1fr]' : 'grid-cols-[80px_repeat(7,minmax(120px,1fr))]'} bg-gray-50 border-b`}>
                   <div className="p-2 text-xs"></div>
                   {(view === 'day' ? [anchorDate] : weekDays).map((d) => (
