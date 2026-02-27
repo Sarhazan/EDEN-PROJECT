@@ -144,6 +144,19 @@ router.put('/settings/:key', (req, res) => {
       VALUES (?, ?, datetime('now'))
     `).run(key, value);
 
+    // If workday end time changes, reset today's auto-close marker so scheduler can re-evaluate.
+    if (key === 'workday_end_time') {
+      db.prepare(`DELETE FROM settings WHERE key = 'task_autoclose_last_run_date'`).run();
+
+      // Try immediate re-check so user sees effect without waiting for next minute tick.
+      try {
+        const { checkAndRunAutoClose } = require('../services/taskAutoClose');
+        checkAndRunAutoClose(new Date());
+      } catch (e) {
+        console.warn('[Accounts] Immediate task auto-close check failed:', e?.message || e);
+      }
+    }
+
     res.json({ success: true, key, value });
   } catch (error) {
     console.error('Error setting value:', error);
