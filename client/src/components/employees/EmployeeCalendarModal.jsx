@@ -180,7 +180,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                 <div className={`grid ${view === 'day' ? 'grid-cols-[80px_1fr]' : 'grid-cols-[80px_repeat(7,minmax(0,1fr))]'} bg-gray-50 border-b`}>
                   <div className="p-2 text-xs"></div>
                   {(view === 'day' ? [anchorDate] : weekDays).map((d) => (
-                    <div key={d.toISOString()} className="p-2 text-xs font-semibold text-center border-r last:border-r-0">
+                    <div key={d.toISOString()} className="p-2 text-xs font-semibold text-center border-r">
                       {format(d, 'EEE dd/MM', { locale: he })}
                     </div>
                   ))}
@@ -194,7 +194,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                       return (
                         <div
                           key={`${day.toISOString()}-${hour}`}
-                          className="min-h-[42px] p-1 border-r last:border-r-0"
+                          className="min-h-[42px] p-1 border-r"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={() => handleDrop(day, hour)}
                           onDoubleClick={() => openCreateForm(day, hour)}
