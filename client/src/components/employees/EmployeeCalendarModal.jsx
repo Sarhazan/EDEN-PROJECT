@@ -193,7 +193,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     const taskRect = e.currentTarget.getBoundingClientRect();
     const clickOffsetY = e.clientY - taskRect.top;
     const clickOffsetX = e.clientX - taskRect.left;
-    setDragging({
+    const newDragState = {
       taskId: task.id,
       task,
       startClientX: e.clientX,
@@ -204,7 +204,9 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       currentHour: Number(hStr) || 6,
       currentMinute: Math.round((Number(mStr) || 0) / 15) * 15,
       currentDay: parseISO(task.start_date),
-    });
+    };
+    draggingRef.current = newDragState;
+    setDragging(newDragState);
   }, []);
 
   useEffect(() => {
