@@ -141,7 +141,7 @@ router.post('/send-bulk', async (req, res) => {
     for (const [employeeId, data] of Object.entries(tasksByEmployee)) {
       try {
         console.log(`\n--- Processing employee ${employeeId} ---`);
-        let { phone, name, tasks, date, language } = data;
+        let { phone, name, tasks, date, language, extraTasks } = data;
         console.log(`Employee: ${name}, Phone: ${phone}, Tasks: ${tasks.length}`);
 
         // Fallback: if client doesn't send language, query from database
@@ -243,6 +243,27 @@ router.post('/send-bulk', async (req, res) => {
           message += '\n';
         }
 
+        if (extraTasks && extraTasks.length > 0) {
+          message += '\n📋 משימות נוספות:\n';
+          for (const et of extraTasks) {
+            let translatedTitle = et.title;
+            let translatedDescription = et.description;
+            if (language && language !== 'he') {
+              try {
+                const r = await translationService.translateFromHebrew(et.title, language);
+                translatedTitle = r.translation;
+                if (et.description) {
+                  const r2 = await translationService.translateFromHebrew(et.description, language);
+                  translatedDescription = r2.translation;
+                }
+              } catch {}
+            }
+            message += `• ${translatedTitle}\n`;
+            if (translatedDescription) message += `  ${translatedDescription}\n`;
+          }
+          message += '\n';
+        }
+
         message += '\n📱 ' + t('clickToView');
 
         // Send the message
@@ -289,6 +310,52 @@ router.post('/send-bulk', async (req, res) => {
     });
   } catch (error) {
     console.error('Error in bulk send endpoint:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Send single task with full confirmation flow
+router.post('/send-single-task', async (req, res) => {
+  try {
+    const { taskId, employeeId } = req.body;
+    if (!taskId || !employeeId) {
+      return res.status(400).json({ error: 'חסרים פרטים' });
+    }
+    const status = whatsappService.getStatus();
+    if (!status.isReady) {
+      return res.status(400).json({ error: 'וואטסאפ אינו מחובר' });
+    }
+    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
+    if (!task) return res.status(404).json({ error: 'משימה לא נמצאה' });
+    const employee = db.prepare('SELECT * FROM employees WHERE id = ?').get(employeeId);
+    if (!employee || !employee.phone) {
+      return res.status(400).json({ error: 'לעובד אין מספר טלפון' });
+    }
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+    db.prepare('INSERT INTO task_confirmations (token, employee_id, task_ids, expires_at) VALUES (?, ?, ?, ?)')
+      .run(token, employeeId, JSON.stringify([taskId]), expiresAt.toISOString());
+    const htmlUrl = await htmlGenerator.generateTaskHtml({
+      token,
+      employeeName: employee.name,
+      tasks: [task],
+      isAcknowledged: false,
+      acknowledgedAt: null
+    });
+    const shortUrl = await urlShortener.shorten(htmlUrl);
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(new Date());
+    const timeLabel = (task.start_time && task.start_time !== '00:00') ? task.start_time.slice(0, 5) : 'ללא שעה';
+    let message = `שלום ${employee.name}! 👋\n\nמשימה להיום (${today}):\n\n`;
+    message += `• ${timeLabel} - ${task.title}\n`;
+    if (task.description) message += `  ${task.description}\n`;
+    message += `\n📱 לאישור ותמונה:`;
+    await whatsappService.sendMessage(employee.phone, message);
+    await whatsappService.sendMessage(employee.phone, shortUrl);
+    res.json({ success: true, message: 'המשימה נשלחה בהצלחה' });
+  } catch (error) {
+    console.error('Error in send-single-task:', error);
     res.status(500).json({ error: error.message });
   }
 });

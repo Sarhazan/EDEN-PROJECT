@@ -102,22 +102,21 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
 
   const handleSendTask = async (e) => {
     e.stopPropagation();
-    if (!task.employee_id || !task.employee_name) {
+    if (!task.employee_id) {
       alert('לא ניתן לשלוח משימה ללא עובד משוייך');
       return;
     }
     const employee = employees.find(emp => emp.id === task.employee_id);
     if (!employee || !employee.phone) {
-      alert('לעובד אין מספר טלפון. אנא הוסף מספר טלפון בפרטי העובד');
+      alert('לעובד אין מספר טלפון');
       return;
     }
     setIsSending(true);
     try {
-      const message = `${task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}\n${task.title}\n${task.description || ''}`;
-      await axios.post(`${API_URL}/whatsapp/send`, {
-        phoneNumber: employee.phone,
-        message: message
-      }, { timeout: 30000 });
+      await axios.post(`${API_URL}/whatsapp/send-single-task`, {
+        taskId: task.id,
+        employeeId: task.employee_id
+      }, { timeout: 60000 });
       await updateTaskStatus(task.id, 'sent');
       alert('המשימה נשלחה בהצלחה בוואטסאפ!');
     } catch (error) {
