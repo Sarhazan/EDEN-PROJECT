@@ -17,6 +17,7 @@ class WhatsAppService {
     this.initializationTimeout = null;
     this.readyPollingInterval = null;
     this.knownContactChatIds = new Map(); // normalizedDigits -> chatId
+    this.reinitTimer = null;
   }
 
   /**
@@ -74,8 +75,10 @@ class WhatsAppService {
         dataPath: dataPath
       }),
       puppeteer: puppeteerOptions,
-      // Disable automatic "seen" marking to avoid errors
-      qrMaxRetries: 5,
+      // Keep QR alive longer on cloud (Railway cold starts / slower scan flows)
+      qrMaxRetries: 15,
+      takeoverOnConflict: true,
+      takeoverTimeoutMs: 0,
       // Disable web version cache - let whatsapp-web.js fetch directly from WhatsApp
       // This avoids version mismatch issues that can prevent the ready event
       webVersionCache: {
@@ -163,6 +166,11 @@ class WhatsAppService {
       if (this.io) {
         this.io.emit('whatsapp:disconnected', { reason });
       }
+
+      const reasonText = String(reason || '').toLowerCase();
+      if (reasonText.includes('max qrcode retries reached') || reasonText.includes('navigation') || reasonText.includes('protocol error')) {
+        this.scheduleReinitialize(5000, reasonText || 'disconnected');
+      }
     });
 
     // Loading screen event - useful for tracking initialization progress
@@ -182,6 +190,9 @@ class WhatsAppService {
       if (this.io) {
         this.io.emit('whatsapp:auth_failure', { message });
       }
+
+      this.client = null;
+      this.scheduleReinitialize(7000, 'auth_failure');
     });
 
     // Remote session saved event
@@ -216,6 +227,25 @@ class WhatsAppService {
     console.log('⏳ Starting WhatsApp client initialization...');
     console.log('   webVersionCache: disabled (type: none)');
     await this.client.initialize();
+  }
+
+  scheduleReinitialize(delayMs = 4000, reason = 'unknown') {
+    if (this.reinitTimer) {
+      clearTimeout(this.reinitTimer);
+      this.reinitTimer = null;
+    }
+
+    console.log(`🔁 Scheduling WhatsApp reinitialize in ${delayMs}ms (reason: ${reason})`);
+    this.reinitTimer = setTimeout(async () => {
+      this.reinitTimer = null;
+      try {
+        if (!this.client) {
+          await this.initialize();
+        }
+      } catch (e) {
+        console.error('❌ Reinitialize failed:', e?.message || e);
+      }
+    }, delayMs);
   }
 
   /**
