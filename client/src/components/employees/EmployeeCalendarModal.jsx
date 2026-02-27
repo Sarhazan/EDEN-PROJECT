@@ -278,7 +278,9 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
       const adjustedX = e.clientX - (state.clickOffsetX || 0);
       const adjustedY = e.clientY - (state.clickOffsetY || 0);
-      const relX = adjustedX - rect.left - TIME_COL_WIDTH;
+      // RTL fix: time column is on the RIGHT, day columns go right→left visually.
+      // Measure from the right edge so dayIndex 0 = Sunday (rightmost), 6 = Saturday (leftmost).
+      const relX = (rect.right - TIME_COL_WIDTH) - adjustedX;
       const relY = adjustedY - hoursRect.top;
 
       const dayIndex = Math.max(0, Math.min(numDays - 1, Math.floor(relX / dayColWidth)));
