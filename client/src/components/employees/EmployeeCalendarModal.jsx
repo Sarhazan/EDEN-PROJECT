@@ -13,7 +13,7 @@ import { useApp } from '../../context/AppContext';
 import { toast } from 'react-toastify';
 
 const DEFAULT_HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00–21:00
-const HOUR_HEIGHT = 42; // px per hour row
+const HOUR_HEIGHT = 64; // px per hour row (+52% — better readability for short tasks)
 const TIME_COL_WIDTH = 80; // px for left time label column
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
@@ -179,7 +179,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       ? Number(task.estimated_duration_minutes)
       : 60;
 
-  const taskHeightPx = (dur) => Math.max(11, (dur / 60) * HOUR_HEIGHT);
+  const taskHeightPx = (dur) => Math.max(36, (dur / 60) * HOUR_HEIGHT);
 
   const tasksForDate = (date) =>
     employeeTasks.filter((t) => isSameDay(parseISO(t.start_date), date));
@@ -497,7 +497,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       : durationForTask(task);
 
     const height = taskHeightPx(currentDuration);
-    const showTimeRange = currentDuration >= 30;
+    const showTimeRange = currentDuration >= 15;
 
     const borderColor = STATUS_BORDER[task.status] || '#3b82f6';
     const bgColor = STATUS_BG[task.status] || '#bfdbfe';
@@ -519,7 +519,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         style={{
           top: `${topOffset}px`,
           height: `${height}px`,
-          minHeight: '11px',
+          minHeight: '36px',
           backgroundColor: bgColor,
           color: textColor,
           borderLeft: `3px solid ${borderColor}`,
@@ -542,10 +542,10 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         }}
       >
         {/* Task content */}
-        <div className="px-1.5 py-0.5 leading-tight overflow-hidden pointer-events-none" style={{ fontSize: '10px' }}>
-          <div className="font-semibold truncate">{task.title || 'ללא כותרת'}</div>
+        <div className="px-1.5 py-1 leading-snug overflow-hidden pointer-events-none" style={{ fontSize: '11px' }}>
+          <div className="font-semibold" style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{task.title || 'ללא כותרת'}</div>
           {showTimeRange && (
-            <div className="opacity-70 truncate">{formatTimeRange(task.start_time || '00:00', currentDuration)}</div>
+            <div className="opacity-70 truncate text-[10px] mt-0.5">{formatTimeRange(task.start_time || '00:00', currentDuration)}</div>
           )}
         </div>
 
