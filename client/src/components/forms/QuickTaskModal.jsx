@@ -292,7 +292,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
         title: parsed.title,
         start_date: formattedDate,
         due_date: dueDateFormatted,
-        start_time: parsed.startTime,
+        start_time: parsed.startTime || formData.start_time || '',
         frequency: 'one-time',
         is_recurring: false,
         priority: 'normal',
