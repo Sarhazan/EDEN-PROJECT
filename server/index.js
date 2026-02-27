@@ -67,6 +67,8 @@ initializeDataRetention();
 const { initializeTaskAutoClose } = require('./services/taskAutoClose');
 initializeTaskAutoClose();
 
+const { initializeDailyScheduleSender } = require('./services/dailyScheduleSender');
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -86,6 +88,7 @@ io.on('connection', (socket) => {
 // Initialize WhatsApp service with Socket.IO
 const whatsappService = require('./services/whatsapp');
 whatsappService.setIo(io);
+initializeDailyScheduleSender(whatsappService);
 
 // API Routes
 const tasksRouter = require('./routes/tasks');

@@ -12,7 +12,7 @@ import QuickTaskModal from '../forms/QuickTaskModal';
 import { useApp } from '../../context/AppContext';
 import { toast } from 'react-toastify';
 
-const HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00–21:00
+const DEFAULT_HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00–21:00
 const HOUR_HEIGHT = 42; // px per hour row
 const TIME_COL_WIDTH = 80; // px for left time label column
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
@@ -99,6 +99,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [resizeState, setResizeState] = useState(null); // drag-to-resize state
   const [quickCreateDefaults, setQuickCreateDefaults] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
+  const [hours, setHours] = useState(DEFAULT_HOURS);
 
   // Refs for stale-closure-safe access inside document event handlers
   const draggingRef = useRef(null);
@@ -111,6 +112,33 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const employeeTasksRef = useRef([]);
   const didResizeRef = useRef(false);
   const suppressNextClickRef = useRef(false);
+
+  useEffect(() => {
+    const fetchWorkdayHours = async () => {
+      try {
+        const [startRes, endRes] = await Promise.all([
+          axios.get(`${API_URL}/accounts/settings/workday_start_time`),
+          axios.get(`${API_URL}/accounts/settings/workday_end_time`)
+        ]);
+
+        const startTime = startRes?.data?.value || '08:00';
+        const endTime = endRes?.data?.value || '18:00';
+
+        const parsedStart = parseInt(String(startTime).split(':')[0], 10);
+        const parsedEnd = parseInt(String(endTime).split(':')[0], 10);
+
+        const startHour = Math.max(0, (Number.isFinite(parsedStart) ? parsedStart : 8) - 2);
+        const endHour = Math.min(23, (Number.isFinite(parsedEnd) ? parsedEnd : 18) + 2);
+        const normalizedEnd = endHour >= startHour ? endHour : startHour;
+
+        setHours(Array.from({ length: normalizedEnd - startHour + 1 }, (_, i) => startHour + i));
+      } catch (error) {
+        console.error('Failed to load workday settings for calendar hours:', error);
+      }
+    };
+
+    fetchWorkdayHours();
+  }, []);
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const employeeTasks = useMemo(() => {
@@ -238,9 +266,11 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       const dayIndex = Math.max(0, Math.min(numDays - 1, Math.floor(relX / dayColWidth)));
 
       // Convert relY to time, snapping to 15-min grid
-      const rawMinutes = (relY / HOUR_HEIGHT) * 60 + HOURS[0] * 60;
+      const firstHour = hours[0] ?? DEFAULT_HOURS[0];
+      const lastHour = hours[hours.length - 1] ?? DEFAULT_HOURS[DEFAULT_HOURS.length - 1];
+      const rawMinutes = (relY / HOUR_HEIGHT) * 60 + firstHour * 60;
       const snappedMin = Math.round(rawMinutes / 15) * 15;
-      const clamped = Math.max(HOURS[0] * 60, Math.min(HOURS[HOURS.length - 1] * 60, snappedMin));
+      const clamped = Math.max(firstHour * 60, Math.min(lastHour * 60, snappedMin));
       const hour = Math.floor(clamped / 60);
       const minute = clamped % 60;
 
@@ -325,7 +355,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       document.removeEventListener('mouseup', onMouseUp);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!dragging, refreshData]);
+  }, [!!dragging, refreshData, hours]);
 
   // ── FEATURE 2: Drag-to-Resize ────────────────────────────────────────────────
   useEffect(() => {
@@ -670,7 +700,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
                 {/* Hour rows */}
                 <div ref={hoursBodyRef}>
-                  {HOURS.map((hour) => (
+                  {hours.map((hour) => (
                     <div
                       key={hour}
                       className={`grid border-b last:border-b-0 ${

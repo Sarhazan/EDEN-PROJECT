@@ -655,6 +655,10 @@ function initializeDatabase() {
     )
   `);
 
+  db.exec(`
+    INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('workday_start_time', '08:00', datetime('now'));
+  `);
+
   // Create indexes for HQ dashboard/history query performance
   // Completed/history paths
   createIndexIfNotExists('idx_tasks_history', 'tasks', 'status, completed_at DESC, employee_id, system_id');

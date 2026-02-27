@@ -37,7 +37,10 @@ export default function SettingsPage() {
   const [tasksPerPageSaving, setTasksPerPageSaving] = useState(false);
   const [tasksPerPageSaved, setTasksPerPageSaved] = useState(false);
 
-  // Workday end time setting
+  // Workday settings
+  const [workdayStartTime, setWorkdayStartTime] = useState('08:00');
+  const [workdayStartTimeSaving, setWorkdayStartTimeSaving] = useState(false);
+  const [workdayStartTimeSaved, setWorkdayStartTimeSaved] = useState(false);
   const [workdayEndTime, setWorkdayEndTime] = useState('18:00');
   const [workdayEndTimeSaving, setWorkdayEndTimeSaving] = useState(false);
   const [workdayEndTimeSaved, setWorkdayEndTimeSaved] = useState(false);
@@ -206,19 +209,26 @@ export default function SettingsPage() {
     fetchTasksPerPage();
   }, []);
 
-  // Fetch workday end time setting on mount
+  // Fetch workday settings on mount
   useEffect(() => {
-    const fetchWorkdayEndTime = async () => {
+    const fetchWorkdaySettings = async () => {
       try {
-        const response = await axios.get(`${API_URL}/accounts/settings/workday_end_time`);
-        if (response.data.value) {
-          setWorkdayEndTime(response.data.value);
+        const [startRes, endRes] = await Promise.all([
+          axios.get(`${API_URL}/accounts/settings/workday_start_time`),
+          axios.get(`${API_URL}/accounts/settings/workday_end_time`)
+        ]);
+
+        if (startRes.data.value) {
+          setWorkdayStartTime(startRes.data.value);
+        }
+        if (endRes.data.value) {
+          setWorkdayEndTime(endRes.data.value);
         }
       } catch (err) {
-        console.error('Error fetching workday end time:', err);
+        console.error('Error fetching workday settings:', err);
       }
     };
-    fetchWorkdayEndTime();
+    fetchWorkdaySettings();
   }, []);
 
   // Fetch employees list and manager setting on mount
@@ -259,6 +269,24 @@ export default function SettingsPage() {
       console.error('Error saving manager setting:', err);
     } finally {
       setManagerSaving(false);
+    }
+  };
+
+  const handleWorkdayStartTimeChange = async (newValue) => {
+    setWorkdayStartTime(newValue);
+    setWorkdayStartTimeSaving(true);
+    setWorkdayStartTimeSaved(false);
+
+    try {
+      await axios.put(`${API_URL}/accounts/settings/workday_start_time`, {
+        value: newValue
+      });
+      setWorkdayStartTimeSaved(true);
+      setTimeout(() => setWorkdayStartTimeSaved(false), 2000);
+    } catch (err) {
+      console.error('Error saving workday start time:', err);
+    } finally {
+      setWorkdayStartTimeSaving(false);
     }
   };
 
@@ -699,6 +727,36 @@ export default function SettingsPage() {
         <p className="text-gray-600 mb-4">
           שעת סיום יום העבודה. משימות חד-פעמיות שנוצרות ליום מסוים ייחשבו באיחור רק אחרי שעה זו.
         </p>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            שעת תחילת יום
+          </label>
+          <p className="text-xs text-gray-500 mb-2">
+            בשעה זו ישלחו לעובדים משימות היום דרך WhatsApp (א׳-ה׳)
+          </p>
+          <div className="flex items-center gap-4">
+            <input
+              type="time"
+              value={workdayStartTime}
+              onChange={(e) => handleWorkdayStartTimeChange(e.target.value)}
+              className="w-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg"
+            />
+            {workdayStartTimeSaving && (
+              <span className="text-blue-500 flex items-center gap-1">
+                <FaSpinner className="animate-spin" /> שומר...
+              </span>
+            )}
+            {workdayStartTimeSaved && (
+              <span className="text-green-500 flex items-center gap-1">
+                <FaCheck /> נשמר!
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            ברירת מחדל: 08:00
+          </p>
+        </div>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
