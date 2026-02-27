@@ -513,7 +513,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         className={`
           absolute left-0 w-full rounded-md shadow-sm select-none overflow-hidden
           transition-transform duration-75
-          ${isDraggingThis ? 'opacity-40' : 'hover:scale-[1.01] hover:shadow-md'}
+          ${isDraggingThis ? 'opacity-20 scale-95 blur-[1px] transition-all duration-150' : 'hover:scale-[1.01] hover:shadow-md'}
           ${!dragging ? 'cursor-grab active:cursor-grabbing' : ''}
         `}
         style={{
@@ -523,6 +523,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           backgroundColor: bgColor,
           color: textColor,
           borderLeft: `3px solid ${borderColor}`,
+          outline: isDraggingThis ? `2px dashed ${borderColor}66` : 'none',
           zIndex: isDraggingThis ? 5 : 10,
         }}
         onMouseDown={(e) => {
@@ -729,13 +730,29 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                         return (
                           <div
                             key={`${day.toISOString()}-${hour}`}
-                            className={`border-r last:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? 'bg-blue-100' : ''}`}
+                            className={`border-r last:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''}`}
                             style={{ height: `${HOUR_HEIGHT}px` }}
                             onClick={() => {
                               if (!dragging) openCreateForm(day, hour);
                             }}
                           >
                             {/* Task blocks */}
+                            {isTargetCell && (
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  top: `${((dragging?.currentMinute || 0) / 60) * HOUR_HEIGHT}px`,
+                                  left: 2, right: 2,
+                                  height: `${taskHeightPx(durationForTask(dragging?.task))}px`,
+                                  backgroundColor: STATUS_BG[dragging?.task?.status] || '#bfdbfe',
+                                  borderLeft: `3px solid ${STATUS_BORDER[dragging?.task?.status] || '#2563eb'}`,
+                                  borderRadius: '4px',
+                                  opacity: 0.6,
+                                  pointerEvents: 'none',
+                                  zIndex: 8,
+                                }}
+                              />
+                            )}
                             {cellTasks.map((task) => renderTaskBlock(task))}
                           </div>
                         );
@@ -759,11 +776,23 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
             height: taskHeightPx(durationForTask(dragging.task)),
             zIndex: 9999,
             pointerEvents: 'none',
+            willChange: 'transform',
+            transform: 'rotate(1.5deg) scale(1.05)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.25), 0 8px 16px rgba(0,0,0,0.15)',
+            backgroundColor: STATUS_BG[dragging.task?.status] || '#bfdbfe',
+            borderLeft: `3px solid ${STATUS_BORDER[dragging.task?.status] || '#2563eb'}`,
+            borderRadius: '6px',
+            overflow: 'hidden',
+            opacity: 0.92,
           }}
-          className="bg-blue-400/60 border-2 border-blue-500 rounded-md shadow-lg"
         >
-          <div className="p-1 text-xs text-white font-semibold truncate">
-            {dragging.task?.title}
+          <div style={{ padding: '4px 8px', fontSize: '10px', color: STATUS_TEXT[dragging.task?.status] || '#1e3a8a' }}>
+            <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {dragging.task?.title || 'משימה'}
+            </div>
+            <div style={{ opacity: 0.75 }}>
+              {String(dragging.currentHour).padStart(2,'0')}:{String(dragging.currentMinute || 0).padStart(2,'0')}
+            </div>
           </div>
         </div>
       )}
