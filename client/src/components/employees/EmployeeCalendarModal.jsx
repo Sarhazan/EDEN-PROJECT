@@ -180,7 +180,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(anchorDate, { weekStartsOn: 0 });
-    return Array.from({ length: 5 }, (_, i) => addDays(start, i)); // Sun Mon Tue Wed Thu
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i)); // Sun–Sat full week
   }, [anchorDate]);
 
   // Keep refs up-to-date every render
@@ -273,7 +273,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       const rect = gridBodyRef.current.getBoundingClientRect();
       const hoursRect = hoursBodyRef.current.getBoundingClientRect();
       const currentView = viewRef.current;
-      const numDays = currentView === 'day' ? 1 : 5;
+      const numDays = currentView === 'day' ? 1 : 7;
       const dayColWidth = (rect.width - TIME_COL_WIDTH) / numDays;
 
       const adjustedX = e.clientX - (state.clickOffsetX || 0);
@@ -313,16 +313,17 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         if (timeEl) { timeEl.style.color = STATUS_TEXT[state.task?.status] || '#1e3a8a'; timeEl.textContent = String(hour).padStart(2,'0') + ':' + String(minute).padStart(2,'0'); }
       }
 
-      // Update ref immediately so rapid moves read fresh data
-      const updated = {
-        ...state,
-        hasMoved: true,
-        currentHour: hour,
-        currentMinute: minute,
-        currentDay
-      };
+      // Only trigger React re-render when the target TIME SLOT changes (not every pixel)
+      // Ghost DOM updates already handle the visual — this just updates the drop zone highlight
+      const slotChanged =
+        !state.hasMoved ||
+        state.currentHour !== hour ||
+        state.currentMinute !== minute ||
+        !isSameDay(state.currentDay, currentDay);
+
+      const updated = { ...state, hasMoved: true, currentHour: hour, currentMinute: minute, currentDay };
       draggingRef.current = updated;
-      setDragging(updated);
+      if (slotChanged) setDragging(updated);
     };
 
     const onMouseUp = async () => {
@@ -514,7 +515,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     view === 'month'
       ? format(anchorDate, 'MMMM yyyy', { locale: he })
       : view === 'week'
-      ? `${format(weekDays[0], 'dd/MM')} – ${format(weekDays[4], 'dd/MM')}`
+      ? `${format(weekDays[0], 'dd/MM')} – ${format(weekDays[6], 'dd/MM')}`
       : format(anchorDate, 'EEEE dd/MM', { locale: he });
 
   const shift = (dir) => {
@@ -632,8 +633,8 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title={`יומן - ${employee?.name || ''}`}>
-        <div className="flex flex-col h-full" style={{ minHeight: 0 }}>
+      <Modal isOpen={isOpen} onClose={onClose} title={`יומן - ${employee?.name || ''}`} noScroll>
+        <div className="flex flex-col h-full p-4" style={{ minHeight: 0 }}>
 
           {/* Navigation bar */}
           <div className="flex items-center justify-between gap-2 flex-shrink-0 mb-3">
@@ -721,7 +722,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   className={`grid bg-gray-50 border-b flex-shrink-0 ${
                     view === 'day'
                       ? 'grid-cols-[80px_1fr]'
-                      : 'grid-cols-[80px_repeat(5,minmax(0,1fr))]'
+                      : 'grid-cols-[80px_repeat(7,minmax(0,1fr))]'
                   }`}
                 >
                   <div className="p-2 text-xs" />
@@ -736,12 +737,12 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                 </div>
 
                 {/* Hour rows */}
-                <div ref={hoursBodyRef} className="flex flex-col" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                <div ref={hoursBodyRef} className="flex flex-col" style={{ flex: 1, minHeight: 0, overflowY: 'hidden' }}>
                   {hours.map((hour, idx) => (
                     <div key={hour} ref={idx === 0 ? hourRowRef : undefined} className={`grid border-b last:border-b-0 flex-1 ${
                         view === 'day'
                           ? 'grid-cols-[80px_1fr]'
-                          : 'grid-cols-[80px_repeat(5,minmax(0,1fr))]'
+                          : 'grid-cols-[80px_repeat(7,minmax(0,1fr))]'
                       }`}
                     >
                       {/* Time label */}

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
 
-export default function Modal({ isOpen, onClose, title, children }) {
+export default function Modal({ isOpen, onClose, title, children, noScroll = false }) {
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose();
@@ -40,7 +40,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
           </button>
         </div>
 
-        <div className="p-4 md:p-8 overflow-y-auto flex-1">
+        <div className={`${noScroll ? 'overflow-hidden p-0' : 'p-4 md:p-8 overflow-y-auto'} flex-1 flex flex-col min-h-0`}>
           {children}
         </div>
       </div>
