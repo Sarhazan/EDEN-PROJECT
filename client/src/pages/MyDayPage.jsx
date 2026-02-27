@@ -1728,17 +1728,17 @@ export default function MyDayPage() {
           </div>
           <div className="space-y-2">
             {pendingApprovalTasks.map(task => (
-              <div key={task.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm">
+              <div key={task.id} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-sm">
+                <button
+                  onClick={() => handleApproveTask(task.id)}
+                  className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors font-medium flex-shrink-0"
+                >
+                  ✓ אשר
+                </button>
                 <div className="text-right">
                   <div className="text-sm font-semibold">{task.title}</div>
                   <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>
                 </div>
-                <button
-                  onClick={() => handleApproveTask(task.id)}
-                  className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors font-medium flex-shrink-0 mr-2"
-                >
-                  ✓ אשר
-                </button>
               </div>
             ))}
           </div>
