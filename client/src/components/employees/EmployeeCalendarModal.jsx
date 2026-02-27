@@ -278,10 +278,11 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
       const adjustedX = e.clientX - (state.clickOffsetX || 0);
       const adjustedY = e.clientY - (state.clickOffsetY || 0);
-      // RTL fix: time column is on the RIGHT, day columns go right→left visually.
-      // Measure from the right edge so dayIndex 0 = Sunday (rightmost), 6 = Saturday (leftmost).
-      const relX = (rect.right - TIME_COL_WIDTH) - adjustedX;
-      const relY = adjustedY - hoursRect.top;
+      // Target cell detection uses RAW cursor position (not task corner).
+      // This ensures the drop zone follows the cursor exactly, not the task's top-left.
+      // RTL fix: time column is on the RIGHT → measure relX from the right edge.
+      const relX = (rect.right - TIME_COL_WIDTH) - e.clientX;
+      const relY = e.clientY - hoursRect.top;
 
       const dayIndex = Math.max(0, Math.min(numDays - 1, Math.floor(relX / dayColWidth)));
 
