@@ -68,3 +68,6 @@ docs/task-*.html
 # Local test artifacts
 .playwright-mcp/
 uploads/
+
+test-results/
+playwright-report/
