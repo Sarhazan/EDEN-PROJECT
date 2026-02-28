@@ -378,7 +378,6 @@ export default function TaskConfirmationPage() {
             >
               <FaThumbsUp className="text-4xl" />
               <span>{acknowledging ? t('approving') : t('ackBtn')}</span>
-              <span className="text-4xl">≡ƒסם</span>
             </button>
           </div>
         )}
