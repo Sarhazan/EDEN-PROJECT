@@ -117,7 +117,13 @@ export function useBulkWhatsApp({
         return group?.tasks?.map((t) => t.id) || [];
       });
 
-      for (const taskId of sentTaskIds) {
+      // Also mark extraTasks (no-time tasks) as sent
+      const sentExtraTaskIds = successfulEmployeeIds.flatMap((employeeId) => {
+        const group = tasksByEmployee[employeeId];
+        return group?.extraTasks?.map((t) => t.id) || [];
+      });
+
+      for (const taskId of [...sentTaskIds, ...sentExtraTaskIds]) {
         await updateTaskStatus(taskId, 'sent');
       }
 
