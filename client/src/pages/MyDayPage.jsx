@@ -570,6 +570,19 @@ export default function MyDayPage() {
       filtered = Array.from(nearestBySeries.values());
     }
 
+    // Dedup: same recurring series may have multiple DB instances on the same day
+    // (e.g. time was edited → new instances created without removing old ones).
+    // Keep only the instance with the lowest id per (title, employee_id, frequency, date).
+    const dedupMap = new Map();
+    filtered.forEach((task) => {
+      const key = `${task.title}|${task.employee_id || ''}|${task.frequency}|${task.start_date}`;
+      const existing = dedupMap.get(key);
+      if (!existing || task.id < existing.id) {
+        dedupMap.set(key, task);
+      }
+    });
+    filtered = Array.from(dedupMap.values());
+
     return filtered.sort((a, b) => {
       // Sort by date first, then by time
       const dateCompare = new Date(a.start_date) - new Date(b.start_date);
@@ -690,6 +703,15 @@ export default function MyDayPage() {
         shouldTaskAppearOnDate(task, currentDate) &&
         !isTaskClosed(task)
       );
+      // Dedup recurring tasks (same title+employee+frequency on same date → keep lowest id)
+      const dedupMap = new Map();
+      tasksForDay.forEach((task) => {
+        if (!isRecurringTask(task)) { dedupMap.set(`once:${task.id}`, task); return; }
+        const key = `${task.title}|${task.employee_id || ''}|${task.frequency}|${task.start_date}`;
+        const existing = dedupMap.get(key);
+        if (!existing || task.id < existing.id) dedupMap.set(key, task);
+      });
+      tasksForDay = Array.from(dedupMap.values());
       // Apply star filter
       if (starFilter) {
         tasksForDay = tasksForDay.filter((t) => t.is_starred === 1);
