@@ -1,0 +1,238 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - heading "ניהול תחזוקה" [level=1] [ref=e6]
+    - navigation [ref=e7]:
+      - link "היום שלי" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - img [ref=e9]
+        - generic [ref=e11]: היום שלי
+      - link "משימות" [ref=e12] [cursor=pointer]:
+        - /url: /tasks
+        - img [ref=e13]
+        - generic [ref=e15]: משימות
+      - link "היסטוריה" [ref=e16] [cursor=pointer]:
+        - /url: /history
+        - img [ref=e17]
+        - generic [ref=e19]: היסטוריה
+      - link "מערכות" [ref=e20] [cursor=pointer]:
+        - /url: /systems
+        - img [ref=e21]
+        - generic [ref=e23]: מערכות
+      - link "ספקים" [ref=e24] [cursor=pointer]:
+        - /url: /suppliers
+        - img [ref=e25]
+        - generic [ref=e27]: ספקים
+      - link "עובדים" [ref=e28] [cursor=pointer]:
+        - /url: /employees
+        - img [ref=e29]
+        - generic [ref=e31]: עובדים
+      - link "מיקומים" [ref=e32] [cursor=pointer]:
+        - /url: /locations
+        - img [ref=e33]
+        - generic [ref=e35]: מיקומים
+      - link "מבנים" [ref=e36] [cursor=pointer]:
+        - /url: /buildings
+        - img [ref=e37]
+        - generic [ref=e39]: מבנים
+      - link "דיירים" [ref=e40] [cursor=pointer]:
+        - /url: /tenants
+        - img [ref=e41]
+        - generic [ref=e43]: דיירים
+      - link "גבייה" [ref=e44] [cursor=pointer]:
+        - /url: /billing
+        - img [ref=e45]
+        - generic [ref=e47]: גבייה
+      - link "טפסים" [ref=e48] [cursor=pointer]:
+        - /url: /forms
+        - img [ref=e49]
+        - generic [ref=e51]: טפסים
+      - link "הגדרות" [ref=e52] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e53]
+        - generic [ref=e55]: הגדרות
+      - button "משימות מסומנות" [ref=e56] [cursor=pointer]:
+        - img [ref=e57]
+        - generic [ref=e59]: משימות מסומנות
+      - button "משימה חדשה" [ref=e60] [cursor=pointer]:
+        - img [ref=e61]
+        - generic [ref=e63]: משימה חדשה
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]: מתחם
+        - generic [ref=e67]: NXT בת ים
+        - generic [ref=e68]: מנהל אחזקה
+        - generic [ref=e69]: עדן קנדי
+      - generic [ref=e72]: מחובר
+      - button "התנתק" [ref=e73] [cursor=pointer]:
+        - img [ref=e74]
+        - generic [ref=e76]: התנתק
+      - generic [ref=e77]: LOCAL DEV
+  - generic "תפריט ניווט ראשי" [ref=e78]:
+    - generic [ref=e79]:
+      - heading "ניהול תחזוקה" [level=1] [ref=e80]
+      - button "סגור תפריט" [ref=e81] [cursor=pointer]:
+        - img [ref=e82]
+    - navigation [ref=e84]:
+      - link "היום שלי" [ref=e85] [cursor=pointer]:
+        - /url: /
+        - img [ref=e86]
+        - generic [ref=e88]: היום שלי
+      - link "משימות" [ref=e89] [cursor=pointer]:
+        - /url: /tasks
+        - img [ref=e90]
+        - generic [ref=e92]: משימות
+      - link "היסטוריה" [ref=e93] [cursor=pointer]:
+        - /url: /history
+        - img [ref=e94]
+        - generic [ref=e96]: היסטוריה
+      - link "מערכות" [ref=e97] [cursor=pointer]:
+        - /url: /systems
+        - img [ref=e98]
+        - generic [ref=e100]: מערכות
+      - link "ספקים" [ref=e101] [cursor=pointer]:
+        - /url: /suppliers
+        - img [ref=e102]
+        - generic [ref=e104]: ספקים
+      - link "עובדים" [ref=e105] [cursor=pointer]:
+        - /url: /employees
+        - img [ref=e106]
+        - generic [ref=e108]: עובדים
+      - link "מיקומים" [ref=e109] [cursor=pointer]:
+        - /url: /locations
+        - img [ref=e110]
+        - generic [ref=e112]: מיקומים
+      - link "מבנים" [ref=e113] [cursor=pointer]:
+        - /url: /buildings
+        - img [ref=e114]
+        - generic [ref=e116]: מבנים
+      - link "דיירים" [ref=e117] [cursor=pointer]:
+        - /url: /tenants
+        - img [ref=e118]
+        - generic [ref=e120]: דיירים
+      - link "גבייה" [ref=e121] [cursor=pointer]:
+        - /url: /billing
+        - img [ref=e122]
+        - generic [ref=e124]: גבייה
+      - link "טפסים" [ref=e125] [cursor=pointer]:
+        - /url: /forms
+        - img [ref=e126]
+        - generic [ref=e128]: טפסים
+      - link "הגדרות" [ref=e129] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e130]
+        - generic [ref=e132]: הגדרות
+      - generic [ref=e133]: LOCAL DEV
+  - main [ref=e134]:
+    - generic [ref=e135]:
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - heading "היום שלי" [level=1] [ref=e138]
+          - generic [ref=e139]: "משימות למחר: 2"
+        - paragraph [ref=e140]: יום שבת, 28/02/2026
+      - button "הצג נתונים מתקדמים" [ref=e142] [cursor=pointer]
+      - generic [ref=e143]:
+        - generic [ref=e145]:
+          - img [ref=e146]
+          - generic [ref=e148]:
+            - generic [ref=e149]: "0"
+            - generic [ref=e150]: משימות להיום
+        - generic [ref=e151]:
+          - generic [ref=e152]: לפי עדיפות
+          - generic [ref=e154]:
+            - img [ref=e155]
+            - generic [ref=e158]: "0"
+        - generic [ref=e159]:
+          - generic [ref=e160]: לפי סטטוס
+          - generic [ref=e161]:
+            - generic [ref=e162]:
+              - img [ref=e163]
+              - generic [ref=e166]: "10"
+            - generic [ref=e168]:
+              - generic [ref=e170]: הושלם
+              - generic [ref=e171]: "10"
+      - generic [ref=e172]:
+        - generic [ref=e173]:
+          - generic [ref=e174]:
+            - heading "תחזית עומס משימות" [level=3] [ref=e175]
+            - paragraph [ref=e176]: תמיד מחושב מהיום קדימה
+          - generic [ref=e177]:
+            - button "שבוע" [ref=e178] [cursor=pointer]
+            - button "חודש" [ref=e179] [cursor=pointer]
+        - generic [ref=e180]:
+          - generic [ref=e181]: דחוף
+          - generic [ref=e183]: רגיל
+          - generic [ref=e185]: נמוך
+        - generic [ref=e188]:
+          - generic "28/02 · 0 משימות — לחץ לניווט" [ref=e189] [cursor=pointer]:
+            - generic [ref=e191]:
+              - generic [ref=e192]: שבת
+              - generic [ref=e193]: 28/02
+          - generic "01/03 · 1 משימות — לחץ לניווט" [ref=e194] [cursor=pointer]:
+            - generic [ref=e195]: "1"
+            - generic [ref=e200]:
+              - generic [ref=e201]: יום א׳
+              - generic [ref=e202]: 01/03
+          - generic "02/03 · 0 משימות — לחץ לניווט" [ref=e203] [cursor=pointer]:
+            - generic [ref=e205]:
+              - generic [ref=e206]: יום ב׳
+              - generic [ref=e207]: 02/03
+          - generic "03/03 · 0 משימות — לחץ לניווט" [ref=e208] [cursor=pointer]:
+            - generic [ref=e210]:
+              - generic [ref=e211]: יום ג׳
+              - generic [ref=e212]: 03/03
+          - generic "04/03 · 0 משימות — לחץ לניווט" [ref=e213] [cursor=pointer]:
+            - generic [ref=e215]:
+              - generic [ref=e216]: יום ד׳
+              - generic [ref=e217]: 04/03
+          - generic "05/03 · 0 משימות — לחץ לניווט" [ref=e218] [cursor=pointer]:
+            - generic [ref=e220]:
+              - generic [ref=e221]: יום ה׳
+              - generic [ref=e222]: 05/03
+          - generic "06/03 · 0 משימות — לחץ לניווט" [ref=e223] [cursor=pointer]:
+            - generic [ref=e225]:
+              - generic [ref=e226]: יום ו׳
+              - generic [ref=e227]: 06/03
+      - generic [ref=e228]:
+        - generic [ref=e229]:
+          - heading "התקדמות משימות היום" [level=3] [ref=e230]
+          - generic [ref=e231]: 10 מתוך 0 הושלמו
+        - paragraph [ref=e234]: 100%
+      - generic [ref=e235]:
+        - button "טען נתוני דמה" [ref=e236] [cursor=pointer]:
+          - img [ref=e237]
+          - text: טען נתוני דמה
+        - button "נקה נתונים" [ref=e239] [cursor=pointer]:
+          - img [ref=e240]
+          - text: נקה נתונים
+      - button "איפוס גודל עמודות" [ref=e243] [cursor=pointer]
+      - textbox "חיפוש משימות..." [ref=e245]
+      - generic [ref=e246]:
+        - generic [ref=e248]:
+          - generic [ref=e249]:
+            - generic [ref=e250]:
+              - button "היום" [ref=e251] [cursor=pointer]
+              - heading "משימות קבועות (0)" [level=2] [ref=e252]
+            - generic [ref=e253]:
+              - textbox [ref=e256]: 28/02/2026
+              - button "שלח כל המשימות" [ref=e257] [cursor=pointer]:
+                - img [ref=e258]
+                - generic [ref=e260]: שלח כל המשימות
+          - generic [ref=e261]:
+            - combobox [ref=e262]:
+              - option "משימות מנהל" [selected]
+              - option "כל המשימות"
+              - option "סנן לפי עדיפות"
+              - option "סנן לפי מערכת"
+              - option "סנן לפי סטטוס"
+              - option "סנן לפי עובד"
+              - option "סנן לפי מיקום"
+            - button "נקה סינון" [ref=e263] [cursor=pointer]
+          - paragraph [ref=e265]: אין משימות קבועות להיום
+        - generic [ref=e268]:
+          - heading "משימות חד פעמיות (0)" [level=2] [ref=e269]
+          - paragraph [ref=e271]: אין משימות חד פעמיות להיום
+  - region "Notifications Alt+T"
+```

@@ -335,7 +335,7 @@ router.put('/:token/task/:taskId', (req, res) => {
     const { status } = req.body;
 
     // Validate status
-    const validStatuses = ['draft', 'sent', 'received', 'in_progress', 'pending_approval', 'completed'];
+    const validStatuses = ['draft', 'sent', 'received', 'pending_approval', 'completed'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'סטטוס לא חוקי' });
     }

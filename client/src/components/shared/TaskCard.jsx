@@ -27,7 +27,6 @@ const statusLabels = {
   draft: 'חדש',
   sent: 'נשלח',
   received: 'התקבל',
-  in_progress: 'בביצוע',
   pending_approval: 'ממתין לאישור',
   completed: 'הושלם',
   not_completed: 'לא בוצע'

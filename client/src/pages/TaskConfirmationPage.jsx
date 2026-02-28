@@ -35,7 +35,7 @@ const UI_TEXT = {
     cancel: '╫ס╫ש╫ר╫ץ╫£',
     doneAndSend: '╫í╫ש╫ש╫₧╫¬╫ש - ╫⌐╫£╫ק ╫£╫נ╫ש╫⌐╫ץ╫¿',
     footer: '╫₧╫ó╫¿╫¢╫¬ ╫á╫ש╫פ╫ץ╫£ ╫¬╫ק╫צ╫ץ╫º╫פ - Eden',
-    status: { draft: '╫ק╫ף╫⌐', sent: '╫á╫⌐╫£╫ק', received: '╫פ╫¬╫º╫ס╫£', in_progress: '╫ס╫ס╫ש╫ª╫ץ╫ó', pending_approval: '╫₧╫₧╫¬╫ש╫ƒ ╫£╫נ╫ש╫⌐╫ץ╫¿', completed: '╫פ╫ץ╫⌐╫£╫¥' },
+    status: { draft: '╫ק╫ף╫⌐', sent: '╫á╫⌐╫£╫ק', received: '╫פ╫¬╫º╫ס╫£', pending_approval: '╫₧╫₧╫¬╫ש╫ƒ ╫£╫נ╫ש╫⌐╫ץ╫¿', completed: '╫פ╫ץ╫⌐╫£╫¥' },
     priority: { urgent: '╫ף╫ק╫ץ╫ú', normal: '╫¿╫ע╫ש╫£', optional: '╫נ╫ץ╫ñ╫ª╫ש╫ץ╫á╫£╫ש' }
   },
   en: {
@@ -67,7 +67,7 @@ const UI_TEXT = {
     cancel: 'Cancel',
     doneAndSend: 'Done - send for approval',
     footer: 'Eden Maintenance Management',
-    status: { draft: 'New', sent: 'Sent', received: 'Received', in_progress: 'In progress', pending_approval: 'Pending approval', completed: 'Completed' },
+    status: { draft: 'New', sent: 'Sent', received: 'Received', pending_approval: 'Pending approval', completed: 'Completed' },
     priority: { urgent: 'Urgent', normal: 'Normal', optional: 'Optional' }
   }
 };
@@ -309,8 +309,6 @@ export default function TaskConfirmationPage() {
         return 'bg-green-100 text-green-800';
       case 'pending_approval':
         return 'bg-orange-100 text-orange-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }

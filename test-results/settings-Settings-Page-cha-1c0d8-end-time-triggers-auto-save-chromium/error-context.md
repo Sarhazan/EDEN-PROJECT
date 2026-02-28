@@ -1,0 +1,258 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - heading "ניהול תחזוקה" [level=1] [ref=e6]
+    - navigation [ref=e7]:
+      - link "היום שלי" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - img [ref=e9]
+        - generic [ref=e11]: היום שלי
+      - link "משימות" [ref=e12] [cursor=pointer]:
+        - /url: /tasks
+        - img [ref=e13]
+        - generic [ref=e15]: משימות
+      - link "היסטוריה" [ref=e16] [cursor=pointer]:
+        - /url: /history
+        - img [ref=e17]
+        - generic [ref=e19]: היסטוריה
+      - link "מערכות" [ref=e20] [cursor=pointer]:
+        - /url: /systems
+        - img [ref=e21]
+        - generic [ref=e23]: מערכות
+      - link "ספקים" [ref=e24] [cursor=pointer]:
+        - /url: /suppliers
+        - img [ref=e25]
+        - generic [ref=e27]: ספקים
+      - link "עובדים" [ref=e28] [cursor=pointer]:
+        - /url: /employees
+        - img [ref=e29]
+        - generic [ref=e31]: עובדים
+      - link "מיקומים" [ref=e32] [cursor=pointer]:
+        - /url: /locations
+        - img [ref=e33]
+        - generic [ref=e35]: מיקומים
+      - link "מבנים" [ref=e36] [cursor=pointer]:
+        - /url: /buildings
+        - img [ref=e37]
+        - generic [ref=e39]: מבנים
+      - link "דיירים" [ref=e40] [cursor=pointer]:
+        - /url: /tenants
+        - img [ref=e41]
+        - generic [ref=e43]: דיירים
+      - link "גבייה" [ref=e44] [cursor=pointer]:
+        - /url: /billing
+        - img [ref=e45]
+        - generic [ref=e47]: גבייה
+      - link "טפסים" [ref=e48] [cursor=pointer]:
+        - /url: /forms
+        - img [ref=e49]
+        - generic [ref=e51]: טפסים
+      - link "הגדרות" [ref=e52] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e53]
+        - generic [ref=e55]: הגדרות
+      - button "משימות מסומנות" [ref=e56] [cursor=pointer]:
+        - img [ref=e57]
+        - generic [ref=e59]: משימות מסומנות
+    - generic [ref=e60]:
+      - generic [ref=e61]:
+        - generic [ref=e62]: מתחם
+        - generic [ref=e63]: NXT בת ים
+        - generic [ref=e64]: מנהל אחזקה
+        - generic [ref=e65]: עדן קנדי
+      - generic [ref=e68]: מחובר
+      - button "התנתק" [ref=e69] [cursor=pointer]:
+        - img [ref=e70]
+        - generic [ref=e72]: התנתק
+      - generic [ref=e73]: LOCAL DEV
+  - generic "תפריט ניווט ראשי" [ref=e74]:
+    - generic [ref=e75]:
+      - heading "ניהול תחזוקה" [level=1] [ref=e76]
+      - button "סגור תפריט" [ref=e77] [cursor=pointer]:
+        - img [ref=e78]
+    - navigation [ref=e80]:
+      - link "היום שלי" [ref=e81] [cursor=pointer]:
+        - /url: /
+        - img [ref=e82]
+        - generic [ref=e84]: היום שלי
+      - link "משימות" [ref=e85] [cursor=pointer]:
+        - /url: /tasks
+        - img [ref=e86]
+        - generic [ref=e88]: משימות
+      - link "היסטוריה" [ref=e89] [cursor=pointer]:
+        - /url: /history
+        - img [ref=e90]
+        - generic [ref=e92]: היסטוריה
+      - link "מערכות" [ref=e93] [cursor=pointer]:
+        - /url: /systems
+        - img [ref=e94]
+        - generic [ref=e96]: מערכות
+      - link "ספקים" [ref=e97] [cursor=pointer]:
+        - /url: /suppliers
+        - img [ref=e98]
+        - generic [ref=e100]: ספקים
+      - link "עובדים" [ref=e101] [cursor=pointer]:
+        - /url: /employees
+        - img [ref=e102]
+        - generic [ref=e104]: עובדים
+      - link "מיקומים" [ref=e105] [cursor=pointer]:
+        - /url: /locations
+        - img [ref=e106]
+        - generic [ref=e108]: מיקומים
+      - link "מבנים" [ref=e109] [cursor=pointer]:
+        - /url: /buildings
+        - img [ref=e110]
+        - generic [ref=e112]: מבנים
+      - link "דיירים" [ref=e113] [cursor=pointer]:
+        - /url: /tenants
+        - img [ref=e114]
+        - generic [ref=e116]: דיירים
+      - link "גבייה" [ref=e117] [cursor=pointer]:
+        - /url: /billing
+        - img [ref=e118]
+        - generic [ref=e120]: גבייה
+      - link "טפסים" [ref=e121] [cursor=pointer]:
+        - /url: /forms
+        - img [ref=e122]
+        - generic [ref=e124]: טפסים
+      - link "הגדרות" [ref=e125] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e126]
+        - generic [ref=e128]: הגדרות
+      - generic [ref=e129]: LOCAL DEV
+  - main [ref=e130]:
+    - generic [ref=e131]:
+      - heading "╫פ╫ע╫ף╫¿╫ץ╫¬" [level=1] [ref=e132]
+      - generic [ref=e133]:
+        - generic [ref=e134]:
+          - img [ref=e135]
+          - heading "╫ק╫ש╫ס╫ץ╫¿ ╫£╫ץ╫ץ╫נ╫ר╫í╫נ╫ñ" [level=2] [ref=e137]
+        - paragraph [ref=e138]: ╫ק╫ס╫¿ ╫נ╫¬ ╫ק╫⌐╫ס╫ץ╫ƒ ╫פ╫ץ╫ץ╫נ╫ר╫í╫נ╫ñ ╫⌐╫£╫ת ╫¢╫ף╫ש ╫£╫⌐╫£╫ץ╫ק ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫£╫ó╫ץ╫ס╫ף╫ש╫¥ ╫ש╫⌐╫ש╫¿╫ץ╫¬ ╫ף╫¿╫ת ╫פ╫₧╫ó╫¿╫¢╫¬
+        - generic [ref=e142]: WhatsApp ╫₧╫ק╫ץ╫ס╫¿ ╫ץ╫₧╫ץ╫¢╫ƒ
+        - generic [ref=e143]:
+          - img [ref=e144]
+          - generic [ref=e146]: ╫₧╫ק╫ץ╫ס╫¿ ╫£╫ץ╫ץ╫נ╫ר╫í╫נ╫ñ ╫ס╫פ╫ª╫£╫ק╫פ!
+        - generic [ref=e147]:
+          - img [ref=e148]
+          - generic [ref=e150]: ╫₧╫ק╫ץ╫ס╫¿ ╫£╫ץ╫ץ╫נ╫ר╫í╫נ╫ñ
+        - generic [ref=e151]:
+          - button "QR ╫ק╫ף╫⌐ (╫£╫ק╫ש╫ס╫ץ╫¿ ╫₧╫ק╫ף╫⌐)" [ref=e152] [cursor=pointer]:
+            - img [ref=e153]
+            - text: QR ╫ק╫ף╫⌐ (╫£╫ק╫ש╫ס╫ץ╫¿ ╫₧╫ק╫ף╫⌐)
+          - button "╫פ╫¬╫á╫¬╫º ╫₧╫ץ╫ץ╫נ╫ר╫í╫נ╫ñ" [ref=e155] [cursor=pointer]:
+            - img [ref=e156]
+            - text: ╫פ╫¬╫á╫¬╫º ╫₧╫ץ╫ץ╫נ╫ר╫í╫נ╫ñ
+        - generic [ref=e158]:
+          - paragraph [ref=e159]: "Γה╣∩╕ן ╫ק╫⌐╫ץ╫ס ╫£╫ף╫ó╫¬:"
+          - list [ref=e160]:
+            - listitem [ref=e161]: ╫í╫¿╫ש╫º╫¬ QR code ╫á╫ף╫¿╫⌐╫¬ ╫ñ╫ó╫¥ ╫נ╫ק╫¬
+            - listitem [ref=e162]: ╫פ╫í╫⌐╫ƒ ╫á╫⌐╫₧╫¿ ╫ס╫⌐╫¿╫¬ ╫ע╫¥ ╫נ╫ק╫¿╫ש ╫פ╫ñ╫ó╫£╫פ ╫₧╫ק╫ף╫⌐
+            - listitem [ref=e163]: ╫£╫ק╫Ñ ╫ó╫£ "╫פ╫¬╫á╫¬╫º ╫₧╫ץ╫ץ╫נ╫ר╫í╫נ╫ñ" ╫¢╫ף╫ש ╫£╫פ╫¬╫á╫¬╫º ╫ש╫ף╫á╫ש╫¬
+            - listitem [ref=e164]: ╫פ╫פ╫ץ╫ף╫ó╫ץ╫¬ ╫á╫⌐╫£╫ק╫ץ╫¬ ╫₧╫ק╫⌐╫ס╫ץ╫ƒ ╫פ╫ץ╫ץ╫נ╫ר╫í╫נ╫ñ ╫פ╫נ╫ש╫⌐╫ש ╫⌐╫£╫ת
+            - listitem [ref=e165]: ╫ó╫£╫ש╫ת ╫£╫ץ╫ץ╫ף╫נ ╫⌐╫£╫ó╫ץ╫ס╫ף╫ש╫¥ ╫ש╫⌐ ╫₧╫í╫ñ╫¿╫ש ╫ר╫£╫ñ╫ץ╫ƒ ╫¬╫º╫ש╫á╫ש╫¥ ╫ס╫₧╫ó╫¿╫¢╫¬
+      - generic [ref=e166]:
+        - generic [ref=e167]:
+          - img [ref=e168]
+          - heading "Google Translate (╫ס╫¬╫⌐╫£╫ץ╫¥)" [level=2] [ref=e170]
+        - paragraph [ref=e171]: ╫ק╫ס╫¿ ╫נ╫¬ Google Cloud Translation API ╫£╫¬╫¿╫ע╫ץ╫¥ ╫פ╫ó╫¿╫ץ╫¬ ╫ó╫ץ╫ס╫ף╫ש╫¥. ╫₧╫⌐╫₧╫⌐ ╫¢╫ע╫ש╫ס╫ץ╫ש ╫¢╫⌐-Gemini API ╫₧╫ע╫ש╫ó ╫£╫₧╫ע╫ס╫£╫¬ ╫פ╫⌐╫ש╫₧╫ץ╫⌐ ╫פ╫ק╫ש╫á╫₧╫ש╫¬.
+        - generic [ref=e173]:
+          - generic [ref=e174]:
+            - generic [ref=e176]: ╫₧╫ק╫ץ╫ס╫¿
+            - generic [ref=e177]: "(╫₧╫ñ╫¬╫ק: ****P_GA)"
+          - generic [ref=e178]: "╫¬╫¿╫ע╫ץ╫₧╫ש╫¥: 0 ╫פ╫ª╫£╫ש╫ק╫ץ, 0 ╫á╫¢╫⌐╫£╫ץ"
+        - generic [ref=e179]:
+          - generic [ref=e180]:
+            - generic [ref=e182]: "Gemini API (╫ק╫ש╫á╫₧╫ש):"
+            - generic [ref=e183]: ╫ñ╫ó╫ש╫£
+            - generic [ref=e184]: (0 ╫¬╫¿╫ע╫ץ╫₧╫ש╫¥, 0 ╫¢╫⌐╫£╫ץ╫á╫ץ╫¬)
+          - paragraph [ref=e185]: Gemini ╫₧╫⌐╫₧╫⌐ ╫º╫ץ╫ף╫¥ (╫ק╫ש╫á╫₧╫ש). Google Translate ╫₧╫⌐╫₧╫⌐ ╫¿╫º ╫¢╫ע╫ש╫ס╫ץ╫ש ╫¢╫⌐╫á╫ע╫₧╫¿╫¬ ╫פ╫₧╫¢╫í╫פ.
+        - generic [ref=e186]:
+          - button "╫ס╫ף╫ץ╫º ╫ק╫ש╫ס╫ץ╫¿" [ref=e187] [cursor=pointer]:
+            - img [ref=e188]
+            - text: ╫ס╫ף╫ץ╫º ╫ק╫ש╫ס╫ץ╫¿
+          - button "╫á╫¬╫º ╫ק╫ש╫ס╫ץ╫¿" [ref=e190] [cursor=pointer]:
+            - img [ref=e191]
+            - text: ╫á╫¬╫º ╫ק╫ש╫ס╫ץ╫¿
+        - generic [ref=e193]:
+          - paragraph [ref=e194]: "Γה╣∩╕ן ╫נ╫ש╫ת ╫£╫פ╫⌐╫ש╫ע ╫₧╫ñ╫¬╫ק API:"
+          - list [ref=e195]:
+            - listitem [ref=e196]:
+              - text: ╫פ╫ש╫¢╫á╫í ╫£-
+              - link "Google Cloud Console" [ref=e197] [cursor=pointer]:
+                - /url: https://console.cloud.google.com
+            - listitem [ref=e198]: ╫ª╫ץ╫¿ ╫ñ╫¿╫ץ╫ש╫º╫ר ╫ק╫ף╫⌐ ╫נ╫ץ ╫ס╫ק╫¿ ╫ñ╫¿╫ץ╫ש╫º╫ר ╫º╫ש╫ש╫¥
+            - listitem [ref=e199]: ╫פ╫ñ╫ó╫£ ╫נ╫¬ Cloud Translation API
+            - listitem [ref=e200]: ╫ª╫ץ╫¿ API Key ╫ס-Credentials
+            - listitem [ref=e201]: ╫פ╫ó╫¬╫º ╫ץ╫פ╫ף╫ס╫º ╫נ╫¬ ╫פ╫₧╫ñ╫¬╫ק ╫¢╫נ╫ƒ
+          - paragraph [ref=e202]: "≡ƒע░ ╫ó╫£╫ץ╫¬: 500,000 ╫¬╫ץ╫ץ╫ש╫¥ ╫¿╫נ╫⌐╫ץ╫á╫ש╫¥ ╫ס╫ק╫ץ╫ף╫⌐ ╫ק╫ש╫á╫¥, ╫£╫נ╫ק╫¿ ╫₧╫¢╫ƒ $20 ╫£╫₧╫ש╫£╫ש╫ץ╫ƒ ╫¬╫ץ╫ץ╫ש╫¥"
+      - generic [ref=e203]:
+        - generic [ref=e204]:
+          - img [ref=e205]
+          - heading "╫פ╫ע╫ף╫¿╫ץ╫¬ ╫ף╫ú ╫ó╫ץ╫ס╫ף" [level=2] [ref=e207]
+        - paragraph [ref=e208]: ╫פ╫ע╫ף╫¿ ╫¢╫₧╫פ ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫ש╫ץ╫ª╫ע╫ץ ╫ס╫¢╫£ ╫ñ╫ó╫¥ ╫ס╫ף╫ú ╫פ╫נ╫ש╫⌐╫ץ╫¿ ╫⌐╫£ ╫פ╫ó╫ץ╫ס╫ף. ╫¢╫נ╫⌐╫¿ ╫פ╫ó╫ץ╫ס╫ף ╫₧╫⌐╫£╫ש╫¥ ╫₧╫⌐╫ש╫₧╫פ, ╫פ╫ס╫נ╫פ ╫ס╫¬╫ץ╫¿ ╫₧╫ץ╫ñ╫ש╫ó╫פ ╫נ╫ץ╫ר╫ץ╫₧╫ר╫ש╫¬.
+        - generic [ref=e209]:
+          - generic [ref=e210]: ╫₧╫í╫ñ╫¿ ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫ס╫ף╫ú
+          - generic [ref=e211]:
+            - spinbutton [ref=e212]: "5"
+            - generic [ref=e213]: ╫₧╫⌐╫ש╫₧╫ץ╫¬
+          - paragraph [ref=e214]: "╫ס╫¿╫ש╫¿╫¬ ╫₧╫ק╫ף╫£: 3 ╫₧╫⌐╫ש╫₧╫ץ╫¬. ╫ר╫ץ╫ץ╫ק ╫₧╫ץ╫¬╫¿: 1-20 ╫₧╫⌐╫ש╫₧╫ץ╫¬."
+        - generic [ref=e215]:
+          - paragraph [ref=e216]: "Γה╣∩╕ן ╫נ╫ש╫ת ╫צ╫פ ╫ó╫ץ╫ס╫ף:"
+          - list [ref=e217]:
+            - listitem [ref=e218]: ╫פ╫ó╫ץ╫ס╫ף ╫¿╫ץ╫נ╫פ ╫¢╫ñ╫¬╫ץ╫¿ "╫º╫ש╫ס╫£╫¬╫ש ≡ƒסם" ╫£╫ñ╫á╫ש ╫⌐╫פ╫ץ╫נ ╫ש╫¢╫ץ╫£ ╫£╫í╫₧╫ƒ ╫₧╫⌐╫ש╫₧╫ץ╫¬
+            - listitem [ref=e219]: ╫£╫נ╫ק╫¿ ╫£╫ק╫ש╫ª╫פ ╫ó╫£ "╫º╫ש╫ס╫£╫¬╫ש", ╫₧╫ץ╫ª╫ע╫ץ╫¬ ╫ó╫ף 5 ╫₧╫⌐╫ש╫₧╫ץ╫¬
+            - listitem [ref=e220]: ╫¢╫נ╫⌐╫¿ ╫₧╫⌐╫ש╫₧╫פ ╫פ╫ץ╫⌐╫£╫₧╫פ, ╫פ╫₧╫⌐╫ש╫₧╫פ ╫פ╫ס╫נ╫פ ╫ס╫¬╫ץ╫¿ ╫₧╫ץ╫ñ╫ש╫ó╫פ
+            - listitem [ref=e221]: ╫₧╫ó╫¿╫¢╫¬ ╫¬╫ץ╫¿ ╫ף╫ש╫á╫₧╫ש╫¬ - ╫¬╫₧╫ש╫ף ╫ש╫⌐ ╫ó╫ף 5 ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫ñ╫ó╫ש╫£╫ץ╫¬
+      - generic [ref=e222]:
+        - generic [ref=e223]:
+          - img [ref=e224]
+          - heading "╫פ╫ע╫ף╫¿╫ץ╫¬ ╫ש╫ץ╫¥ ╫ó╫ס╫ץ╫ף╫פ" [level=2] [ref=e226]
+        - paragraph [ref=e227]: ╫⌐╫ó╫¬ ╫í╫ש╫ץ╫¥ ╫ש╫ץ╫¥ ╫פ╫ó╫ס╫ץ╫ף╫פ. ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫ק╫ף-╫ñ╫ó╫₧╫ש╫ץ╫¬ ╫⌐╫á╫ץ╫ª╫¿╫ץ╫¬ ╫£╫ש╫ץ╫¥ ╫₧╫í╫ץ╫ש╫¥ ╫ש╫ש╫ק╫⌐╫ס╫ץ ╫ס╫נ╫ש╫ק╫ץ╫¿ ╫¿╫º ╫נ╫ק╫¿╫ש ╫⌐╫ó╫פ ╫צ╫ץ.
+        - generic [ref=e228]:
+          - generic [ref=e229]: ╫⌐╫ó╫¬ ╫¬╫ק╫ש╫£╫¬ ╫ש╫ץ╫¥
+          - paragraph [ref=e230]: ╫ס╫⌐╫ó╫פ ╫צ╫ץ ╫ש╫⌐╫£╫ק╫ץ ╫£╫ó╫ץ╫ס╫ף╫ש╫¥ ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫פ╫ש╫ץ╫¥ ╫ף╫¿╫ת WhatsApp (╫נ╫│-╫פ╫│)
+          - textbox [ref=e232]: 08:00
+          - paragraph [ref=e233]: "╫ס╫¿╫ש╫¿╫¬ ╫₧╫ק╫ף╫£: 08:00"
+        - generic [ref=e234]:
+          - generic [ref=e235]: ╫⌐╫ó╫¬ ╫í╫ש╫ץ╫¥ ╫ש╫ץ╫¥
+          - textbox [active] [ref=e237]: 18:30
+          - paragraph [ref=e238]: "╫ס╫¿╫ש╫¿╫¬ ╫₧╫ק╫ף╫£: 18:00"
+      - generic [ref=e239]:
+        - generic [ref=e240]:
+          - img [ref=e241]
+          - heading "╫פ╫ע╫ף╫¿╫ץ╫¬ ╫₧╫á╫פ╫£" [level=2] [ref=e243]
+        - paragraph [ref=e244]: ╫ס╫ק╫¿ ╫נ╫¬ ╫פ╫ó╫ץ╫ס╫ף ╫⌐╫₧╫⌐╫₧╫⌐ ╫¢╫₧╫á╫פ╫£. ╫פ╫ñ╫ש╫£╫ר╫¿ "╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫₧╫á╫פ╫£" ╫ס╫ש╫ץ╫¥ ╫⌐╫£╫ש ╫ש╫ª╫ש╫ע ╫¿╫º ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫פ╫₧╫⌐╫ץ╫ש╫¢╫ץ╫¬ ╫נ╫£╫ש╫ץ.
+        - generic [ref=e245]:
+          - generic [ref=e246]: ╫פ╫₧╫á╫פ╫£
+          - combobox [ref=e248]:
+            - option "Γאפ ╫£╫£╫נ ╫₧╫á╫פ╫£ Γאפ"
+            - option "סהר" [selected]
+            - option "עדן קנדי"
+            - option "קטיה"
+          - paragraph [ref=e249]: ╫פ╫₧╫á╫פ╫£ ╫פ╫á╫ס╫ק╫¿ ╫ש╫פ╫ש╫פ ╫ס╫¿╫ש╫¿╫¬ ╫פ╫₧╫ק╫ף╫£ ╫ס╫ó╫¬ ╫פ╫ץ╫í╫ñ╫¬ ╫₧╫⌐╫ש╫₧╫פ ╫₧"╫פ╫ש╫ץ╫¥ ╫⌐╫£╫ש"
+      - generic [ref=e250]:
+        - generic [ref=e251]:
+          - img [ref=e252]
+          - heading "╫á╫ש╫פ╫ץ╫£ ╫á╫¬╫ץ╫á╫ש╫¥" [level=2] [ref=e254]
+        - paragraph [ref=e255]: ╫¢╫£╫ש╫¥ ╫£╫á╫ש╫פ╫ץ╫£ ╫á╫¬╫ץ╫á╫ש ╫פ╫₧╫ó╫¿╫¢╫¬. ╫פ╫⌐╫¬╫₧╫⌐ ╫ס╫צ╫פ╫ש╫¿╫ץ╫¬ - ╫ñ╫ó╫ץ╫£╫ץ╫¬ ╫נ╫£╫ץ ╫₧╫⌐╫ñ╫ש╫ó╫ץ╫¬ ╫ó╫£ ╫¢╫£ ╫פ╫á╫¬╫ץ╫á╫ש╫¥.
+        - generic [ref=e256]:
+          - button "╫ר╫ó╫ƒ ╫á╫¬╫ץ╫á╫ש ╫ף╫₧╫פ" [disabled] [ref=e257]:
+            - img [ref=e258]
+            - text: ╫ר╫ó╫ƒ ╫á╫¬╫ץ╫á╫ש ╫ף╫₧╫פ
+          - button "╫á╫º╫פ ╫á╫¬╫ץ╫á╫ש╫¥" [disabled] [ref=e260]:
+            - img [ref=e261]
+            - text: ╫á╫º╫פ ╫á╫¬╫ץ╫á╫ש╫¥
+        - generic [ref=e263]:
+          - paragraph [ref=e264]: "Γתá∩╕ן ╫נ╫צ╫פ╫¿╫פ:"
+          - list [ref=e265]:
+            - listitem [ref=e266]:
+              - strong [ref=e267]: ╫ר╫ó╫ƒ ╫á╫¬╫ץ╫á╫ש ╫ף╫₧╫פ
+              - text: "- ╫₧╫ץ╫ק╫º ╫נ╫¬ ╫¢╫£ ╫פ╫á╫¬╫ץ╫á╫ש╫¥ ╫פ╫º╫ש╫ש╫₧╫ש╫¥ ╫ץ╫₧╫ק╫£╫ש╫ú ╫נ╫ץ╫¬╫¥ ╫ס╫á╫¬╫ץ╫á╫ש ╫ף╫₧╫פ ╫£╫ס╫ף╫ש╫º╫ץ╫¬"
+            - listitem [ref=e268]:
+              - strong [ref=e269]: ╫á╫º╫פ ╫á╫¬╫ץ╫á╫ש╫¥
+              - text: "- ╫₧╫ץ╫ק╫º ╫נ╫¬ ╫¢╫£ ╫פ╫á╫¬╫ץ╫á╫ש╫¥ ╫£╫ª╫₧╫ש╫¬╫ץ╫¬. ╫ñ╫ó╫ץ╫£╫פ ╫צ╫ץ ╫נ╫ש╫á╫פ ╫פ╫ñ╫ש╫¢╫פ!"
+          - paragraph [ref=e270]: ≡ƒפע ╫ñ╫ó╫ץ╫£╫ץ╫¬ ╫נ╫£╫ץ ╫₧╫ץ╫⌐╫ס╫¬╫ץ╫¬ ╫ס╫í╫ס╫ש╫ס╫¬ ╫פ╫ñ╫¿╫ץ╫ף╫º╫⌐╫ƒ ╫£╫₧╫á╫ש╫ó╫¬ ╫₧╫ק╫ש╫º╫¬ ╫á╫¬╫ץ╫á╫ש╫¥ ╫ס╫ר╫ó╫ץ╫¬
+  - region "Notifications Alt+T"
+```

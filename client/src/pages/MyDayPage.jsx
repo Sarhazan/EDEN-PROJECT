@@ -445,7 +445,6 @@ export default function MyDayPage() {
     // 4. Tasks by status (today only, excluding completed)
     const newTasks = todayTasks.filter((t) => t.status === 'draft').length;
     const sentTasks = todayTasks.filter((t) => t.status === 'sent').length;
-    const inProgressTasks = todayTasks.filter((t) => t.status === 'in_progress').length;
 
     // 5. Count completed tasks separately for completion rate
     let completedTasks = tasks.filter((t) =>
@@ -476,7 +475,6 @@ export default function MyDayPage() {
       byStatus: {
         new: newTasks,
         sent: sentTasks,
-        inProgress: inProgressTasks,
         completed: completedCount
       },
       completed: completedCount,
@@ -923,7 +921,6 @@ export default function MyDayPage() {
             const items = [
               { label: 'חדש', value: stats.byStatus.new, color: '#6B7280' },
               { label: 'נשלח', value: stats.byStatus.sent, color: '#3B82F6' },
-              { label: 'בביצוע', value: stats.byStatus.inProgress, color: '#EAB308' },
               { label: 'הושלם', value: stats.byStatus.completed, color: '#22C55E' },
             ].filter(i => i.value > 0);
             const total = items.reduce((s, i) => s + i.value, 0);
@@ -1276,7 +1273,6 @@ export default function MyDayPage() {
                   <>
                     <option value="draft">חדש</option>
                     <option value="sent">נשלח</option>
-                    <option value="in_progress">בביצוע</option>
                     <option value="not_completed">לא בוצע</option>
                   </>
                 )}
@@ -1471,7 +1467,6 @@ export default function MyDayPage() {
                         <>
                           <option value="draft">חדש</option>
                           <option value="sent">נשלח</option>
-                          <option value="in_progress">בביצוע</option>
                           <option value="not_completed">לא בוצע</option>
                         </>
                       )}
@@ -1643,7 +1638,6 @@ export default function MyDayPage() {
                       <>
                         <option value="draft">חדש</option>
                         <option value="sent">נשלח</option>
-                        <option value="in_progress">בביצוע</option>
                         <option value="not_completed">לא בוצע</option>
                       </>
                     )}
