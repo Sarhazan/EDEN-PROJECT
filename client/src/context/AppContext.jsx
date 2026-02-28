@@ -38,12 +38,10 @@ export function AppProvider({ children }) {
     const socket = io(SOCKET_URL);
 
     socket.on('connect', () => {
-      console.log('WebSocket connected');
       setConnectionStatus('connected');
     });
 
     socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
       setConnectionStatus('disconnected');
     });
 
@@ -54,14 +52,11 @@ export function AppProvider({ children }) {
 
     // Listen for task created
     socket.on('task:created', (data) => {
-      console.log('Task created via WebSocket:', data.task);
       setTasks(prevTasks => [...prevTasks, data.task]);
     });
 
     // Listen for task updated
     socket.on('task:updated', async (data) => {
-      console.log('✅ Task updated via WebSocket:', data.task);
-      console.log('   Task ID:', data.task.id, '| New Status:', data.task.status);
 
       // Fetch attachments for updated task
       try {
@@ -77,7 +72,6 @@ export function AppProvider({ children }) {
         const updated = prevTasks.map(task =>
           task.id === data.task.id ? data.task : task
         );
-        console.log('   Tasks after update:', updated.length, 'tasks');
         return updated;
       });
 
@@ -87,7 +81,6 @@ export function AppProvider({ children }) {
 
     // Listen for task deleted
     socket.on('task:deleted', (data) => {
-      console.log('Task deleted via WebSocket:', data.task);
       setTasks(prevTasks =>
         prevTasks.filter(task => task.id !== data.task.id)
       );
@@ -239,13 +232,9 @@ export function AppProvider({ children }) {
 
   // Employees
   const fetchEmployees = async () => {
-    console.log('[DEBUG fetchEmployees] Starting fetch...');
     const response = await fetch(`${API_URL}/employees`);
     const data = await response.json();
-    console.log('[DEBUG fetchEmployees] Received data:', data);
-    console.log('[DEBUG fetchEmployees] Sample employee:', data[0]);
     setEmployees(data);
-    console.log('[DEBUG fetchEmployees] State updated');
   };
 
   const addEmployee = async (employee) => {
@@ -259,7 +248,6 @@ export function AppProvider({ children }) {
   };
 
   const updateEmployee = async (id, employee) => {
-    console.log('[DEBUG updateEmployee] Updating employee', id, 'with data:', employee);
     const response = await fetch(`${API_URL}/employees/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -267,9 +255,7 @@ export function AppProvider({ children }) {
     });
     if (!response.ok) throw new Error('שגיאה בעדכון עובד');
     const updatedEmployee = await response.json();
-    console.log('[DEBUG updateEmployee] Server returned:', updatedEmployee);
     await fetchEmployees();
-    console.log('[DEBUG updateEmployee] fetchEmployees completed');
   };
 
   const deleteEmployee = async (id) => {

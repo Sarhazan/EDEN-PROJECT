@@ -114,7 +114,6 @@ export default function TaskConfirmationPage() {
         setTasksPerPage(parseInt(response.data.value, 10));
       }
     } catch (err) {
-      console.log('Using default tasks per page:', DEFAULT_TASKS_PER_PAGE);
     }
   };
 

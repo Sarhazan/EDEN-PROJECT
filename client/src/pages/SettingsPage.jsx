@@ -58,27 +58,23 @@ export default function SettingsPage() {
     setSocket(newSocket);
 
     newSocket.on('whatsapp:qr', ({ qrDataUrl }) => {
-      console.log('Received QR code via Socket.IO');
       setQrCode(qrDataUrl);  // qrDataUrl is already a data URL, use directly in img src
       setWhatsappStatus(prev => ({ ...prev, needsAuth: true, isReady: false }));
       setSuccessMessage('סרוק את הקוד בטלפון שלך');
     });
 
     newSocket.on('whatsapp:authenticated', () => {
-      console.log('WhatsApp authenticated - initializing session...');
       setQrCode(null); // Hide QR immediately
       setSuccessMessage('✓ QR נסרק! מאתחל את החיבור...');
     });
 
     newSocket.on('whatsapp:ready', () => {
-      console.log('WhatsApp ready via Socket.IO');
       setQrCode(null);
       setWhatsappStatus({ isReady: true, needsAuth: false, isInitialized: true });
       setSuccessMessage('מחובר לוואטסאפ בהצלחה!');
     });
 
     newSocket.on('whatsapp:disconnected', ({ reason }) => {
-      console.log('WhatsApp disconnected:', reason);
       setQrCode(null);
       setWhatsappStatus({ isReady: false, needsAuth: false, isInitialized: false });
       if (reason !== 'manual') {
@@ -88,7 +84,6 @@ export default function SettingsPage() {
 
     // Loading progress during initialization
     newSocket.on('whatsapp:loading', ({ percent, message }) => {
-      console.log(`WhatsApp loading: ${percent}% - ${message}`);
       setSuccessMessage(`טוען WhatsApp: ${percent}%`);
     });
 

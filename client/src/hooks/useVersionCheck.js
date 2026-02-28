@@ -24,7 +24,6 @@ export function useVersionCheck() {
       }
     } catch (error) {
       // Silently fail - version check is not critical
-      console.log('Version check failed:', error.message);
     }
   }, [currentVersion]);
 
