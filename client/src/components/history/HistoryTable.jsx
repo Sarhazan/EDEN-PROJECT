@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import Modal from '../shared/Modal';
+import { BACKEND_URL } from '../../config';
 
 export default function HistoryTable({ tasks, loading }) {
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -13,11 +14,6 @@ export default function HistoryTable({ tasks, loading }) {
   if (tasks.length === 0) {
     return <div className="p-8 text-center text-gray-500">לא נמצאו משימות</div>;
   }
-
-  // Backend URL for static assets (uploads) - without /api suffix
-  // In production: VITE_BACKEND_URL="" (empty string) for same-origin requests
-  // In development: VITE_BACKEND_URL not set, defaults to localhost:3002
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:3002';
 
   return (
     <>

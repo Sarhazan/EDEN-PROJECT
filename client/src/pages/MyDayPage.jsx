@@ -9,10 +9,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import '../components/forms/datepicker-custom.css';
 import axios from 'axios';
 import { Resizable } from 're-resizable';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
-const BACKEND_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3002/api').replace('/api', '');
-const SHOW_DATA_CONTROLS = import.meta.env.DEV || import.meta.env.VITE_ENV === 'test' || import.meta.env.VITE_ENV === 'local';
+import { API_URL, BACKEND_URL, SHOW_DATA_CONTROLS, LS_KEYS } from '../config';
 
 export default function MyDayPage() {
   const { tasks, systems, employees, locations, setIsTaskModalOpen, setEditingTask, updateTaskStatus, seedData, clearData } = useApp();
@@ -34,19 +31,19 @@ export default function MyDayPage() {
 
   // Star filter state from localStorage
   const [starFilter, setStarFilter] = useState(() => {
-    return localStorage.getItem('starFilter') === 'true';
+    return localStorage.getItem(LS_KEYS.STAR_FILTER) === 'true';
   });
 
   // Manager filter state — default ON
   const [managerFilter, setManagerFilter] = useState(() => {
-    const stored = localStorage.getItem('myDayManagerFilter');
+    const stored = localStorage.getItem(LS_KEYS.MANAGER_FILTER);
     return stored === null ? true : stored === 'true'; // default true for new users
   });
   const [managerEmployeeId, setManagerEmployeeId] = useState(null);
 
   // Column widths state with localStorage initialization
   const [columnWidths, setColumnWidths] = useState(() => {
-    const stored = localStorage.getItem('myDayColumnWidths');
+    const stored = localStorage.getItem(LS_KEYS.COLUMN_WIDTHS);
     if (stored) {
       try {
         return JSON.parse(stored);
@@ -61,7 +58,7 @@ export default function MyDayPage() {
   // Listen to localStorage changes for star filter (cross-tab sync) and custom event (same-tab sync)
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === 'starFilter') {
+      if (e.key === LS_KEYS.STAR_FILTER) {
         setStarFilter(e.newValue === 'true');
       }
     };
@@ -140,7 +137,7 @@ export default function MyDayPage() {
   // Debounced localStorage save for column widths
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      localStorage.setItem('myDayColumnWidths', JSON.stringify(columnWidths));
+      localStorage.setItem(LS_KEYS.COLUMN_WIDTHS, JSON.stringify(columnWidths));
     }, 100); // 100ms debounce
 
     return () => clearTimeout(timeoutId);
@@ -149,7 +146,7 @@ export default function MyDayPage() {
   // Load manager employee ID — from localStorage first (instant), then sync from DB
   useEffect(() => {
     // Instant load from localStorage
-    const cached = localStorage.getItem('manager_employee_id');
+    const cached = localStorage.getItem(LS_KEYS.MANAGER_EMPLOYEE_ID);
     if (cached) setManagerEmployeeId(parseInt(cached, 10));
 
     // Sync from DB (source of truth)
@@ -158,7 +155,7 @@ export default function MyDayPage() {
         if (res.data.value) {
           const id = parseInt(res.data.value, 10);
           setManagerEmployeeId(id);
-          localStorage.setItem('manager_employee_id', res.data.value);
+          localStorage.setItem(LS_KEYS.MANAGER_EMPLOYEE_ID, res.data.value);
         }
       })
       .catch(() => {});
@@ -176,7 +173,7 @@ export default function MyDayPage() {
   const toggleManagerFilter = () => {
     setManagerFilter(prev => {
       const next = !prev;
-      localStorage.setItem('myDayManagerFilter', String(next));
+      localStorage.setItem(LS_KEYS.MANAGER_FILTER, String(next));
       return next;
     });
   };
@@ -213,7 +210,7 @@ export default function MyDayPage() {
   const handleResetColumnWidths = () => {
     const defaultWidths = { left: '60%', right: 'auto' };
     setColumnWidths(defaultWidths);
-    localStorage.setItem('myDayColumnWidths', JSON.stringify(defaultWidths));
+    localStorage.setItem(LS_KEYS.COLUMN_WIDTHS, JSON.stringify(defaultWidths));
   };
 
   // Handle filter category change (reset value when category changes)

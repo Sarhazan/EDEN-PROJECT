@@ -3,8 +3,7 @@ import { FaPlus, FaEdit, FaTrash, FaMapMarkerAlt, FaUpload, FaSpinner } from 're
 import { useApp } from '../context/AppContext';
 import Modal from '../components/shared/Modal';
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+import { API_URL } from '../config';
 
 export default function LocationsPage() {
   const { locations, addLocation, updateLocation, deleteLocation, loading } = useApp();

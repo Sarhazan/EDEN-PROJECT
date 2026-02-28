@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding, FaEnvelope, FaFileAlt, FaMoneyBillWave } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
+import { LS_KEYS } from '../../config';
 
 export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation, onAddBuilding, onAddTenant }) {
   const { connectionStatus, logout, tasks } = useApp();
@@ -40,7 +41,7 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
 
   // Initialize from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('starFilter');
+    const saved = localStorage.getItem(LS_KEYS.STAR_FILTER);
     if (saved !== null) setStarFilter(saved === 'true');
   }, []);
 
@@ -48,7 +49,7 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
   const handleStarFilterToggle = () => {
     const newValue = !starFilter;
     setStarFilter(newValue);
-    localStorage.setItem('starFilter', newValue.toString());
+    localStorage.setItem(LS_KEYS.STAR_FILTER, newValue.toString());
     // Dispatch custom event to notify same-tab components
     window.dispatchEvent(new CustomEvent('starFilterChanged', { detail: { value: newValue } }));
   };

@@ -3,8 +3,7 @@ import { useHistoryFilters } from '../hooks/useHistoryFilters';
 import HistoryFilters from '../components/history/HistoryFilters';
 import HistoryStats from '../components/history/HistoryStats';
 import HistoryTable from '../components/history/HistoryTable';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+import { API_URL, LS_KEYS } from '../config';
 
 export default function HistoryPage() {
   const { filters, updateFilter, updateFilters, clearFilters } = useHistoryFilters();
@@ -17,13 +16,13 @@ export default function HistoryPage() {
 
   // Star filter state from localStorage
   const [starFilter, setStarFilter] = useState(() => {
-    return localStorage.getItem('starFilter') === 'true';
+    return localStorage.getItem(LS_KEYS.STAR_FILTER) === 'true';
   });
 
   // Listen to localStorage changes for star filter (cross-tab sync) and custom event (same-tab sync)
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === 'starFilter') {
+      if (e.key === LS_KEYS.STAR_FILTER) {
         setStarFilter(e.newValue === 'true');
       }
     };

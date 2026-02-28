@@ -3,9 +3,7 @@ import { FaEdit, FaTrash, FaPaperPlane, FaRedo, FaCheck, FaMapMarkerAlt, FaBuild
 import { useApp } from '../../context/AppContext';
 import { format, isToday } from 'date-fns';
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:3002';
+import { API_URL, BACKEND_URL } from '../../config';
 
 const priorityColors = {
   urgent: 'bg-rose-50 text-rose-700',

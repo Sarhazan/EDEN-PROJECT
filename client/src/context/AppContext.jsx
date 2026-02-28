@@ -1,16 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { API_URL, SOCKET_URL, LS_KEYS } from '../config';
 
 const AppContext = createContext();
-
-// In production, use relative URLs (same origin). In development, use localhost
-const API_URL = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL
-  : 'http://localhost:3002/api';
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
-  ? import.meta.env.VITE_SOCKET_URL
-  : (import.meta.env.PROD ? window.location.origin : 'http://localhost:3002');
 
 export function AppProvider({ children }) {
   const [tasks, setTasks] = useState([]);
@@ -27,11 +19,11 @@ export function AppProvider({ children }) {
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     // Check localStorage on initial load
-    return localStorage.getItem('isAuthenticated') === 'true';
+    return localStorage.getItem(LS_KEYS.IS_AUTHENTICATED) === 'true';
   });
   const [authRole, setAuthRole] = useState(() => {
     // site | hq
-    return localStorage.getItem('authRole') || null;
+    return localStorage.getItem(LS_KEYS.AUTH_ROLE) || null;
   });
   const socketRef = useRef(null);
 
@@ -470,15 +462,15 @@ export function AppProvider({ children }) {
   const login = (role = 'site') => {
     setIsAuthenticated(true);
     setAuthRole(role);
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('authRole', role);
+    localStorage.setItem(LS_KEYS.IS_AUTHENTICATED, 'true');
+    localStorage.setItem(LS_KEYS.AUTH_ROLE, role);
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setAuthRole(null);
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('authRole');
+    localStorage.removeItem(LS_KEYS.IS_AUTHENTICATED);
+    localStorage.removeItem(LS_KEYS.AUTH_ROLE);
   };
 
   const value = {

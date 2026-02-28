@@ -2,7 +2,7 @@
 import { useApp } from '../context/AppContext';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+import { API_URL, LS_KEYS } from '../config';
 import { FaPlus, FaEdit, FaTrash, FaUserTie, FaUserShield, FaCalendarAlt } from 'react-icons/fa';
 import Modal from '../components/shared/Modal';
 import EmployeeForm from '../components/forms/EmployeeForm';
@@ -68,7 +68,7 @@ export default function EmployeesPage() {
   const [calendarEmployee, setCalendarEmployee] = useState(null);
 
   useEffect(() => {
-    const cached = localStorage.getItem('manager_employee_id');
+    const cached = localStorage.getItem(LS_KEYS.MANAGER_EMPLOYEE_ID);
     if (cached) setManagerEmployeeId(Number(cached));
 
     axios.get(`${API_URL}/accounts/settings/manager_employee_id`)

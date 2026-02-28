@@ -3,10 +3,7 @@ import { FaWhatsapp, FaCheck, FaTimes, FaGoogle, FaKey, FaPlug, FaSpinner, FaDat
 import axios from 'axios';
 import { useApp } from '../context/AppContext';
 import { io } from 'socket.io-client';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
-// Socket.IO connects to base URL without /api path
-const SOCKET_URL = API_URL.replace(/\/api$/, '');
+import { API_URL, SOCKET_URL, LS_KEYS } from '../config';
 // Environment flags
 const IS_TEST_ENV = import.meta.env.VITE_ENV === 'test';
 const IS_PRODUCTION_ENV = import.meta.env.PROD && import.meta.env.VITE_ENV !== 'test' && import.meta.env.VITE_ENV !== 'local';
@@ -258,9 +255,9 @@ export default function SettingsPage() {
       await axios.put(`${API_URL}/accounts/settings/manager_employee_id`, { value: newValue });
       // Sync to localStorage so MyDay picks it up immediately (even without remount)
       if (newValue) {
-        localStorage.setItem('manager_employee_id', newValue);
+        localStorage.setItem(LS_KEYS.MANAGER_EMPLOYEE_ID, newValue);
       } else {
-        localStorage.removeItem('manager_employee_id');
+        localStorage.removeItem(LS_KEYS.MANAGER_EMPLOYEE_ID);
       }
       window.dispatchEvent(new CustomEvent('manager:changed', { detail: { id: newValue } }));
       setManagerSaved(true);

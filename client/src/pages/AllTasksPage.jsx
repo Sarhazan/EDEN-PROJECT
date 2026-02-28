@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import TaskCard from '../components/shared/TaskCard';
+import { LS_KEYS } from '../config';
 
 export default function AllTasksPage() {
   const { tasks, setIsTaskModalOpen, setEditingTask, deleteTaskSeries } = useApp();
@@ -8,13 +9,13 @@ export default function AllTasksPage() {
 
   // Star filter state from localStorage
   const [starFilter, setStarFilter] = useState(() => {
-    return localStorage.getItem('starFilter') === 'true';
+    return localStorage.getItem(LS_KEYS.STAR_FILTER) === 'true';
   });
 
   // Listen to localStorage changes for star filter (cross-tab sync) and custom event (same-tab sync)
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === 'starFilter') {
+      if (e.key === LS_KEYS.STAR_FILTER) {
         setStarFilter(e.newValue === 'true');
       }
     };

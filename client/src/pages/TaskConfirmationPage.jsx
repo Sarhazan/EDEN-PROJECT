@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { FaCheckCircle, FaClock, FaExclamationTriangle, FaCheckDouble, FaCamera, FaTimes, FaPaperPlane, FaThumbsUp, FaListOl } from 'react-icons/fa';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+import { API_URL } from '../config';
 const DEFAULT_TASKS_PER_PAGE = 3;
 
 const UI_TEXT = {

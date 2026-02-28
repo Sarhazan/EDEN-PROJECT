@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-
-const API_URL = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL
-  : 'http://localhost:3002/api';
+import { API_URL } from '../config';
 
 export default function HQFormsPage() {
   const [items, setItems] = useState([]);

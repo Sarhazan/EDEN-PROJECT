@@ -11,10 +11,10 @@ import TaskForm from '../forms/TaskForm';
 import QuickTaskModal from '../forms/QuickTaskModal';
 import { useApp } from '../../context/AppContext';
 import { toast } from 'react-toastify';
+import { API_URL } from '../../config';
 
 const DEFAULT_HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00–21:00
 const TIME_COL_WIDTH = 80; // px for left time label column
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 // ── Status colour maps ────────────────────────────────────────────────────────
 const STATUS_COLORS = {

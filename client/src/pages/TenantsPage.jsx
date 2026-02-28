@@ -3,10 +3,7 @@ import { useApp } from '../context/AppContext';
 import { FaPlus, FaEdit, FaTrash, FaUsers } from 'react-icons/fa';
 import Modal from '../components/shared/Modal';
 import TenantForm from '../components/forms/TenantForm';
-
-const API_URL = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL
-  : 'http://localhost:3002/api';
+import { API_URL } from '../config';
 
 export default function TenantsPage() {
   const { tenants, buildings, deleteTenant } = useApp();

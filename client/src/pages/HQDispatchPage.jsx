@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../components/forms/datepicker-custom.css';
-
-const API_URL = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL
-  : 'http://localhost:3002/api';
+import { API_URL } from '../config';
 
 const parseISODate = (value) => {
   if (!value) return null;

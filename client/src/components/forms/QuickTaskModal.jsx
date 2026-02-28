@@ -7,8 +7,7 @@ import { FaTimes } from 'react-icons/fa';
 import DateChip from './DateChip';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+import { API_URL } from '../../config';
 
 const getIsraelDateParts = (d = new Date()) => {
   const parts = new Intl.DateTimeFormat('en-CA', {

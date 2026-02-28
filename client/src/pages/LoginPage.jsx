@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FaUser, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { LS_KEYS } from '../config';
 
 export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -23,8 +24,8 @@ export default function LoginPage({ onLogin }) {
     // Check hardcoded credentials
     if (username === 'eden' && password === 'eden100') {
       // Success - save to localStorage and call onLogin
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('authRole', 'site');
+      localStorage.setItem(LS_KEYS.IS_AUTHENTICATED, 'true');
+      localStorage.setItem(LS_KEYS.AUTH_ROLE, 'site');
       onLogin('site');
     } else {
       setError('שם משתמש או סיסמה שגויים');

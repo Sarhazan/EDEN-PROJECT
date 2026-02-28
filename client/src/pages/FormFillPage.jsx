@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-
-const API_URL = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL
-  : 'http://localhost:3002/api';
+import { API_URL } from '../config';
 
 export default function FormFillPage() {
   const { id } = useParams();
