@@ -3,5 +3,6 @@
   "taskListHeader": "Tasks for {{date}}",
   "time": "Time",
   "description": "Description",
-  "clickToView": "Click the link below to view and confirm"
+  "clickToView": "Click the link below to view and confirm",
+  "extraTasksHeader": "📋 Additional tasks:"
 }

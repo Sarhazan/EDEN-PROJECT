@@ -11,6 +11,7 @@ import axios from 'axios';
 import { Resizable } from 're-resizable';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+const BACKEND_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3002/api').replace('/api', '');
 const SHOW_DATA_CONTROLS = import.meta.env.DEV || import.meta.env.VITE_ENV === 'test' || import.meta.env.VITE_ENV === 'local';
 
 export default function MyDayPage() {
@@ -21,6 +22,7 @@ export default function MyDayPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const [timelineRangeDays, setTimelineRangeDays] = useState(7);
+  const [expandedPendingIds, setExpandedPendingIds] = useState(new Set());
   const [highlightTaskId, setHighlightTaskId] = useState(null);
   const [pendingNavigateTaskId, setPendingNavigateTaskId] = useState(null);
   const navigateRetryRef = useRef(0);
@@ -247,6 +249,9 @@ export default function MyDayPage() {
 
       // Must have employee
       if (!task.employee_id) return false;
+
+      // No-time tasks go to extraTasks only, not to the timed list
+      if (!task.start_time || task.start_time === '00:00') return false;
 
       // Check if task time hasn't passed
       if (isSameDay(new Date(task.start_date), selectedDate)) {
@@ -1703,20 +1708,63 @@ export default function MyDayPage() {
             <span className="text-orange-600 font-bold text-sm">⏳ ממתינות לאישור ({pendingApprovalTasks.length})</span>
           </div>
           <div className="space-y-2">
-            {pendingApprovalTasks.map(task => (
-              <div key={task.id} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-sm">
-                <button
-                  onClick={() => handleApproveTask(task.id)}
-                  className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors font-medium flex-shrink-0"
-                >
-                  ✓ אשר
-                </button>
-                <div className="text-right">
-                  <div className="text-sm font-semibold">{task.title}</div>
-                  <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>
+            {pendingApprovalTasks.map(task => {
+              const isExpanded = expandedPendingIds.has(task.id);
+              const hasDetails = task.completion_note || (task.attachments && task.attachments.filter(a => a.file_type === 'image').length > 0);
+              return (
+                <div key={task.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  {/* Row */}
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <button
+                      onClick={() => handleApproveTask(task.id)}
+                      className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors font-medium flex-shrink-0"
+                    >
+                      ✓ אשר
+                    </button>
+                    <div className="flex-1 text-right min-w-0">
+                      <div className="text-sm font-semibold truncate">{task.title}</div>
+                      <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>
+                    </div>
+                    {hasDetails && (
+                      <button
+                        onClick={() => setExpandedPendingIds(prev => {
+                          const next = new Set(prev);
+                          next.has(task.id) ? next.delete(task.id) : next.add(task.id);
+                          return next;
+                        })}
+                        className="text-gray-400 hover:text-gray-600 flex-shrink-0 text-xs px-2 py-1 rounded hover:bg-gray-100"
+                      >
+                        {isExpanded ? '▲' : '▼'} פרטים
+                      </button>
+                    )}
+                  </div>
+                  {/* Expandable details */}
+                  {isExpanded && hasDetails && (
+                    <div className="border-t border-orange-100 bg-orange-50/50 px-4 py-3 text-right space-y-2">
+                      {task.completion_note && (
+                        <div className="text-sm text-gray-700">
+                          <span className="font-semibold text-gray-500 text-xs">הערת עובד: </span>
+                          {task.completion_note}
+                        </div>
+                      )}
+                      {task.attachments && task.attachments.filter(a => a.file_type === 'image').length > 0 && (
+                        <div className="flex flex-wrap gap-2 justify-end">
+                          {task.attachments.filter(a => a.file_type === 'image').map((att, i) => (
+                            <img
+                              key={i}
+                              src={`${BACKEND_URL}${att.file_path}`}
+                              alt="תמונת השלמה"
+                              className="w-24 h-24 object-cover rounded-lg border border-orange-200 cursor-pointer hover:opacity-90"
+                              onClick={() => window.open(`${BACKEND_URL}${att.file_path}`, '_blank')}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

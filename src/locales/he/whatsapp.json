@@ -3,5 +3,6 @@
   "taskListHeader": "משימות ליום {{date}}",
   "time": "שעה",
   "description": "תיאור",
-  "clickToView": "לחץ על הקישור למטה כדי לצפות ולאשר"
+  "clickToView": "לחץ על הקישור למטה כדי לצפות ולאשר",
+  "extraTasksHeader": "📋 משימות נוספות:"
 }

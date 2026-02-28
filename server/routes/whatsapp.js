@@ -187,8 +187,8 @@ router.post('/send-bulk', async (req, res) => {
         stmt.run(token, employeeId, JSON.stringify(taskIds), expiresAt.toISOString());
         console.log('Token stored successfully');
 
-        // Sort tasks by time
-        const sortedTasks = tasks.sort((a, b) => a.start_time.localeCompare(b.start_time));
+        // Sort tasks by time (guard against null start_time)
+        const sortedTasks = tasks.sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
 
         // Generate HTML page with tasks
         console.log(`Generating HTML for employee ${name} with ${sortedTasks.length} tasks`);
@@ -244,7 +244,7 @@ router.post('/send-bulk', async (req, res) => {
         }
 
         if (extraTasks && extraTasks.length > 0) {
-          message += '\n📋 משימות נוספות:\n';
+          message += '\n' + t('extraTasksHeader') + '\n';
           for (const et of extraTasks) {
             let translatedTitle = et.title;
             let translatedDescription = et.description;
