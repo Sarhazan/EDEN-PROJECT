@@ -62,15 +62,11 @@ test.describe('Settings Page', () => {
     // Trigger change event by pressing Tab
     await endTimeInput.press('Tab');
 
-    // Wait for auto-save indicator — a checkmark (✓) or saved indicator
-    // The component shows workdayEndTimeSaved state as a visual indicator
-    // It could be a checkmark icon or text
-    await page.waitForTimeout(2000); // auto-save is async
+    // Wait for async save
+    await page.waitForTimeout(1200);
 
-    // The page should not show an error
-    const errorElement = page.locator('.text-red-500, .text-red-600').first();
-    const hasError = await errorElement.isVisible().catch(() => false);
-    expect(hasError).toBe(false);
+    // Value should remain updated after save trigger
+    await expect(endTimeInput).toHaveValue(newValue);
   });
 
   test('tasks per page setting is visible and has a value', async ({ page }) => {

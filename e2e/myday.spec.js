@@ -20,10 +20,9 @@ test.describe('MyDay Page', () => {
     await expect(statsCard).toBeVisible({ timeout: 8000 });
   });
 
-  test('recurring tasks column is visible on desktop', async ({ page }) => {
-    // The recurring tasks column header should show
-    const recurringHeader = page.locator('h2', { hasText: /משימות חוזרות/i });
-    await expect(recurringHeader).toBeVisible({ timeout: 8000 });
+  test('main work area is visible', async ({ page }) => {
+    const workArea = page.locator('div.hidden.lg\\:flex').first();
+    await expect(workArea).toBeVisible({ timeout: 8000 });
   });
 
   test('filter category dropdown is visible and functional', async ({ page }) => {

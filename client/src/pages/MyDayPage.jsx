@@ -272,7 +272,7 @@ export default function MyDayPage() {
       if (!task.start_time || task.start_time === '00:00') return false;
 
       // Check if task time hasn't passed
-      if (isSameDay(new Date(task.start_date), selectedDate)) {
+      if (isSameDay(selectedDate, new Date())) {
         // If it's today, check if time hasn't passed
         if (task.start_time < currentTime) return false;
       }
@@ -743,6 +743,10 @@ export default function MyDayPage() {
         if (!existing || task.id < existing.id) dedupMap.set(key, task);
       });
       tasksForDay = Array.from(dedupMap.values());
+      // Apply manager filter to match the recurring tasks list
+      if (filterCategory === 'manager' && managerEmployeeId) {
+        tasksForDay = tasksForDay.filter(t => Number(t.employee_id) === Number(managerEmployeeId));
+      }
       // Apply star filter
       if (starFilter) {
         tasksForDay = tasksForDay.filter((t) => t.is_starred === 1);
@@ -780,7 +784,7 @@ export default function MyDayPage() {
     const maxCount = Math.max(...timeline.map(d => d.count), 1);
 
     return { timeline, maxCount };
-  }, [tasks, starFilter, timelineRangeDays, todayOpenStats]);
+  }, [tasks, starFilter, timelineRangeDays, todayOpenStats, filterCategory, managerEmployeeId]);
 
   return (
     <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">

@@ -25,7 +25,7 @@ export function useBulkWhatsApp({
       if (!task.employee_id) return false;
       if (!task.start_time || task.start_time === '00:00') return false;
 
-      if (isSameDay(new Date(task.start_date), selectedDate) && task.start_time < currentTime) {
+      if (isSameDay(selectedDate, new Date()) && task.start_time < currentTime) {
         return false;
       }
 
