@@ -37,4 +37,19 @@ router.delete('/clear', blockInProduction, (req, res) => {
   }
 });
 
+// Trigger task autoclose for a specific date (test/dev only)
+router.post('/trigger-autoclose', blockInProduction, (req, res) => {
+  try {
+    const { autoCloseOpenTasksForDate } = require('../services/taskAutoClose');
+    const { db } = require('../database/schema');
+    // Reset the last-run flag so it can be triggered again today
+    db.prepare(`DELETE FROM settings WHERE key = 'task_autoclose_last_run_date'`).run();
+    const date = req.body.date || new Date().toISOString().slice(0, 10);
+    const changed = autoCloseOpenTasksForDate(date);
+    res.json({ ok: true, date, changed });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
