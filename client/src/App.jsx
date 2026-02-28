@@ -182,18 +182,7 @@ function MainContent() {
         </button>
       )}
 
-      {/* New version banner */}
-      {!isPublicRoute && updateAvailable && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40 bg-amber-50 border border-amber-300 text-amber-900 px-4 py-2 rounded-lg shadow-lg flex items-center gap-3">
-          <span className="text-sm font-medium">גרסה חדשה זמינה</span>
-          <button
-            onClick={doUpdate}
-            className="px-3 py-1 rounded bg-amber-500 text-white text-sm hover:bg-amber-600"
-          >
-            רענן עכשיו
-          </button>
-        </div>
-      )}
+      {/* New version banner — disabled */}
 
       <main className={isPublicRoute ? 'flex-1' : (isDesktop ? 'mr-72 flex-1' : 'flex-1 w-full overflow-x-hidden')}>
         <Routes>
