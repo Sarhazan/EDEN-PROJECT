@@ -52,7 +52,7 @@ const getTodayIsraelStart = () => {
 };
 
 export default function TaskForm({ task, initialValues = null, onClose }) {
-  const { addTask, updateTask, systems, employees, locations, buildings } = useApp();
+  const { addTask, updateTask, deleteTask, systems, employees, locations, buildings } = useApp();
   const isEditing = !!task;
 
   const [formData, setFormData] = useState({
@@ -334,6 +334,16 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       onClose();
     } catch (error) {
       alert('שגיאה: ' + error.message);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`למחוק את המשימה "${formData.title}"? הפעולה לא ניתנת לביטול.`)) return;
+    try {
+      await deleteTask(task.id);
+      onClose();
+    } catch (error) {
+      alert('שגיאה במחיקה: ' + error.message);
     }
   };
 
@@ -620,6 +630,16 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
           {isEditing ? 'עדכן משימה' : 'צור משימה'}
         </button>
       </div>
+
+      {isEditing && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="w-full mt-2 bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 min-h-[44px] transition-all duration-150 active:scale-95 text-sm font-medium"
+        >
+          🗑️ מחק משימה
+        </button>
+      )}
     </form>
   );
 }
