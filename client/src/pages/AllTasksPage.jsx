@@ -65,8 +65,9 @@ export default function AllTasksPage() {
     const bySeries = new Map();
 
     recurring.forEach((task) => {
-      // Intentionally exclude start_time from key so time-edited duplicates collapse
-      const key = `${task.title}|${task.frequency}|${task.employee_id || ''}|${task.system_id || ''}`;
+      // Key: title + frequency + employee only (no start_time, no system_id)
+      // Dropping system_id prevents duplicates when same-name tasks exist across systems
+      const key = `${task.title}|${task.frequency}|${task.employee_id || ''}`;
       const taskDate = new Date(`${task.start_date}T${task.start_time || '00:00'}`);
       const existing = bySeries.get(key);
 
