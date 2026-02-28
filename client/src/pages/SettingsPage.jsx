@@ -197,6 +197,14 @@ export default function SettingsPage() {
     setError(null);
     setSuccessMessage(null);
     try {
+      // If already initialized but not ready (e.g. QR expired / not scanned),
+      // disconnect first so the server creates a fresh session and new QR.
+      if (whatsappStatus.isInitialized && !whatsappStatus.isReady) {
+        await axios.post(`${API_URL}/whatsapp/disconnect`).catch(() => {});
+        setQrCode(null);
+        setWhatsappStatus({ isReady: false, needsAuth: false, isInitialized: false, error: null });
+      }
+
       const response = await axios.post(`${API_URL}/whatsapp/connect`);
       if (response.data.isReady) {
         setSuccessMessage('כבר מחובר ל-WhatsApp!');
