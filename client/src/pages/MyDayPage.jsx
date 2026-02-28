@@ -10,6 +10,16 @@ import '../components/forms/datepicker-custom.css';
 import axios from 'axios';
 import { Resizable } from 're-resizable';
 import { API_URL, BACKEND_URL, SHOW_DATA_CONTROLS, LS_KEYS } from '../config';
+import { useTaskFilters } from '../hooks/useTaskFilters';
+import { useManagerFilter } from '../hooks/useManagerFilter';
+import { useColumnResize } from '../hooks/useColumnResize';
+import { useBulkWhatsApp } from '../hooks/useBulkWhatsApp';
+import { useNavigateToTask } from '../hooks/useNavigateToTask';
+import TaskListPanel from '../components/myday/TaskListPanel';
+import CalendarPanel from '../components/myday/CalendarPanel';
+import ForecastChart from '../components/myday/ForecastChart';
+import PendingApprovalSection from '../components/myday/PendingApprovalSection';
+import StatsBar from '../components/myday/StatsBar';
 
 export default function MyDayPage() {
   const { tasks, systems, employees, locations, setIsTaskModalOpen, setEditingTask, updateTaskStatus, seedData, clearData } = useApp();
@@ -28,6 +38,17 @@ export default function MyDayPage() {
   const [filterCategory, setFilterCategory] = useState('manager'); // default: manager view
   const [filterValue, setFilterValue] = useState(''); // The specific value within the selected category
   const [taskSearch, setTaskSearch] = useState('');
+
+  // Incremental split hooks (kept side-by-side with existing logic for behavior parity)
+  const _taskFiltersHook = useTaskFilters(tasks, employees, systems, locations, selectedDate);
+  const _managerFilterHook = useManagerFilter();
+  const _columnResizeHook = useColumnResize();
+  const _navigateToTaskHook = useNavigateToTask(setSelectedDate, [
+    tasks,
+    selectedDate,
+    filterCategory,
+    filterValue
+  ]);
 
   // Star filter state from localStorage
   const [starFilter, setStarFilter] = useState(() => {
@@ -379,6 +400,16 @@ export default function MyDayPage() {
     // onto all future matching dates → duplicates.
     return isSameDay(new Date(task.start_date), date);
   };
+
+  const _bulkWhatsAppHook = useBulkWhatsApp({
+    tasks,
+    selectedDate,
+    filterCategory,
+    filterValue,
+    employees,
+    shouldTaskAppearOnDate,
+    updateTaskStatus
+  });
 
   // Calculate statistics and filter tasks
   const stats = useMemo(() => {
