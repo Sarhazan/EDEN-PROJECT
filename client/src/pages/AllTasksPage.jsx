@@ -61,7 +61,7 @@ export default function AllTasksPage() {
   // Recurring tasks: one row per series, nearest future instance
   // Key excludes start_time so duplicate series (same name + freq + employee) collapse to one
   const recurringNearestTasks = useMemo(() => {
-    const recurring = baseTasks.filter((t) => Number(t.is_recurring) === 1 && t.status !== 'completed');
+    const recurring = baseTasks.filter((t) => Number(t.is_recurring) === 1);
     const now = new Date();
     const bySeries = new Map();
 
