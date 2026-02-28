@@ -1007,6 +1007,12 @@ export default function MyDayPage() {
                   }`}
                   onClick={() => setSelectedDate(day.date)}
                 >
+                {/* Count — above bar */}
+                <div className={`text-xs font-bold h-5 flex items-center justify-center ${
+                  day.isToday ? 'text-blue-700' : 'text-gray-700'
+                }`}>
+                  {day.count > 0 ? day.count : ''}
+                </div>
                 {/* Bar */}
                 <div className="w-full flex flex-col justify-end h-28">
                   <div
@@ -1038,14 +1044,6 @@ export default function MyDayPage() {
                       <div className="w-full h-full bg-gray-200" />
                     )}
                   </div>
-                </div>
-                {/* Count */}
-                <div
-                  className={`text-sm font-bold ${
-                    day.isToday ? 'text-blue-700' : 'text-gray-700'
-                  }`}
-                >
-                  {day.count}
                 </div>
                 {/* Date (fixed height to keep monthly bars perfectly aligned) */}
                 {(() => {
