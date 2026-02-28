@@ -202,6 +202,14 @@ export function AppProvider({ children }) {
     await fetchTasks();
   };
 
+  const deleteTaskSeries = async (id) => {
+    const response = await fetch(`${API_URL}/tasks/${id}/series`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error('שגיאה במחיקת סדרת משימות');
+    await fetchTasks();
+  };
+
   // Systems
   const fetchSystems = async () => {
     const response = await fetch(`${API_URL}/systems`);
@@ -493,6 +501,7 @@ export function AppProvider({ children }) {
     updateTaskStatus,
     toggleTaskStar,
     deleteTask,
+    deleteTaskSeries,
     // System methods
     addSystem,
     updateSystem,

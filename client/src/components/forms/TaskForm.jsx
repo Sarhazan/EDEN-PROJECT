@@ -52,7 +52,7 @@ const getTodayIsraelStart = () => {
 };
 
 export default function TaskForm({ task, initialValues = null, onClose }) {
-  const { addTask, updateTask, deleteTask, systems, employees, locations, buildings } = useApp();
+  const { addTask, updateTask, deleteTask, deleteTaskSeries, systems, employees, locations, buildings } = useApp();
   const isEditing = !!task;
 
   const [formData, setFormData] = useState({
@@ -338,12 +338,22 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`למחוק את המשימה "${formData.title}"? הפעולה לא ניתנת לביטול.`)) return;
+    if (!window.confirm(`למחוק מופע זה בלבד של "${formData.title}"? הפעולה לא ניתנת לביטול.`)) return;
     try {
       await deleteTask(task.id);
       onClose();
     } catch (error) {
       alert('שגיאה במחיקה: ' + error.message);
+    }
+  };
+
+  const handleDeleteSeries = async () => {
+    if (!window.confirm(`למחוק את כל המופעים של "${formData.title}"?\n\nכל המשימות הקבועות בסדרה זו יימחקו לצמיתות.`)) return;
+    try {
+      await deleteTaskSeries(task.id);
+      onClose();
+    } catch (error) {
+      alert('שגיאה במחיקת הסדרה: ' + error.message);
     }
   };
 
@@ -632,13 +642,35 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       </div>
 
       {isEditing && (
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="w-full mt-2 bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 min-h-[44px] transition-all duration-150 active:scale-95 text-sm font-medium"
-        >
-          🗑️ מחק משימה
-        </button>
+        <div className="flex flex-col gap-2 mt-2">
+          {/* Recurring: two separate delete options */}
+          {task.is_recurring ? (
+            <>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="w-full bg-orange-50 border border-orange-200 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 min-h-[44px] transition-all duration-150 active:scale-95 text-sm font-medium"
+              >
+                🗑️ מחק מופע זה בלבד
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSeries}
+                className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 min-h-[44px] transition-all duration-150 active:scale-95 text-sm font-medium"
+              >
+                🗑️ מחק משימה קבועה כולה
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 min-h-[44px] transition-all duration-150 active:scale-95 text-sm font-medium"
+            >
+              🗑️ מחק משימה
+            </button>
+          )}
+        </div>
       )}
     </form>
   );

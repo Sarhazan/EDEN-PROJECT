@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import TaskCard from '../components/shared/TaskCard';
 
 export default function AllTasksPage() {
-  const { tasks, setIsTaskModalOpen, setEditingTask } = useApp();
+  const { tasks, setIsTaskModalOpen, setEditingTask, deleteTaskSeries } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
 
   // Star filter state from localStorage
@@ -169,7 +169,21 @@ export default function AllTasksPage() {
             <div className="p-6 text-center text-gray-500">אין משימות קבועות להצגה</div>
           ) : (
             recurringNearestTasks.map((task) => (
-              <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+              <div key={task.id} className="relative group">
+                <TaskCard task={task} onEdit={handleEdit} />
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!window.confirm(`למחוק את כל המופעים של "${task.title}"?\n\nכל הסדרה תימחק לצמיתות.`)) return;
+                    try { await deleteTaskSeries(task.id); }
+                    catch (err) { alert('שגיאה: ' + err.message); }
+                  }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 border border-red-200 text-red-600 text-xs px-2 py-1 rounded-lg hover:bg-red-100"
+                  title="מחק משימה קבועה כולה"
+                >
+                  🗑️ מחק קבועה
+                </button>
+              </div>
             ))
           )}
         </div>

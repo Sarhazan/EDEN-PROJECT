@@ -795,6 +795,31 @@ router.put('/:id/status', (req, res) => {
 });
 
 // Delete task
+// Delete entire recurring series (all instances with same title+employee+frequency)
+router.delete('/:id/series', (req, res) => {
+  try {
+    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    if (!task) return res.status(404).json({ error: 'משימה לא נמצאה' });
+
+    // Match all instances of this series
+    const result = db.prepare(`
+      DELETE FROM tasks
+      WHERE title = ?
+        AND COALESCE(employee_id, 0) = COALESCE(?, 0)
+        AND frequency = ?
+        AND is_recurring = 1
+    `).run(task.title, task.employee_id, task.frequency);
+
+    if (io) {
+      io.emit('tasks:series_deleted', { title: task.title, frequency: task.frequency, deleted: result.changes });
+    }
+
+    res.json({ deleted: result.changes });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.delete('/:id', (req, res) => {
   try {
     const taskId = req.params.id;
