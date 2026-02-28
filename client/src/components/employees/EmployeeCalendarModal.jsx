@@ -540,9 +540,11 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     const height = taskHeightPx(currentDuration);
     const showTimeRange = currentDuration >= 15;
 
-    const borderColor = STATUS_BORDER[task.status] || '#3b82f6';
-    const bgColor = STATUS_BG[task.status] || '#bfdbfe';
-    const textColor = STATUS_TEXT[task.status] || '#1e3a8a';
+    // Completed-late: orange override (time_delta_minutes > 0 means completed after deadline)
+    const isCompletedLate = task.status === 'completed' && task.start_time && task.time_delta_minutes > 0;
+    const borderColor = isCompletedLate ? '#ea580c' : (STATUS_BORDER[task.status] || '#3b82f6');
+    const bgColor    = isCompletedLate ? '#fed7aa' : (STATUS_BG[task.status]     || '#bfdbfe');
+    const textColor  = isCompletedLate ? '#7c2d12' : (STATUS_TEXT[task.status]   || '#1e3a8a');
 
     // Minute offset within the hour cell
     const minutePart = Number((task.start_time || '00:00').split(':')[1] || 0);
@@ -919,6 +921,11 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                 {tooltip.task.start_time && (
                   <div className="text-xs mt-2" style={{ color: '#64748b' }}>
                     🕐 {tooltip.task.start_time} · {durationForTask(tooltip.task)} דק׳
+                  </div>
+                )}
+              {tooltip.task.status === 'completed' && tooltip.task.time_delta_minutes > 0 && (
+                  <div className="text-xs mt-1 font-semibold" style={{ color: '#fb923c' }}>
+                    ⚠️ {tooltip.task.time_delta_text || `איחור של ${tooltip.task.time_delta_minutes} דק׳`}
                   </div>
                 )}
               </div>
