@@ -725,7 +725,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                 ref={gridBodyRef}
                 className="flex flex-col"
                 // Prevent browser text selection while dragging
-                style={{ flex: 1, minHeight: 0, userSelect: dragging?.hasMoved ? 'none' : undefined }}
+                style={{ flex: 1, minHeight: 0, overflow: 'hidden', userSelect: dragging?.hasMoved ? 'none' : undefined }}
               >
                 {/* Day header row */}
                 <div
@@ -824,7 +824,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                 })()}
 
                 {/* Hour rows */}
-                <div ref={hoursBodyRef} className="flex flex-col" style={{ flex: 1, minHeight: 0, overflowY: 'hidden' }}>
+                <div ref={hoursBodyRef} className="flex flex-col" style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
                   {hours.map((hour, idx) => (
                     <div key={hour} ref={idx === 0 ? hourRowRef : undefined} className={`grid border-b last:border-b-0 flex-1 ${
                         view === 'day'
