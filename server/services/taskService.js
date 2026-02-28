@@ -26,15 +26,15 @@ function formatMinutesToHebrew(totalMinutes) {
   const parts = [];
 
   if (days > 0) {
-    parts.push(days === 1 ? 'ιεν ΰηγ' : `${days} ιξιν`);
+    parts.push(days === 1 ? 'Χ™Χ•Χ ΧΧ—Χ“' : `${days} Χ™ΧΧ™Χ`);
   }
 
   if (hours > 0) {
-    parts.push(hours === 1 ? 'ωςδ ΰηϊ' : `${hours} ωςεϊ`);
+    parts.push(hours === 1 ? 'Χ©ΧΆΧ” ΧΧ—Χª' : `${hours} Χ©ΧΆΧ•Χª`);
   }
 
   if (minutes > 0 || parts.length === 0) {
-    parts.push(minutes === 1 ? 'γχδ ΰηϊ' : `${minutes} γχεϊ`);
+    parts.push(minutes === 1 ? 'Χ“Χ§Χ” ΧΧ—Χª' : `${minutes} Χ“Χ§Χ•Χª`);
   }
 
   return parts.join(', ');
@@ -88,11 +88,11 @@ function calculateTimeDelta(task) {
 
   let deltaText;
   if (deltaMinutes < 0) {
-    deltaText = `δεωμν ξεχγν α-${formatMinutesToHebrew(deltaMinutes)}`;
+    deltaText = `Χ”Χ•Χ©ΧΧ ΧΧ•Χ§Χ“Χ Χ‘-${formatMinutesToHebrew(Math.abs(deltaMinutes))}`;
   } else if (deltaMinutes > 0) {
-    deltaText = `ΰιηεψ ωμ ${formatMinutesToHebrew(deltaMinutes)}`;
+    deltaText = `Χ”Χ•Χ©ΧΧ Χ‘ΧΧ™Χ—Χ•Χ¨ Χ©Χ ${formatMinutesToHebrew(deltaMinutes)}`;
   } else {
-    deltaText = 'δεωμν αζξο';
+    deltaText = 'Χ”Χ•Χ©ΧΧ Χ‘Χ–ΧΧ';
   }
 
   return {
