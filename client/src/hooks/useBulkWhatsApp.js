@@ -41,7 +41,7 @@ export function useBulkWhatsApp({
     }
 
     if (tasksToSend.length === 0) {
-      alert('ΰιο ξωιξεϊ μωμιηδ (λμ δξωιξεϊ λαψ πωμηε ΰε ωδζξο ςαψ)');
+      alert('ΧΧ™Χ ΧΧ©Χ™ΧΧ•Χª ΧΧ©ΧΧ™Χ—Χ” (Χ›Χ Χ”ΧΧ©Χ™ΧΧ•Χª Χ›Χ‘Χ¨ Χ Χ©ΧΧ—Χ• ΧΧ• ΧΧΧ Χ©ΧΆΧª Χ”ΧªΧ—ΧΧ”)');
       return;
     }
 
@@ -95,8 +95,8 @@ export function useBulkWhatsApp({
     const employeeCount = Object.keys(tasksByEmployee).length;
     const confirmMessage =
       filterCategory === 'employee' && filterValue
-        ? `δΰν μωμεη ${tasksToSend.length} ξωιξεϊ μ-${tasksByEmployee[Object.keys(tasksByEmployee)[0]]?.name}?`
-        : `δΰν μωμεη ${tasksToSend.length} ξωιξεϊ μ-${employeeCount} ςεαγιν?`;
+        ? `Χ”ΧΧ ΧΧ©ΧΧ•Χ— ${tasksToSend.length} ΧΧ©Χ™ΧΧ•Χª Χ-${tasksByEmployee[Object.keys(tasksByEmployee)[0]]?.name}?`
+        : `Χ”ΧΧ ΧΧ©ΧΧ•Χ— ${tasksToSend.length} ΧΧ©Χ™ΧΧ•Χª Χ-${employeeCount} ΧΆΧ•Χ‘Χ“Χ™Χ?`;
 
     if (!confirm(confirmMessage)) return;
 
@@ -123,7 +123,7 @@ export function useBulkWhatsApp({
 
       alert(response.data.message);
     } catch (error) {
-      alert('ωβιΰδ: ' + (error.response?.data?.error || error.message));
+      alert('Χ©Χ’Χ™ΧΧ”: ' + (error.response?.data?.error || error.message));
     } finally {
       setIsSendingBulk(false);
     }
