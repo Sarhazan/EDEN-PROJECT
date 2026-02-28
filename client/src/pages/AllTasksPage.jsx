@@ -57,43 +57,49 @@ export default function AllTasksPage() {
     return filtered;
   }, [tasks, starFilter, searchTerm]);
 
-  // Recurring tasks: show only the nearest instance for each recurring series
+  // Recurring tasks: one row per series, nearest future instance
+  // Key excludes start_time so duplicate series (same name + freq + employee) collapse to one
   const recurringNearestTasks = useMemo(() => {
     const recurring = baseTasks.filter((t) => Number(t.is_recurring) === 1 && t.status !== 'completed');
     const now = new Date();
     const bySeries = new Map();
 
     recurring.forEach((task) => {
-      const key = task.parent_task_id || `${task.title}|${task.frequency}|${task.start_time}|${task.employee_id || ''}|${task.system_id || ''}`;
+      // Intentionally exclude start_time from key so time-edited duplicates collapse
+      const key = `${task.title}|${task.frequency}|${task.employee_id || ''}|${task.system_id || ''}`;
       const taskDate = new Date(`${task.start_date}T${task.start_time || '00:00'}`);
       const existing = bySeries.get(key);
 
-      // Prefer future/upcoming instance; if none, keep closest in the future first
-      if (!existing) {
-        bySeries.set(key, task);
-        return;
-      }
+      if (!existing) { bySeries.set(key, task); return; }
 
       const existingDate = new Date(`${existing.start_date}T${existing.start_time || '00:00'}`);
       const taskFuture = taskDate >= now;
       const existingFuture = existingDate >= now;
 
-      if (taskFuture && !existingFuture) {
-        bySeries.set(key, task);
-        return;
-      }
-
-      if (taskFuture === existingFuture && taskDate < existingDate) {
-        bySeries.set(key, task);
-      }
+      if (taskFuture && !existingFuture) { bySeries.set(key, task); return; }
+      if (taskFuture === existingFuture && taskDate < existingDate) { bySeries.set(key, task); }
     });
 
-    return Array.from(bySeries.values()).sort((a, b) => {
-      const dateA = new Date(`${a.start_date}T${a.start_time || '00:00'}`);
-      const dateB = new Date(`${b.start_date}T${b.start_time || '00:00'}`);
-      return dateA - dateB;
-    });
+    return Array.from(bySeries.values());
   }, [baseTasks]);
+
+  // Group recurring tasks by frequency, in display order
+  const FREQ_ORDER = ['daily', 'weekly', 'biweekly', 'monthly', 'semi-annual', 'annual'];
+  const FREQ_LABELS = { daily: 'יומי', weekly: 'שבועי', biweekly: 'שבועיים', monthly: 'חודשי', 'semi-annual': 'חצי שנתי', annual: 'שנתי' };
+
+  const recurringByFreq = useMemo(() => {
+    const groups = {};
+    recurringNearestTasks.forEach((task) => {
+      const freq = task.frequency || 'other';
+      if (!groups[freq]) groups[freq] = [];
+      groups[freq].push(task);
+    });
+    // Sort tasks within each group by nearest date
+    Object.values(groups).forEach((arr) =>
+      arr.sort((a, b) => new Date(`${a.start_date}T${a.start_time || '00:00'}`) - new Date(`${b.start_date}T${b.start_time || '00:00'}`))
+    );
+    return groups;
+  }, [recurringNearestTasks]);
 
   const oneTimeTasks = useMemo(() => {
     return baseTasks
@@ -161,32 +167,50 @@ export default function AllTasksPage() {
         </div>
       </div>
 
-      {/* Recurring tasks container */}
+      {/* Recurring tasks container — grouped by frequency */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <h2 className="text-xl font-bold mb-4">משימות קבועות (מופע קרוב בלבד) ({recurringNearestTasks.length})</h2>
-        <div className="space-y-0 rounded-lg overflow-hidden border border-gray-100">
-          {recurringNearestTasks.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">אין משימות קבועות להצגה</div>
-          ) : (
-            recurringNearestTasks.map((task) => (
-              <div key={task.id} className="relative group">
-                <TaskCard task={task} onEdit={handleEdit} />
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!window.confirm(`למחוק את כל המופעים של "${task.title}"?\n\nכל הסדרה תימחק לצמיתות.`)) return;
-                    try { await deleteTaskSeries(task.id); }
-                    catch (err) { alert('שגיאה: ' + err.message); }
-                  }}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 border border-red-200 text-red-600 text-xs px-2 py-1 rounded-lg hover:bg-red-100"
-                  title="מחק משימה קבועה כולה"
-                >
-                  🗑️ מחק קבועה
-                </button>
-              </div>
-            ))
-          )}
-        </div>
+        <h2 className="text-xl font-bold mb-4">משימות קבועות ({recurringNearestTasks.length})</h2>
+        {recurringNearestTasks.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">אין משימות קבועות להצגה</div>
+        ) : (
+          <div className="space-y-5">
+            {[...FREQ_ORDER, ...Object.keys(recurringByFreq).filter(f => !FREQ_ORDER.includes(f))].map((freq) => {
+              const group = recurringByFreq[freq];
+              if (!group || group.length === 0) return null;
+              return (
+                <div key={freq}>
+                  {/* Frequency header */}
+                  <div className="flex items-center gap-2 mb-1 px-1">
+                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">
+                      {FREQ_LABELS[freq] || freq}
+                    </span>
+                    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{group.length}</span>
+                    <div className="flex-1 h-px bg-gray-100" />
+                  </div>
+                  <div className="rounded-lg overflow-hidden border border-gray-100">
+                    {group.map((task) => (
+                      <div key={task.id} className="relative group">
+                        <TaskCard task={task} onEdit={handleEdit} />
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!window.confirm(`למחוק את כל המופעים של "${task.title}"?\n\nכל הסדרה תימחק לצמיתות.`)) return;
+                            try { await deleteTaskSeries(task.id); }
+                            catch (err) { alert('שגיאה: ' + err.message); }
+                          }}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 border border-red-200 text-red-600 text-xs px-2 py-1 rounded-lg hover:bg-red-100"
+                          title="מחק משימה קבועה כולה"
+                        >
+                          🗑️ מחק קבועה
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* One-time tasks container */}
