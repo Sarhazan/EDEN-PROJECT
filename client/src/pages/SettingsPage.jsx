@@ -19,7 +19,7 @@ import { API_URL, SOCKET_URL, LS_KEYS, SHOW_DATA_CONTROLS } from '../config';
 const IS_TEST_ENV = import.meta.env.VITE_ENV === 'test';
 
 export default function SettingsPage() {
-  const { seedData, clearData } = useApp();
+  const { seedData, clearData, employees: contextEmployees } = useApp();
 
   // WhatsApp state
   const [whatsappStatus, setWhatsappStatus] = useState({
@@ -58,7 +58,8 @@ export default function SettingsPage() {
   const [managerEmployeeId, setManagerEmployeeId] = useState('');
   const [managerSaving, setManagerSaving] = useState(false);
   const [managerSaved, setManagerSaved] = useState(false);
-  const [employeesList, setEmployeesList] = useState([]);
+  // employeesList — use live AppContext employees (always in sync)
+  const employeesList = contextEmployees || [];
 
   // ─── Socket.IO for real-time WhatsApp events ───────────────────────────────
   useEffect(() => {
@@ -201,11 +202,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchManagerData = async () => {
       try {
-        const [empRes, settingRes] = await Promise.all([
-          axios.get(`${API_URL}/employees`),
-          axios.get(`${API_URL}/accounts/settings/manager_employee_id`).catch(() => ({ data: { value: '' } })),
-        ]);
-        setEmployeesList(empRes.data || []);
+        const settingRes = await axios.get(`${API_URL}/accounts/settings/manager_employee_id`).catch(() => ({ data: { value: '' } }));
         if (settingRes.data.value) setManagerEmployeeId(settingRes.data.value);
       } catch (err) {
         console.error('Error fetching manager data:', err);
