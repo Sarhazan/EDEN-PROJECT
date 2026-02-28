@@ -100,6 +100,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [editingTask, setEditingTask] = useState(null);
   const [hours, setHours] = useState(DEFAULT_HOURS);
   const [measuredHourHeight, setMeasuredHourHeight] = useState(64);
+  const [tooltip, setTooltip] = useState(null); // { task, x, y }
 
   // Refs for stale-closure-safe access inside document event handlers
   const draggingRef = useRef(null);
@@ -566,7 +567,15 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           outline: isDraggingThis ? `2px dashed ${borderColor}66` : 'none',
           zIndex: isDraggingThis ? 5 : 10,
         }}
+        onMouseEnter={(e) => {
+          if (!dragging && !resizeState) setTooltip({ task, x: e.clientX, y: e.clientY });
+        }}
+        onMouseMove={(e) => {
+          if (!dragging && !resizeState && tooltip) setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+        }}
+        onMouseLeave={() => setTooltip(null)}
         onMouseDown={(e) => {
+          setTooltip(null);
           // Resize handle stops propagation, so this won't fire from there
           if (resizeState) return;
           handleTaskMouseDown(e, task);
@@ -876,6 +885,40 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           }}
         />
       )}
+
+      {/* Hover tooltip — fixed so it escapes overflow:hidden on calendar cells */}
+      {tooltip && !dragging && !resizeState && (() => {
+        const TOOLTIP_W = 260;
+        const left = tooltip.x + 14;
+        const adjustedLeft = left + TOOLTIP_W > window.innerWidth ? tooltip.x - TOOLTIP_W - 8 : left;
+        const top = tooltip.y + 14;
+        const adjustedTop = top + 120 > window.innerHeight ? tooltip.y - 130 : top;
+        return (
+          <div
+            className="fixed z-[9999] pointer-events-none"
+            style={{ left: adjustedLeft, top: adjustedTop }}
+          >
+            <div
+              className="rounded-xl shadow-2xl p-3 text-right"
+              style={{ width: TOOLTIP_W, background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155' }}
+            >
+              <div className="font-bold text-sm leading-snug mb-1" style={{ color: '#f8fafc' }}>
+                {tooltip.task.title || 'ללא כותרת'}
+              </div>
+              {tooltip.task.description && (
+                <div className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: '#94a3b8' }}>
+                  {tooltip.task.description}
+                </div>
+              )}
+              {tooltip.task.start_time && (
+                <div className="text-xs mt-2" style={{ color: '#64748b' }}>
+                  🕐 {tooltip.task.start_time} · {durationForTask(tooltip.task)} דק׳
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
