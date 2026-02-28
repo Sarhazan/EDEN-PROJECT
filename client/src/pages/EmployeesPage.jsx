@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+ο»Ώimport { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import axios from 'axios';
 
@@ -54,7 +54,7 @@ function CircularProgress({ percentage = 0, size = 120 }) {
         <span className="text-3xl font-bold" style={{ color }}>
           {Math.round(percentage)}%
         </span>
-        <span className="text-xs text-gray-500 mt-1">αζξο</span>
+        <span className="text-xs text-gray-500 mt-1">Χ‘Χ–ΧΧ</span>
       </div>
     </div>
   );
@@ -95,11 +95,11 @@ export default function EmployeesPage() {
   };
 
   const handleDelete = async (id, name) => {
-    if (confirm(`δΰν ΰϊδ αθεη ωαψφεπκ μξηεχ ΰϊ δςεαγ "${name}"?`)) {
+    if (confirm(`Χ”ΧΧ ΧΧªΧ” Χ‘ΧΧ•Χ— Χ©Χ‘Χ¨Χ¦Χ•Χ Χ ΧΧΧ—Χ•Χ§ ΧΧª Χ”ΧΆΧ•Χ‘Χ“ "${name}"?`)) {
       try {
         await deleteEmployee(id);
       } catch (error) {
-        alert('ωβιΰδ: ' + error.message);
+        alert('Χ©Χ’Χ™ΧΧ”: ' + error.message);
       }
     }
   };
@@ -114,15 +114,15 @@ export default function EmployeesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">φεεϊ ςεαγιν</h1>
-          <p className="text-gray-600 mt-1">πιδεμ ςεαγιν εωιεκ ξωιξεϊ</p>
+          <h1 className="text-3xl font-bold">Χ¦Χ•Χ•Χª ΧΆΧ•Χ‘Χ“Χ™Χ</h1>
+          <p className="text-gray-600 mt-1">Χ Χ™Χ”Χ•Χ ΧΆΧ•Χ‘Χ“Χ™Χ Χ•Χ©Χ™Χ•Χ ΧΧ©Χ™ΧΧ•Χª</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2"
         >
           <FaPlus />
-          δερσ ςεαγ
+          Χ”Χ•Χ΅Χ£ ΧΆΧ•Χ‘Χ“
         </button>
       </div>
 
@@ -130,7 +130,7 @@ export default function EmployeesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {employees.length === 0 ? (
           <div className="col-span-full bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
-            ΰιο ςεαγιν. μηυ ςμ "δερσ ςεαγ" λγι μδϊηιμ
+            ΧΧ™Χ ΧΆΧ•Χ‘Χ“Χ™Χ. ΧΧ—Χ¥ ΧΆΧ "Χ”Χ•Χ΅Χ£ ΧΆΧ•Χ‘Χ“" Χ›Χ“Χ™ ΧΧ”ΧªΧ—Χ™Χ
           </div>
         ) : (
           employees.map((employee) => (
@@ -149,21 +149,21 @@ export default function EmployeesPage() {
                   <button
                     onClick={() => setCalendarEmployee(employee)}
                     className="text-indigo-500 hover:text-indigo-600 p-1"
-                    title="ιεξο ςεαγ"
+                    title="Χ™Χ•ΧΧ ΧΆΧ•Χ‘Χ“"
                   >
                     <FaCalendarAlt />
                   </button>
                   <button
                     onClick={() => handleEdit(employee)}
                     className="text-blue-500 hover:text-blue-600 p-1"
-                    title="ςψεκ"
+                    title="ΧΆΧ¨Χ•Χ"
                   >
                     <FaEdit />
                   </button>
                   <button
                     onClick={() => handleDelete(employee.id, employee.name)}
                     className="text-red-500 hover:text-red-600 p-1"
-                    title="ξηχ"
+                    title="ΧΧ—Χ§"
                   >
                     <FaTrash />
                   </button>
@@ -175,10 +175,10 @@ export default function EmployeesPage() {
                 {isManagerEmployee(employee) && (
                   <span
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-700"
-                    title="ξπδμ ξϊην"
+                    title="ΧΧ Χ”Χ ΧΧªΧ—Χ"
                   >
                     <FaUserShield className="text-[11px]" />
-                    ξπδμ
+                    ΧΧ Χ”Χ
                   </span>
                 )}
               </div>
@@ -187,16 +187,16 @@ export default function EmployeesPage() {
               )}
 
               {employee.phone && (
-                <p className="text-sm text-gray-600 mb-3">?? {employee.phone}</p>
+                <p className="text-sm text-gray-600 mb-3">π“ {employee.phone}</p>
               )}
 
               <div className="text-sm text-gray-600 mb-3">
-                <span className="font-medium">ωτδ:</span>{' '}
-                {employee.language === 'he' && '???? ςαψιϊ'}
-                {employee.language === 'en' && '???? English'}
-                {employee.language === 'ru' && '???? ???????'}
-                {employee.language === 'ar' && '???? ???????'}
-                {!employee.language && '???? ςαψιϊ'}
+                <span className="font-medium">Χ©Χ¤Χ”:</span>{' '}
+                {employee.language === 'he' && 'π‡®π‡± ΧΆΧ‘Χ¨Χ™Χª'}
+                {employee.language === 'en' && 'π‡¬π‡§ English'}
+                {employee.language === 'ru' && 'π‡·π‡Ί Π ΡƒΡΡΠΊΠΈΠΉ'}
+                {employee.language === 'ar' && 'π‡Έπ‡¦ Ψ§Ω„ΨΉΨ±Ψ¨ΩΨ©'}
+                {!employee.language && 'π‡®π‡± ΧΆΧ‘Χ¨Χ™Χª'}
               </div>
 
               <div className="border-t pt-4 mt-4">
@@ -213,25 +213,25 @@ export default function EmployeesPage() {
                     <div className="text-2xl font-bold text-green-600">
                       {employee.stats?.completed_on_time || 0}
                     </div>
-                    <div className="text-xs text-gray-600">αζξο</div>
+                    <div className="text-xs text-gray-600">Χ‘Χ–ΧΧ</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2">
                     <div className="text-2xl font-bold text-red-600">
                       {employee.stats?.completed_late || 0}
                     </div>
-                    <div className="text-xs text-gray-600">αΰιηεψ</div>
+                    <div className="text-xs text-gray-600">Χ‘ΧΧ™Χ—Χ•Χ¨</div>
                   </div>
                   <div className="bg-red-50 rounded-lg p-2 border border-red-100">
                     <div className="text-2xl font-bold text-red-700">
                       {employee.stats?.not_completed_tasks || 0}
                     </div>
-                    <div className="text-xs text-red-700">μΰ αεφς</div>
+                    <div className="text-xs text-red-700">ΧΧ Χ‘Χ•Χ¦ΧΆ</div>
                   </div>
                 </div>
 
                 {/* Total Tasks */}
                 <div className="mt-2 text-center text-xs text-gray-500">
-                  ρδ"λ {employee.stats?.completed_tasks || 0} ξωιξεϊ δεωμξε
+                  Χ΅Χ”"Χ› {employee.stats?.completed_tasks || 0} ΧΧ©Χ™ΧΧ•Χª Χ”Χ•Χ©ΧΧΧ•
                 </div>
               </div>
             </div>
@@ -243,7 +243,7 @@ export default function EmployeesPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={editingEmployee ? 'ςψεκ ςεαγ' : 'ςεαγ ηγω'}
+        title={editingEmployee ? 'ΧΆΧ¨Χ•Χ ΧΆΧ•Χ‘Χ“' : 'ΧΆΧ•Χ‘Χ“ Χ—Χ“Χ©'}
       >
         <EmployeeForm employee={editingEmployee} onClose={handleCloseModal} />
       </Modal>

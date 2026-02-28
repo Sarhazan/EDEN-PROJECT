@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+﻿import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { API_URL, SOCKET_URL, LS_KEYS } from '../config';
 
@@ -144,7 +144,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(task)
     });
-    if (!response.ok) throw new Error('שגיאה ביצירת משימה');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ש╫ª╫ש╫¿╫¬ ╫₧╫⌐╫ש╫₧╫פ');
     const createdTask = await response.json();
     await fetchTasks();
     return createdTask;
@@ -156,7 +156,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(task)
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון משימה');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫₧╫⌐╫ש╫₧╫פ');
     await fetchTasks();
   };
 
@@ -166,7 +166,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון סטטוס');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫í╫ר╫ר╫ץ╫í');
     await fetchTasks();
     await fetchEmployees(); // Refresh employee stats when task status changes
   };
@@ -175,7 +175,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/tasks/${id}/star`, {
       method: 'PUT'
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון כוכב');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫¢╫ץ╫¢╫ס');
     await fetchTasks();
   };
 
@@ -183,7 +183,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/tasks/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('שגיאה במחיקת משימה');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫₧╫ק╫ש╫º╫¬ ╫₧╫⌐╫ש╫₧╫פ');
     await fetchTasks();
   };
 
@@ -191,7 +191,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/tasks/${id}/series`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('שגיאה במחיקת סדרת משימות');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫₧╫ק╫ש╫º╫¬ ╫í╫ף╫¿╫¬ ╫₧╫⌐╫ש╫₧╫ץ╫¬');
     await fetchTasks();
   };
 
@@ -208,7 +208,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(system)
     });
-    if (!response.ok) throw new Error('שגיאה ביצירת מערכת');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ש╫ª╫ש╫¿╫¬ ╫₧╫ó╫¿╫¢╫¬');
     await fetchSystems();
   };
 
@@ -218,7 +218,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(system)
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון מערכת');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫₧╫ó╫¿╫¢╫¬');
     await fetchSystems();
   };
 
@@ -226,7 +226,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/systems/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('שגיאה במחיקת מערכת');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫₧╫ק╫ש╫º╫¬ ╫₧╫ó╫¿╫¢╫¬');
     await fetchSystems();
   };
 
@@ -243,7 +243,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(employee)
     });
-    if (!response.ok) throw new Error('שגיאה ביצירת עובד');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ש╫ª╫ש╫¿╫¬ ╫ó╫ץ╫ס╫ף');
     await fetchEmployees();
   };
 
@@ -253,7 +253,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(employee)
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון עובד');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫ó╫ץ╫ס╫ף');
     const updatedEmployee = await response.json();
     await fetchEmployees();
   };
@@ -262,7 +262,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/employees/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('שגיאה במחיקת עובד');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫₧╫ק╫ש╫º╫¬ ╫ó╫ץ╫ס╫ף');
     await fetchEmployees();
   };
 
@@ -279,7 +279,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(supplier)
     });
-    if (!response.ok) throw new Error('שגיאה ביצירת ספק');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ש╫ª╫ש╫¿╫¬ ╫í╫ñ╫º');
     await fetchSuppliers();
   };
 
@@ -289,7 +289,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(supplier)
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון ספק');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫í╫ñ╫º');
     await fetchSuppliers();
   };
 
@@ -297,7 +297,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/suppliers/${id}/pay`, {
       method: 'PUT'
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון תשלום');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫¬╫⌐╫£╫ץ╫¥');
     await fetchSuppliers();
   };
 
@@ -305,7 +305,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/suppliers/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('שגיאה במחיקת ספק');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫₧╫ק╫ש╫º╫¬ ╫í╫ñ╫º');
     await fetchSuppliers();
   };
 
@@ -322,7 +322,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(location)
     });
-    if (!response.ok) throw new Error('שגיאה ביצירת מיקום');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ש╫ª╫ש╫¿╫¬ ╫₧╫ש╫º╫ץ╫¥');
     await fetchLocations();
   };
 
@@ -332,7 +332,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(location)
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון מיקום');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫₧╫ש╫º╫ץ╫¥');
     await fetchLocations();
   };
 
@@ -340,7 +340,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/locations/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('שגיאה במחיקת מיקום');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫₧╫ק╫ש╫º╫¬ ╫₧╫ש╫º╫ץ╫¥');
     await fetchLocations();
   };
 
@@ -357,7 +357,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(building)
     });
-    if (!response.ok) throw new Error('שגיאה ביצירת מבנה');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ש╫ª╫ש╫¿╫¬ ╫₧╫ס╫á╫פ');
     await fetchBuildings();
   };
 
@@ -367,7 +367,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(building)
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון מבנה');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫₧╫ס╫á╫פ');
     await fetchBuildings();
   };
 
@@ -375,7 +375,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/buildings/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('שגיאה במחיקת מבנה');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫₧╫ק╫ש╫º╫¬ ╫₧╫ס╫á╫פ');
     await fetchBuildings();
     await fetchTenants();
   };
@@ -393,7 +393,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(tenant)
     });
-    if (!response.ok) throw new Error('שגיאה ביצירת דייר');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ש╫ª╫ש╫¿╫¬ ╫ף╫ש╫ש╫¿');
     await fetchTenants();
   };
 
@@ -403,7 +403,7 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(tenant)
     });
-    if (!response.ok) throw new Error('שגיאה בעדכון דייר');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫ף╫ש╫ש╫¿');
     await fetchTenants();
   };
 
@@ -411,7 +411,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/tenants/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('שגיאה במחיקת דייר');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫₧╫ק╫ש╫º╫¬ ╫ף╫ש╫ש╫¿');
     await fetchTenants();
   };
 
@@ -420,7 +420,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/data/seed`, {
       method: 'POST'
     });
-    if (!response.ok) throw new Error('שגיאה בטעינת נתוני דמה');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ר╫ó╫ש╫á╫¬ ╫á╫¬╫ץ╫á╫ש ╫ף╫₧╫פ');
     await fetchAllData();
   };
 
@@ -428,7 +428,7 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/data/clear`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('שגיאה בניקוי נתונים');
+    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫á╫ש╫º╫ץ╫ש ╫á╫¬╫ץ╫á╫ש╫¥');
     await fetchAllData();
   };
 

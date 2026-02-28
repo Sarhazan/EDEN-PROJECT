@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { FaCheckCircle, FaClock, FaExclamationTriangle, FaCheckDouble, FaCamera, FaTimes, FaPaperPlane, FaThumbsUp, FaListOl } from 'react-icons/fa';
@@ -7,36 +7,36 @@ const DEFAULT_TASKS_PER_PAGE = 3;
 
 const UI_TEXT = {
   he: {
-    loadingTasks: 'טוען משימות...',
-    errorTitle: 'שגיאה',
-    ackSuccess: 'קבלת המשימות אושרה בהצלחה!',
-    ackError: 'שגיאה באישור קבלת המשימות',
-    taskUpdateError: 'שגיאה בעדכון המשימה',
-    completionSent: 'המשימה נשלחה לאישור המנהל!',
-    completionError: 'שגיאה בשליחת המשימה',
-    pageTitle: 'משימות לביצוע',
-    hello: 'שלום',
-    waitingCount: 'יש לך {{count}} משימות ממתינות',
-    ackPrompt: 'לחץ על הכפתור כדי לאשר קבלה ולראות את המשימות',
-    ackBtn: 'קיבלתי',
-    approving: 'מאשר...',
-    queueLabel: 'מציג {{visible}} משימות | עוד {{queued}} בתור',
-    completedCounter: '{{count}} משימות הושלמו/נשלחו לאישור',
-    allDoneTitle: 'כל הכבוד! 🎉',
-    allDoneSub: 'סיימת את כל המשימות',
-    completeSectionTitle: 'השלמת משימה',
-    imagesLabel: 'צלם תמונות (אופציונלי, עד {{max}})',
-    addImage: 'הוסף תמונה',
-    takeImage: 'צלם תמונה',
-    noteLabel: 'הערה (אופציונלי)',
-    notePlaceholder: 'הוסף הערה...',
-    sendForApproval: 'שלח לאישור',
-    sending: 'שולח...',
-    cancel: 'ביטול',
-    doneAndSend: 'סיימתי - שלח לאישור',
-    footer: 'מערכת ניהול תחזוקה - Eden',
-    status: { draft: 'חדש', sent: 'נשלח', received: 'התקבל', in_progress: 'בביצוע', pending_approval: 'ממתין לאישור', completed: 'הושלם' },
-    priority: { urgent: 'דחוף', normal: 'רגיל', optional: 'אופציונלי' }
+    loadingTasks: '╫ר╫ץ╫ó╫ƒ ╫₧╫⌐╫ש╫₧╫ץ╫¬...',
+    errorTitle: '╫⌐╫ע╫ש╫נ╫פ',
+    ackSuccess: '╫º╫ס╫£╫¬ ╫פ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫נ╫ץ╫⌐╫¿╫פ ╫ס╫פ╫ª╫£╫ק╫פ!',
+    ackError: '╫⌐╫ע╫ש╫נ╫פ ╫ס╫נ╫ש╫⌐╫ץ╫¿ ╫º╫ס╫£╫¬ ╫פ╫₧╫⌐╫ש╫₧╫ץ╫¬',
+    taskUpdateError: '╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫פ╫₧╫⌐╫ש╫₧╫פ',
+    completionSent: '╫פ╫₧╫⌐╫ש╫₧╫פ ╫á╫⌐╫£╫ק╫פ ╫£╫נ╫ש╫⌐╫ץ╫¿ ╫פ╫₧╫á╫פ╫£!',
+    completionError: '╫⌐╫ע╫ש╫נ╫פ ╫ס╫⌐╫£╫ש╫ק╫¬ ╫פ╫₧╫⌐╫ש╫₧╫פ',
+    pageTitle: '╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫£╫ס╫ש╫ª╫ץ╫ó',
+    hello: '╫⌐╫£╫ץ╫¥',
+    waitingCount: '╫ש╫⌐ ╫£╫ת {{count}} ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫₧╫₧╫¬╫ש╫á╫ץ╫¬',
+    ackPrompt: '╫£╫ק╫Ñ ╫ó╫£ ╫פ╫¢╫ñ╫¬╫ץ╫¿ ╫¢╫ף╫ש ╫£╫נ╫⌐╫¿ ╫º╫ס╫£╫פ ╫ץ╫£╫¿╫נ╫ץ╫¬ ╫נ╫¬ ╫פ╫₧╫⌐╫ש╫₧╫ץ╫¬',
+    ackBtn: '╫º╫ש╫ס╫£╫¬╫ש',
+    approving: '╫₧╫נ╫⌐╫¿...',
+    queueLabel: '╫₧╫ª╫ש╫ע {{visible}} ╫₧╫⌐╫ש╫₧╫ץ╫¬ | ╫ó╫ץ╫ף {{queued}} ╫ס╫¬╫ץ╫¿',
+    completedCounter: '{{count}} ╫₧╫⌐╫ש╫₧╫ץ╫¬ ╫פ╫ץ╫⌐╫£╫₧╫ץ/╫á╫⌐╫£╫ק╫ץ ╫£╫נ╫ש╫⌐╫ץ╫¿',
+    allDoneTitle: '╫¢╫£ ╫פ╫¢╫ס╫ץ╫ף! ≡ƒמי',
+    allDoneSub: '╫í╫ש╫ש╫₧╫¬ ╫נ╫¬ ╫¢╫£ ╫פ╫₧╫⌐╫ש╫₧╫ץ╫¬',
+    completeSectionTitle: '╫פ╫⌐╫£╫₧╫¬ ╫₧╫⌐╫ש╫₧╫פ',
+    imagesLabel: '╫ª╫£╫¥ ╫¬╫₧╫ץ╫á╫ץ╫¬ (╫נ╫ץ╫ñ╫ª╫ש╫ץ╫á╫£╫ש, ╫ó╫ף {{max}})',
+    addImage: '╫פ╫ץ╫í╫ú ╫¬╫₧╫ץ╫á╫פ',
+    takeImage: '╫ª╫£╫¥ ╫¬╫₧╫ץ╫á╫פ',
+    noteLabel: '╫פ╫ó╫¿╫פ (╫נ╫ץ╫ñ╫ª╫ש╫ץ╫á╫£╫ש)',
+    notePlaceholder: '╫פ╫ץ╫í╫ú ╫פ╫ó╫¿╫פ...',
+    sendForApproval: '╫⌐╫£╫ק ╫£╫נ╫ש╫⌐╫ץ╫¿',
+    sending: '╫⌐╫ץ╫£╫ק...',
+    cancel: '╫ס╫ש╫ר╫ץ╫£',
+    doneAndSend: '╫í╫ש╫ש╫₧╫¬╫ש - ╫⌐╫£╫ק ╫£╫נ╫ש╫⌐╫ץ╫¿',
+    footer: '╫₧╫ó╫¿╫¢╫¬ ╫á╫ש╫פ╫ץ╫£ ╫¬╫ק╫צ╫ץ╫º╫פ - Eden',
+    status: { draft: '╫ק╫ף╫⌐', sent: '╫á╫⌐╫£╫ק', received: '╫פ╫¬╫º╫ס╫£', in_progress: '╫ס╫ס╫ש╫ª╫ץ╫ó', pending_approval: '╫₧╫₧╫¬╫ש╫ƒ ╫£╫נ╫ש╫⌐╫ץ╫¿', completed: '╫פ╫ץ╫⌐╫£╫¥' },
+    priority: { urgent: '╫ף╫ק╫ץ╫ú', normal: '╫¿╫ע╫ש╫£', optional: '╫נ╫ץ╫ñ╫ª╫ש╫ץ╫á╫£╫ש' }
   },
   en: {
     loadingTasks: 'Loading tasks...',
@@ -54,7 +54,7 @@ const UI_TEXT = {
     approving: 'Confirming...',
     queueLabel: 'Showing {{visible}} tasks | {{queued}} in queue',
     completedCounter: '{{count}} tasks completed/sent for approval',
-    allDoneTitle: 'Great job! 🎉',
+    allDoneTitle: 'Great job! ≡ƒמי',
     allDoneSub: 'You finished all tasks',
     completeSectionTitle: 'Complete Task',
     imagesLabel: 'Take photos (optional, up to {{max}})',
@@ -362,7 +362,7 @@ export default function TaskConfirmationPage() {
           </div>
         </div>
 
-        {/* "קיבלתי" Button - Shows at TOP when not acknowledged */}
+        {/* "╫º╫ש╫ס╫£╫¬╫ש" Button - Shows at TOP when not acknowledged */}
         {!isAcknowledged && (
           <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
             <div className="text-center mb-6">
@@ -380,7 +380,7 @@ export default function TaskConfirmationPage() {
             >
               <FaThumbsUp className="text-4xl" />
               <span>{acknowledging ? t('approving') : t('ackBtn')}</span>
-              <span className="text-4xl">👍</span>
+              <span className="text-4xl">≡ƒסם</span>
             </button>
           </div>
         )}
@@ -485,7 +485,7 @@ export default function TaskConfirmationPage() {
                               <div key={index} className="relative inline-block">
                                 <img
                                   src={preview}
-                                  alt={`תמונה ${index + 1}`}
+                                  alt={`╫¬╫₧╫ץ╫á╫פ ${index + 1}`}
                                   className="w-24 h-24 object-cover rounded-lg border-2 border-gray-300"
                                 />
                                 <button
