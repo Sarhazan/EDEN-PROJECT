@@ -888,48 +888,47 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         />
       )}
 
-      {/* Hover tooltip — full-viewport overlay with overflow:hidden prevents scrollbar jitter */}
+      {/* Hover tooltip — clamped strictly within viewport; no overflow possible */}
       {tooltip && !dragging && !resizeState && (() => {
         const TOOLTIP_W = 260;
+        const TOOLTIP_MAX_H = 160;
         const MARGIN = 12;
-        const rawLeft = tooltip.x + MARGIN;
-        const adjustedLeft = rawLeft + TOOLTIP_W + MARGIN > window.innerWidth
-          ? Math.max(0, tooltip.x - TOOLTIP_W - MARGIN)
-          : rawLeft;
-        const rawTop = tooltip.y + MARGIN;
-        const adjustedTop = rawTop + 140 > window.innerHeight
-          ? Math.max(0, tooltip.y - 140)
-          : rawTop;
+        const vw = document.documentElement.clientWidth;  // excludes scrollbar
+        const vh = document.documentElement.clientHeight;
+
+        const left = Math.min(tooltip.x + MARGIN, vw - TOOLTIP_W - 4);
+        const top  = Math.min(tooltip.y + MARGIN, vh - TOOLTIP_MAX_H - 4);
+
         return (
           <div
-            className="fixed z-[9999] pointer-events-none"
-            style={{ inset: 0, overflow: 'hidden' }}
+            className="fixed z-[9999] pointer-events-none rounded-xl shadow-2xl p-3 text-right"
+            style={{
+              left,
+              top,
+              width: TOOLTIP_W,
+              background: '#1e293b',
+              color: '#f1f5f9',
+              border: '1px solid #334155',
+            }}
           >
-            <div style={{ position: 'absolute', left: adjustedLeft, top: adjustedTop, width: TOOLTIP_W }}>
-              <div
-                className="rounded-xl shadow-2xl p-3 text-right"
-                style={{ background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155' }}
-              >
-                <div className="font-bold text-sm leading-snug mb-1" style={{ color: '#f8fafc' }}>
-                  {tooltip.task.title || 'ללא כותרת'}
-                </div>
-                {tooltip.task.description && (
-                  <div className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: '#94a3b8' }}>
-                    {tooltip.task.description}
-                  </div>
-                )}
-                {tooltip.task.start_time && (
-                  <div className="text-xs mt-2" style={{ color: '#64748b' }}>
-                    🕐 {tooltip.task.start_time} · {durationForTask(tooltip.task)} דק׳
-                  </div>
-                )}
-              {tooltip.task.status === 'completed' && tooltip.task.time_delta_minutes > 0 && (
-                  <div className="text-xs mt-1 font-semibold" style={{ color: '#fb923c' }}>
-                    ⚠️ {tooltip.task.time_delta_text || `איחור של ${tooltip.task.time_delta_minutes} דק׳`}
-                  </div>
-                )}
-              </div>
+            <div className="font-bold text-sm leading-snug mb-1" style={{ color: '#f8fafc' }}>
+              {tooltip.task.title || 'ללא כותרת'}
             </div>
+            {tooltip.task.description && (
+              <div className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: '#94a3b8' }}>
+                {tooltip.task.description}
+              </div>
+            )}
+            {tooltip.task.start_time && (
+              <div className="text-xs mt-2" style={{ color: '#64748b' }}>
+                🕐 {tooltip.task.start_time} · {durationForTask(tooltip.task)} דק׳
+              </div>
+            )}
+            {tooltip.task.status === 'completed' && tooltip.task.time_delta_minutes > 0 && (
+              <div className="text-xs mt-1 font-semibold" style={{ color: '#fb923c' }}>
+                ⚠️ {tooltip.task.time_delta_text || `איחור של ${tooltip.task.time_delta_minutes} דק׳`}
+              </div>
+            )}
           </div>
         );
       })()}
