@@ -746,13 +746,58 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   ))}
                 </div>
 
+                {/* All-day tasks (one-time, no time) — week view */}
+                {view === 'week' && (() => {
+                  const hasAnyAllDay = weekDays.some(day =>
+                    employeeTasks.some(t =>
+                      isSameDay(parseISO(t.start_date), day) &&
+                      (!t.start_time || t.start_time === '' || t.start_time === '00:00') &&
+                      Number(t.is_recurring) === 0 &&
+                      t.status !== 'cancelled'
+                    )
+                  );
+                  if (!hasAnyAllDay) return null;
+                  return (
+                    <div className={`grid border-b bg-blue-50/30 flex-shrink-0 grid-cols-[80px_repeat(7,minmax(0,1fr))]`}>
+                      <div className="text-xs p-1.5 bg-gray-50 border-r text-gray-500 font-medium">כל היום</div>
+                      {weekDays.map(day => {
+                        const dayAllDay = employeeTasks.filter(t =>
+                          isSameDay(parseISO(t.start_date), day) &&
+                          (!t.start_time || t.start_time === '' || t.start_time === '00:00') &&
+                          Number(t.is_recurring) === 0 &&
+                          t.status !== 'cancelled'
+                        );
+                        return (
+                          <div key={day.toISOString()} className="border-r first:border-r-0 p-0.5 min-h-[24px]">
+                            {dayAllDay.map(task => (
+                              <div
+                                key={task.id}
+                                className="text-[10px] px-1 py-0.5 rounded mb-0.5 truncate cursor-pointer hover:opacity-80"
+                                style={{
+                                  backgroundColor: STATUS_BG[task.status] || '#bfdbfe',
+                                  color: STATUS_TEXT[task.status] || '#1e3a8a',
+                                  border: `1px solid ${STATUS_BORDER[task.status] || '#2563eb'}`,
+                                }}
+                                onClick={() => setEditingTask(task)}
+                                title={task.title}
+                              >
+                                {task.title || 'ללא כותרת'}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
                 {/* All-day tasks (one-time, no time) — day view only */}
                 {view === 'day' && (() => {
                   const allDayTasks = employeeTasks.filter(t =>
                     isSameDay(parseISO(t.start_date), anchorDate) &&
                     (!t.start_time || t.start_time === '' || t.start_time === '00:00') &&
                     Number(t.is_recurring) === 0 &&
-                    t.status !== 'not_completed' && t.status !== 'cancelled'
+                    t.status !== 'cancelled'
                   );
                   if (allDayTasks.length === 0) return null;
                   return (
