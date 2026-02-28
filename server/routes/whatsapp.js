@@ -70,6 +70,19 @@ router.post('/connect', async (req, res) => {
   }
 });
 
+// Get current QR code as data URL (HTTP fallback when Socket.IO doesn't deliver it)
+router.get('/qr', async (req, res) => {
+  try {
+    const qrDataUrl = whatsappService.getQrDataUrl ? whatsappService.getQrDataUrl() : null;
+    if (!qrDataUrl) {
+      return res.status(404).json({ error: 'אין QR זמין כרגע — נסה לאתחל חיבור' });
+    }
+    res.json({ qrDataUrl });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Disconnect WhatsApp
 router.post('/disconnect', async (req, res) => {
   try {

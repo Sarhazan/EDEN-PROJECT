@@ -110,6 +110,29 @@ export default function SettingsPage() {
     };
   }, []);
 
+  // ─── QR HTTP polling fallback (when Socket.IO doesn't deliver the QR) ──────
+  // Polls GET /whatsapp/qr every 3s if status says needsAuth but qrCode is still null
+  useEffect(() => {
+    if (!whatsappStatus.needsAuth || qrCode) return;
+
+    let active = true;
+    const poll = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/whatsapp/qr`);
+        if (active && res.data?.qrDataUrl) {
+          setQrCode(res.data.qrDataUrl);
+          setSuccessMessage('סרוק את הקוד באפליקציית WhatsApp שלך');
+        }
+      } catch {
+        // QR not ready yet — keep polling
+      }
+    };
+
+    poll(); // immediate first check
+    const interval = setInterval(poll, 3000);
+    return () => { active = false; clearInterval(interval); };
+  }, [whatsappStatus.needsAuth, qrCode]);
+
   // ─── Initial data load ─────────────────────────────────────────────────────
   useEffect(() => {
     const checkWhatsAppStatus = async () => {

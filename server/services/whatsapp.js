@@ -353,6 +353,10 @@ class WhatsAppService {
     };
   }
 
+  getQrDataUrl() {
+    return this.qrDataUrl || null;
+  }
+
   /**
    * Send WhatsApp message
    */
