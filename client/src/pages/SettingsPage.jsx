@@ -4,6 +4,10 @@ import axios from 'axios';
 import { useApp } from '../context/AppContext';
 import { io } from 'socket.io-client';
 import { API_URL, SOCKET_URL, LS_KEYS } from '../config';
+import WhatsAppSection from '../components/settings/WhatsAppSection';
+import WorkdaySection from '../components/settings/WorkdaySection';
+import ManagerSection from '../components/settings/ManagerSection';
+import VersionSection from '../components/settings/VersionSection';
 // Environment flags
 const IS_TEST_ENV = import.meta.env.VITE_ENV === 'test';
 const IS_PRODUCTION_ENV = import.meta.env.PROD && import.meta.env.VITE_ENV !== 'test' && import.meta.env.VITE_ENV !== 'local';
@@ -397,7 +401,7 @@ export default function SettingsPage() {
       <h1 className="text-3xl font-bold mb-6">הגדרות</h1>
 
       {/* WhatsApp Integration Section */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <WhatsAppSection>
         <div className="flex items-center gap-3 mb-4">
           <FaWhatsapp className="text-green-500 text-3xl" />
           <h2 className="text-2xl font-semibold">חיבור לוואטסאפ</h2>
@@ -514,10 +518,10 @@ export default function SettingsPage() {
             <li>עליך לוודא שלעובדים יש מספרי טלפון תקינים במערכת</li>
           </ul>
         </div>
-      </div>
+      </WhatsAppSection>
 
       {/* Google Translate Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+      <VersionSection>
         <div className="flex items-center gap-3 mb-4">
           <FaGoogle className="text-blue-500 text-3xl" />
           <h2 className="text-2xl font-semibold">Google Translate (בתשלום)</h2>
@@ -659,7 +663,7 @@ export default function SettingsPage() {
             💰 עלות: 500,000 תווים ראשונים בחודש חינם, לאחר מכן $20 למיליון תווים
           </p>
         </div>
-      </div>
+      </VersionSection>
 
       {/* Employee Page Settings Section */}
       <div className="bg-white rounded-lg shadow-md p-6 mt-6">
@@ -715,7 +719,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Workday End Time Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+      <WorkdaySection>
         <div className="flex items-center gap-3 mb-4">
           <FaCog className="text-gray-500 text-3xl" />
           <h2 className="text-2xl font-semibold">הגדרות יום עבודה</h2>
@@ -781,10 +785,10 @@ export default function SettingsPage() {
             ברירת מחדל: 18:00
           </p>
         </div>
-      </div>
+      </WorkdaySection>
 
       {/* Manager Selection Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+      <ManagerSection>
         <div className="flex items-center gap-3 mb-4">
           <FaCog className="text-indigo-500 text-3xl" />
           <h2 className="text-2xl font-semibold">הגדרות מנהל</h2>
@@ -824,7 +828,7 @@ export default function SettingsPage() {
             המנהל הנבחר יהיה ברירת המחדל בעת הוספת משימה מ"היום שלי"
           </p>
         </div>
-      </div>
+      </ManagerSection>
 
       {/* Data Management Section (hidden in production) */}
       {!IS_PRODUCTION_ENV && (
