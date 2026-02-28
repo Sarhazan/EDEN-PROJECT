@@ -385,21 +385,32 @@ export default function MyDayPage() {
 
   // Helper function to check if a task should appear on the selected date
   const shouldTaskAppearOnDate = (task, date) => {
-    // Closed tasks should stay on their original day only
+    const taskStartDate = startOfDay(new Date(task.start_date));
+    const selectedDay = startOfDay(date);
+
+    // Tasks with due_date
+    if (!isRecurringTask(task) && task.due_date) {
+      const taskDueDate = startOfDay(new Date(task.due_date));
+
+      if (isTaskClosed(task)) {
+        // Closed tasks: show only on due_date
+        return isSameDay(taskDueDate, selectedDay);
+      }
+      // Active tasks: show on every day from start_date to due_date (inclusive)
+      return (
+        (isSameDay(taskStartDate, selectedDay) || taskStartDate < selectedDay) &&
+        (isSameDay(taskDueDate, selectedDay) || taskDueDate > selectedDay)
+      );
+    }
+
+    // Tasks without due_date (original logic):
     if (isTaskClosed(task)) {
-      return isSameDay(new Date(task.start_date), date);
+      return isSameDay(taskStartDate, selectedDay);
     }
-
-    // One-time tasks: check exact date match
     if (!isRecurringTask(task)) {
-      return isSameDay(new Date(task.start_date), date);
+      return isSameDay(taskStartDate, selectedDay);
     }
-
-    // Recurring tasks: use EXACT date match only.
-    // The server pre-generates one DB instance per occurrence date.
-    // Using frequency-based logic here causes every past instance to "spill"
-    // onto all future matching dates → duplicates.
-    return isSameDay(new Date(task.start_date), date);
+    return isSameDay(taskStartDate, selectedDay);
   };
 
   const _bulkWhatsAppHook = useBulkWhatsApp({

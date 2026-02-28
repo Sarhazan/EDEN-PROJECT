@@ -29,9 +29,15 @@ function autoCloseOpenTasksForDate(dateStr) {
     UPDATE tasks
     SET status = 'not_completed',
         updated_at = CURRENT_TIMESTAMP
-    WHERE start_date = ?
-      AND status IN ('draft', 'sent', 'received')
-  `).run(dateStr);
+    WHERE status IN ('draft', 'sent', 'received')
+      AND (
+        -- Tasks without due_date: close on start_date
+        (due_date IS NULL AND start_date = ?)
+        OR
+        -- Tasks with due_date: close only on due_date (not start_date)
+        (due_date IS NOT NULL AND due_date = ?)
+      )
+  `).run(dateStr, dateStr);
 
   return result.changes || 0;
 }
