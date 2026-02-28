@@ -29,6 +29,7 @@ export default function MyDayPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const [timelineRangeDays, setTimelineRangeDays] = useState(7);
+  const [forecastFilter, setForecastFilter] = useState('all'); // 'all' | 'manager' | 'employees'
   const [expandedPendingIds, setExpandedPendingIds] = useState(new Set());
   const [highlightTaskId, setHighlightTaskId] = useState(null);
   const [pendingNavigateTaskId, setPendingNavigateTaskId] = useState(null);
@@ -743,10 +744,17 @@ export default function MyDayPage() {
         if (!existing || task.id < existing.id) dedupMap.set(key, task);
       });
       tasksForDay = Array.from(dedupMap.values());
-      // Apply manager filter to match the recurring tasks list
-      if (filterCategory === 'manager' && managerEmployeeId) {
-        tasksForDay = tasksForDay.filter(t => Number(t.employee_id) === Number(managerEmployeeId));
+      // Apply forecast-specific filter
+      if (forecastFilter === 'manager') {
+        tasksForDay = tasksForDay.filter(t =>
+          !t.employee_id || Number(t.employee_id) === Number(managerEmployeeId)
+        );
+      } else if (forecastFilter === 'employees') {
+        tasksForDay = tasksForDay.filter(t =>
+          t.employee_id && Number(t.employee_id) !== Number(managerEmployeeId)
+        );
       }
+      // 'all' = no filter
       // Apply star filter
       if (starFilter) {
         tasksForDay = tasksForDay.filter((t) => t.is_starred === 1);
@@ -784,7 +792,7 @@ export default function MyDayPage() {
     const maxCount = Math.max(...timeline.map(d => d.count), 1);
 
     return { timeline, maxCount };
-  }, [tasks, starFilter, timelineRangeDays, todayOpenStats, filterCategory, managerEmployeeId]);
+  }, [tasks, starFilter, timelineRangeDays, todayOpenStats, forecastFilter, managerEmployeeId]);
 
   return (
     <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
@@ -1028,19 +1036,43 @@ export default function MyDayPage() {
             <h3 className="text-lg font-semibold">תחזית עומס משימות</h3>
             <p className="text-xs text-gray-500">תמיד מחושב מהיום קדימה</p>
           </div>
-          <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setTimelineRangeDays(7)}
-              className={`px-3 py-1.5 text-xs rounded ${timelineRangeDays === 7 ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
-            >
-              שבוע
-            </button>
-            <button
-              onClick={() => setTimelineRangeDays(30)}
-              className={`px-3 py-1.5 text-xs rounded ${timelineRangeDays === 30 ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
-            >
-              חודש
-            </button>
+          <div className="flex items-center gap-2">
+            {/* Forecast view filter */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setForecastFilter('all')}
+                className={`px-2.5 py-1.5 text-xs rounded ${forecastFilter === 'all' ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
+              >
+                הכל
+              </button>
+              <button
+                onClick={() => setForecastFilter('manager')}
+                className={`px-2.5 py-1.5 text-xs rounded ${forecastFilter === 'manager' ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
+              >
+                מנהל
+              </button>
+              <button
+                onClick={() => setForecastFilter('employees')}
+                className={`px-2.5 py-1.5 text-xs rounded ${forecastFilter === 'employees' ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
+              >
+                עובדים
+              </button>
+            </div>
+            {/* Existing week/month toggle */}
+            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setTimelineRangeDays(7)}
+                className={`px-3 py-1.5 text-xs rounded ${timelineRangeDays === 7 ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
+              >
+                שבוע
+              </button>
+              <button
+                onClick={() => setTimelineRangeDays(30)}
+                className={`px-3 py-1.5 text-xs rounded ${timelineRangeDays === 30 ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
+              >
+                חודש
+              </button>
+            </div>
           </div>
         </div>
 
