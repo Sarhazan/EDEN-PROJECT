@@ -537,7 +537,7 @@ export default function MyDayPage() {
     let filtered = tasks.filter((t) => {
       if (!isRecurringTask(t)) return false;
       // When filtering for 'done' status, include completed tasks; otherwise exclude them
-      if (t.status === 'completed' && !(filterCategory === 'status' && filterValue === 'done')) return false;
+      if (t.status === 'completed' && !(filterCategory === 'status' && (filterValue === 'done' || filterValue === 'all'))) return false;
 
       // Manager filter: show only recurring tasks assigned to the manager
       if (filterCategory === 'manager' && managerEmployeeId) {
@@ -658,7 +658,7 @@ export default function MyDayPage() {
         // Intentionally no employee_id exclusion here.
       }
 
-      if (t.status === 'completed') return false;
+      if (t.status === 'completed' && !(filterCategory === 'status' && (filterValue === 'done' || filterValue === 'all'))) return false;
 
       if (isTodaySearch) {
         const taskDate = startOfDay(new Date(t.start_date));
