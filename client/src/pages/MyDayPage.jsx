@@ -535,7 +535,9 @@ export default function MyDayPage() {
     const isTodaySearch = isSameDay(selectedDate, new Date()) && searchTerm.length > 0;
 
     let filtered = tasks.filter((t) => {
-      if (t.status === 'completed' || !isRecurringTask(t)) return false;
+      if (!isRecurringTask(t)) return false;
+      // When filtering for 'done' status, include completed tasks; otherwise exclude them
+      if (t.status === 'completed' && !(filterCategory === 'status' && filterValue === 'done')) return false;
 
       // Manager filter: show only recurring tasks assigned to the manager
       if (filterCategory === 'manager' && managerEmployeeId) {
@@ -566,7 +568,12 @@ export default function MyDayPage() {
           filtered = filtered.filter((t) => t.system_id === parseInt(filterValue));
           break;
         case 'status':
-          filtered = filtered.filter((t) => t.status === filterValue);
+          if (filterValue === 'not_done') {
+            filtered = filtered.filter((t) => ['draft', 'sent', 'received', 'not_completed'].includes(t.status));
+          } else if (filterValue === 'done') {
+            filtered = filtered.filter((t) => ['pending_approval', 'completed'].includes(t.status));
+          }
+          // 'all' = no filter
           break;
         case 'employee':
           if (filterValue === 'general') {
@@ -1318,9 +1325,9 @@ export default function MyDayPage() {
 
                 {filterCategory === 'status' && (
                   <>
-                    <option value="draft">חדש</option>
-                    <option value="sent">נשלח</option>
-                    <option value="not_completed">לא בוצע</option>
+                    <option value="not_done">לא בוצע</option>
+                    <option value="done">בוצע</option>
+                    <option value="all">הכל</option>
                   </>
                 )}
 
@@ -1511,12 +1518,12 @@ export default function MyDayPage() {
                       }
 
                       {filterCategory === 'status' && (
-                        <>
-                          <option value="draft">חדש</option>
-                          <option value="sent">נשלח</option>
-                          <option value="not_completed">לא בוצע</option>
-                        </>
-                      )}
+                  <>
+                    <option value="not_done">לא בוצע</option>
+                    <option value="done">בוצע</option>
+                    <option value="all">הכל</option>
+                  </>
+                )}
 
                       {filterCategory === 'employee' && (
                         <>
@@ -1682,12 +1689,12 @@ export default function MyDayPage() {
                     }
 
                     {filterCategory === 'status' && (
-                      <>
-                        <option value="draft">חדש</option>
-                        <option value="sent">נשלח</option>
-                        <option value="not_completed">לא בוצע</option>
-                      </>
-                    )}
+                  <>
+                    <option value="not_done">לא בוצע</option>
+                    <option value="done">בוצע</option>
+                    <option value="all">הכל</option>
+                  </>
+                )}
 
                     {filterCategory === 'employee' && (
                       <>
@@ -1840,4 +1847,6 @@ export default function MyDayPage() {
     </div>
   );
 }
+
+
 
