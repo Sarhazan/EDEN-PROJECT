@@ -2,7 +2,8 @@ const Database = require('better-sqlite3');
 const path = require('path');
 
 // Create database connection
-const dbPath = path.join(__dirname, '..', '..', 'maintenance.db');
+// DB_PATH env var → Railway Volume (persistent). Fallback to local file for dev.
+const dbPath = process.env.DB_PATH || path.join(__dirname, '..', '..', 'maintenance.db');
 const db = new Database(dbPath);
 
 // Enable foreign keys
