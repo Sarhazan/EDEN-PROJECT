@@ -20,35 +20,51 @@ router.get('/', (req, res) => {
           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
           SUM(CASE WHEN status = 'not_completed' THEN 1 ELSE 0 END) as not_completed_tasks,
           SUM(CASE
-            WHEN status = 'completed' AND completed_at IS NOT NULL
-              AND start_time IS NOT NULL AND start_time != '' AND start_time != '00:00' THEN
+            WHEN status = 'completed' AND completed_at IS NOT NULL THEN
               CASE
-                WHEN datetime(completed_at) <= datetime(start_date || ' ' || start_time, '+' || COALESCE(estimated_duration_minutes, 30) || ' minutes')
-                THEN 1 ELSE 0
+                -- Timed tasks: compare completed_at to start_time + duration
+                WHEN start_time IS NOT NULL AND start_time != '' AND start_time != '00:00' THEN
+                  CASE
+                    WHEN datetime(completed_at) <= datetime(start_date || ' ' || start_time, '+' || COALESCE(estimated_duration_minutes, 30) || ' minutes')
+                    THEN 1 ELSE 0
+                  END
+                -- No-time tasks: use stored time_delta_minutes (calculated vs workday_end at approval)
+                WHEN time_delta_minutes IS NOT NULL THEN
+                  CASE WHEN time_delta_minutes <= 0 THEN 1 ELSE 0 END
+                ELSE 0
               END
             ELSE 0
           END) as completed_on_time,
           SUM(CASE
-            WHEN status = 'completed' AND completed_at IS NOT NULL
-              AND start_time IS NOT NULL AND start_time != '' AND start_time != '00:00' THEN
+            WHEN status = 'completed' AND completed_at IS NOT NULL THEN
               CASE
-                WHEN datetime(completed_at) > datetime(start_date || ' ' || start_time, '+' || COALESCE(estimated_duration_minutes, 30) || ' minutes')
-                THEN 1 ELSE 0
+                -- Timed tasks: completed after start_time + duration
+                WHEN start_time IS NOT NULL AND start_time != '' AND start_time != '00:00' THEN
+                  CASE
+                    WHEN datetime(completed_at) > datetime(start_date || ' ' || start_time, '+' || COALESCE(estimated_duration_minutes, 30) || ' minutes')
+                    THEN 1 ELSE 0
+                  END
+                -- No-time tasks: time_delta_minutes > 0 means completed after workday_end
+                WHEN time_delta_minutes IS NOT NULL THEN
+                  CASE WHEN time_delta_minutes > 0 THEN 1 ELSE 0 END
+                ELSE 0
               END
             ELSE 0
           END) as completed_late,
           ROUND(
             SUM(CASE
-              WHEN status = 'completed' AND completed_at IS NOT NULL
-                AND start_time IS NOT NULL AND start_time != '' AND start_time != '00:00' THEN
+              WHEN status = 'completed' AND completed_at IS NOT NULL THEN
                 CASE
-                  WHEN datetime(completed_at) <= datetime(start_date || ' ' || start_time, '+' || COALESCE(estimated_duration_minutes, 30) || ' minutes')
-                  THEN 1 ELSE 0
+                  WHEN start_time IS NOT NULL AND start_time != '' AND start_time != '00:00' THEN
+                    CASE WHEN datetime(completed_at) <= datetime(start_date || ' ' || start_time, '+' || COALESCE(estimated_duration_minutes, 30) || ' minutes') THEN 1 ELSE 0 END
+                  WHEN time_delta_minutes IS NOT NULL THEN
+                    CASE WHEN time_delta_minutes <= 0 THEN 1 ELSE 0 END
+                  ELSE 0
                 END
               ELSE 0
-            END) * 100.0 / NULLIF(SUM(CASE
-              WHEN status = 'completed' AND start_time IS NOT NULL AND start_time != '' AND start_time != '00:00'
-              THEN 1 ELSE 0 END), 0), 1
+            END) * 100.0 / NULLIF(
+              SUM(CASE WHEN status = 'completed' AND completed_at IS NOT NULL THEN 1 ELSE 0 END)
+            , 0), 1
           ) as on_time_percentage
         FROM tasks
         WHERE employee_id = ?
