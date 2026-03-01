@@ -86,6 +86,12 @@ export function AppProvider({ children }) {
       );
     });
 
+    // Listen for bulk task updates (e.g. autoclose, mass status change)
+    socket.on('tasks:bulk_updated', () => {
+      fetchTasks();
+      fetchEmployees();
+    });
+
     // Store socket in ref for cleanup
     socketRef.current = socket;
 
@@ -93,6 +99,7 @@ export function AppProvider({ children }) {
       socket.off('task:created');
       socket.off('task:updated');
       socket.off('task:deleted');
+      socket.off('tasks:bulk_updated');
       socket.disconnect();
     };
   }, []);

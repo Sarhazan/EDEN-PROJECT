@@ -64,7 +64,7 @@ const { initializeDataRetention } = require('./services/dataRetention');
 initializeDataRetention();
 
 // Initialize automatic end-of-day task closing
-const { initializeTaskAutoClose } = require('./services/taskAutoClose');
+const { initializeTaskAutoClose, setIo: setAutoCloseIo } = require('./services/taskAutoClose');
 initializeTaskAutoClose();
 
 const { initializeDailyScheduleSender } = require('./services/dailyScheduleSender');
@@ -101,7 +101,8 @@ app.use('/api/locations', require('./routes/locations'));
 app.use('/api/buildings', require('./routes/buildings'));
 app.use('/api/tenants', require('./routes/tenants'));
 app.use('/api/billing', require('./routes/billing'));
-app.use('/api/data', require('./routes/data'));
+const dataRouter = require('./routes/data');
+app.use('/api/data', dataRouter);
 app.use('/api/whatsapp', require('./routes/whatsapp'));
 const taskConfirmationRouter = require('./routes/taskConfirmation');
 app.use('/api/confirm', taskConfirmationRouter);
@@ -115,6 +116,8 @@ app.use('/api/billing', require('./routes/billing'));
 // Set io instance in routes after all routes are loaded
 tasksRouter.setIo(io);
 taskConfirmationRouter.setIo(io);
+dataRouter.setIo(io);
+setAutoCloseIo(io);
 
 // Initialize WhatsApp client (auto-reconnects if session exists)
 whatsappService.initialize().catch(err => {

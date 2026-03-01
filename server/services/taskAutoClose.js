@@ -1,6 +1,9 @@
 const cron = require('node-cron');
 const { db } = require('../database/schema');
 
+let io;
+function setIo(ioInstance) { io = ioInstance; }
+
 const LAST_RUN_KEY = 'task_autoclose_last_run_date';
 const END_TIME_KEY = 'workday_end_time';
 
@@ -75,6 +78,12 @@ function checkAndRunAutoClose(now = new Date()) {
   setLastRunDate(dateStr);
 
   console.log(`[TaskAutoClose] ${dateStr} ${configuredEndTime} -> marked ${changed} tasks as not_completed`);
+
+  // Notify all connected clients to refresh their task list
+  if (io && changed > 0) {
+    io.emit('tasks:bulk_updated', { changed, date: dateStr, source: 'autoclose' });
+  }
+
   return { dateStr, configuredEndTime, changed };
 }
 
@@ -104,5 +113,6 @@ function initializeTaskAutoClose() {
 module.exports = {
   initializeTaskAutoClose,
   checkAndRunAutoClose,
-  autoCloseOpenTasksForDate
+  autoCloseOpenTasksForDate,
+  setIo
 };

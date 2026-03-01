@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { seedDatabase, clearDatabase } = require('../database/seed');
 
+let io;
+
 // Middleware to block dangerous operations in production
 // Allows operations if ALLOW_DEMO_SEED=true (for test environments like EDEN-TEST)
 const blockInProduction = (req, res, next) => {
@@ -46,10 +48,17 @@ router.post('/trigger-autoclose', blockInProduction, (req, res) => {
     db.prepare(`DELETE FROM settings WHERE key = 'task_autoclose_last_run_date'`).run();
     const date = req.body.date || new Date().toISOString().slice(0, 10);
     const changed = autoCloseOpenTasksForDate(date);
+
+    // Notify all clients to refresh tasks (autoclose updated statuses in bulk)
+    if (io && changed > 0) {
+      io.emit('tasks:bulk_updated', { changed, date });
+    }
+
     res.json({ ok: true, date, changed });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+router.setIo = (ioInstance) => { io = ioInstance; };
 module.exports = router;
