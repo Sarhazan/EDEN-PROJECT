@@ -132,7 +132,26 @@ function seedDatabase() {
   insertTask.run('טיפול בדשא', 'כיסוח דשא וטיפול בשטחי הגינה', 5, 5, 'biweekly', in3Days, '07:00', 'optional', 'draft', 1);
   insertTask.run('בדיקת חימום מים', 'בדיקת תקינות דוד חשמלי ומערכת חימום', 2, 3, 'monthly', nextWeek, '13:00', 'normal', 'draft', 1);
 
+  seedDefaultLanguages();
   console.log('Database seeded with sample data successfully');
+}
+
+// Default languages always available (restored after clear too)
+const DEFAULT_LANGUAGES = [
+  { code: 'he', name: 'עברית' },
+  { code: 'en', name: 'English' },
+  { code: 'ru', name: 'Русский' },
+  { code: 'ar', name: 'العربية' },
+  { code: 'hi', name: 'हिन्दी' },
+];
+
+function seedDefaultLanguages() {
+  const insert = db.prepare(
+    `INSERT OR IGNORE INTO languages (code, name) VALUES (?, ?)`
+  );
+  for (const lang of DEFAULT_LANGUAGES) {
+    insert.run(lang.code, lang.name);
+  }
 }
 
 function clearDatabase() {
@@ -160,7 +179,10 @@ function clearDatabase() {
     db.exec('PRAGMA foreign_keys = ON');
   }
 
+  // Always restore default languages after clear
+  seedDefaultLanguages();
+
   console.log('Database cleared successfully');
 }
 
-module.exports = { seedDatabase, clearDatabase };
+module.exports = { seedDatabase, clearDatabase, seedDefaultLanguages };
