@@ -167,9 +167,24 @@ export default function EmployeesPage() {
           </div>
         ) : (
           employees.map((employee) => {
-            const todayTasks = (tasks || []).filter(t => t.employee_id === employee.id && t.start_date === todayStr);
+            // Today's tasks: exclude tasks whose due_date is in the future
+            const todayTasks = (tasks || []).filter(t =>
+              t.employee_id === employee.id &&
+              t.start_date === todayStr &&
+              (!t.due_date || t.due_date <= todayStr)
+            );
+
+            // Future due-date tasks: assigned to employee, not yet done, due later
+            const futureDueTasks = (tasks || []).filter(t =>
+              t.employee_id === employee.id &&
+              t.due_date && t.due_date > todayStr &&
+              !['completed', 'not_completed'].includes(t.status)
+            );
+
             const notCompletedList = todayTasks.filter(t => t.status === 'not_completed');
-            const lateList = todayTasks.filter(t => t.status === 'completed' && t.time_delta_minutes > 0);
+            const lateList        = todayTasks.filter(t => t.status === 'completed' && t.time_delta_minutes > 0);
+            const completedToday  = todayTasks.filter(t => t.status === 'completed');
+            const onTimeToday     = completedToday.filter(t => !t.time_delta_minutes || t.time_delta_minutes <= 0);
             
             return (
             <div
@@ -238,11 +253,42 @@ export default function EmployeesPage() {
               </div>
 
               <div className="border-t pt-4 mt-4 relative">
-                <div className="flex justify-center mb-4">
-                    <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                        📋 {todayTasks.length} משימות היום
-                    </span>
+                {/* Today tasks badge + breakdown */}
+                <div className="flex flex-col items-center gap-1 mb-4">
+                  <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                    📋 {todayTasks.length} משימות היום
+                  </span>
+                  {todayTasks.length > 0 && (
+                    <div className="flex gap-3 text-xs text-gray-500 mt-0.5">
+                      <span className="text-emerald-600 font-medium">{completedToday.length} בוצעו</span>
+                      <span className="text-gray-300">|</span>
+                      <span className="text-green-500">{onTimeToday.length} בזמן</span>
+                      <span className="text-gray-300">|</span>
+                      <span className="text-orange-500">{lateList.length} באיחור</span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Future due-date tasks */}
+                {futureDueTasks.length > 0 && (
+                  <div className="mb-4 bg-amber-50 border border-amber-100 rounded-lg p-3">
+                    <div className="text-xs font-semibold text-amber-700 mb-2 flex items-center gap-1">
+                      🗓 {futureDueTasks.length} משימות ממתינות
+                    </div>
+                    <ul className="space-y-1">
+                      {futureDueTasks.map(t => {
+                        const [y, m, d] = t.due_date.split('-');
+                        return (
+                          <li key={t.id} className="flex justify-between items-center text-xs">
+                            <span className="text-gray-700 truncate max-w-[60%]">{t.title}</span>
+                            <span className="text-amber-600 font-medium whitespace-nowrap">עד {d}/{m}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+
                 {/* Circular Progress */}
                 <div className="flex justify-center mb-4">
                   <CircularProgress
