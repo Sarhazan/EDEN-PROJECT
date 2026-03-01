@@ -96,6 +96,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/systems', require('./routes/systems'));
 app.use('/api/suppliers', require('./routes/suppliers'));
 app.use('/api/employees', require('./routes/employees'));
+app.use('/api/languages', require('./routes/languages'));
 app.use('/api/locations', require('./routes/locations'));
 app.use('/api/buildings', require('./routes/buildings'));
 app.use('/api/tenants', require('./routes/tenants'));

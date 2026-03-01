@@ -101,9 +101,12 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'שם העובד הוא שדה חובה' });
     }
 
-    // Validate language if provided
-    if (language && !['he', 'en', 'ru', 'ar'].includes(language)) {
-      return res.status(400).json({ error: 'שפה לא חוקית. בחר: he, en, ru, ar' });
+    // Validate language if provided - check against dynamic languages table
+    if (language) {
+      const validLang = db.prepare(`SELECT code FROM languages WHERE code = ?`).get(language);
+      if (!validLang) {
+        return res.status(400).json({ error: 'שפה לא חוקית. הוסף אותה תחילה דרך ניהול השפות.' });
+      }
     }
 
     const result = db.prepare(`
@@ -125,9 +128,12 @@ router.put('/:id', (req, res) => {
     console.log('[DEBUG PUT /employees/:id] Received update for employee', req.params.id);
     console.log('[DEBUG PUT /employees/:id] Request body:', { name, phone, position, language });
 
-    // Validate language if provided
-    if (language && !['he', 'en', 'ru', 'ar'].includes(language)) {
-      return res.status(400).json({ error: 'שפה לא חוקית. בחר: he, en, ru, ar' });
+    // Validate language if provided - check against dynamic languages table
+    if (language) {
+      const validLang = db.prepare(`SELECT code FROM languages WHERE code = ?`).get(language);
+      if (!validLang) {
+        return res.status(400).json({ error: 'שפה לא חוקית. הוסף אותה תחילה דרך ניהול השפות.' });
+      }
     }
 
     const finalLanguage = language || 'he';

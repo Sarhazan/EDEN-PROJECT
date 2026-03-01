@@ -122,6 +122,54 @@ function initializeDatabase() {
     }
   }
 
+  // Migration: Remove CHECK constraint from employees.language (allow dynamic languages)
+  try {
+    const tableInfo = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='employees'`).get();
+    if (tableInfo && tableInfo.sql && tableInfo.sql.includes('CHECK(language IN')) {
+      console.log('Migrating employees table to remove language CHECK constraint...');
+      db.exec(`PRAGMA foreign_keys = OFF`);
+      db.exec(`
+        BEGIN TRANSACTION;
+        CREATE TABLE employees_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          phone TEXT,
+          position TEXT,
+          manager_id INTEGER,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          language TEXT DEFAULT 'he',
+          FOREIGN KEY (manager_id) REFERENCES employees_new(id) ON DELETE SET NULL
+        );
+        INSERT INTO employees_new (id, name, phone, position, manager_id, created_at, language)
+          SELECT id, name, phone, position, manager_id, created_at, COALESCE(language, 'he') FROM employees;
+        DROP TABLE employees;
+        ALTER TABLE employees_new RENAME TO employees;
+        COMMIT;
+      `);
+      db.exec(`PRAGMA foreign_keys = ON`);
+      console.log('Done: employees table migrated (no CHECK constraint on language)');
+    }
+  } catch (e) {
+    db.exec(`PRAGMA foreign_keys = ON`);
+    console.error('Error migrating employees language constraint:', e.message);
+  }
+
+  // Languages table (dynamic language registry)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS languages (
+      code TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      is_default INTEGER DEFAULT 0
+    )
+  `);
+
+  // Seed default languages
+  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('he', 'עברית (Hebrew)', 1)`).run();
+  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('en', 'English', 1)`).run();
+  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('ru', 'Русский (Russian)', 1)`).run();
+  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('ar', 'العربية (Arabic)', 1)`).run();
+  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('hi', 'हिन्दी (Hindi)', 0)`).run();
+
   // Add manager_id to employees table (MVP manager support: employees can manage other employees)
   // Non-breaking: nullable column; existing rows remain valid.
   if (!hasColumn('employees', 'manager_id')) {
