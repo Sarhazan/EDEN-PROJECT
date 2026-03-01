@@ -712,6 +712,7 @@ router.delete('/:id', (req, res) => {
 
     res.json({ message: 'המשימה נמחקה בהצלחה' });
   } catch (error) {
+    console.error('[DELETE /tasks/:id] Error:', error.message, error.stack?.split('\n')[1]);
     res.status(500).json({ error: error.message });
   }
 });

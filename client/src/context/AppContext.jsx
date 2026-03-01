@@ -183,7 +183,11 @@ export function AppProvider({ children }) {
     const response = await fetch(`${API_URL}/tasks/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫₧╫ק╫ש╫º╫¬ ╫₧╫⌐╫ש╫₧╫פ');
+    if (!response.ok) {
+      let errMsg = 'שגיאה במחיקת משימה';
+      try { const d = await response.json(); if (d?.error) errMsg = d.error; } catch (_) {}
+      throw new Error(errMsg);
+    }
     await fetchTasks();
   };
 
