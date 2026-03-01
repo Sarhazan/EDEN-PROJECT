@@ -19,7 +19,7 @@ class TranslationService {
     if (process.env.GEMINI_API_KEY) {
       try {
         this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        this.geminiModel = this.gemini.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+        this.geminiModel = this.gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
         console.log('✓ Google Gemini API initialized (FREE tier - primary provider)');
       } catch (error) {
         console.error('✗ Failed to initialize Gemini API:', error.message);
@@ -71,10 +71,24 @@ class TranslationService {
 
     try {
       const languageNames = {
-        he: 'Hebrew',
-        en: 'English',
-        ru: 'Russian',
-        ar: 'Arabic'
+        he: 'Hebrew', en: 'English', ru: 'Russian', ar: 'Arabic',
+        hi: 'Hindi', fil: 'Filipino', de: 'German', fr: 'French',
+        es: 'Spanish', it: 'Italian', pt: 'Portuguese', nl: 'Dutch',
+        pl: 'Polish', uk: 'Ukrainian', tr: 'Turkish', fa: 'Persian',
+        ur: 'Urdu', bn: 'Bengali', pa: 'Punjabi', gu: 'Gujarati',
+        mr: 'Marathi', ta: 'Tamil', te: 'Telugu', kn: 'Kannada',
+        ml: 'Malayalam', th: 'Thai', vi: 'Vietnamese', id: 'Indonesian',
+        ms: 'Malay', ko: 'Korean', ja: 'Japanese', 'zh-cn': 'Chinese Simplified',
+        'zh-tw': 'Chinese Traditional', am: 'Amharic', sw: 'Swahili',
+        ha: 'Hausa', yo: 'Yoruba', zu: 'Zulu', so: 'Somali',
+        ne: 'Nepali', si: 'Sinhala', my: 'Burmese', km: 'Khmer',
+        lo: 'Lao', mn: 'Mongolian', ka: 'Georgian', hy: 'Armenian',
+        az: 'Azerbaijani', kk: 'Kazakh', uz: 'Uzbek', tg: 'Tajik',
+        ro: 'Romanian', hu: 'Hungarian', cs: 'Czech', sk: 'Slovak',
+        bg: 'Bulgarian', hr: 'Croatian', sr: 'Serbian', sl: 'Slovenian',
+        el: 'Greek', lt: 'Lithuanian', lv: 'Latvian', et: 'Estonian',
+        fi: 'Finnish', sv: 'Swedish', no: 'Norwegian', da: 'Danish',
+        is: 'Icelandic'
       };
 
       const sourceName = languageNames[sourceLanguage] || sourceLanguage;
