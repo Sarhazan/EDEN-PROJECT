@@ -28,8 +28,8 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'קוד השפה ארוך מדי (מקסימום 10 תווים)' });
     }
 
-    if (!/^[a-z]{2,10}$/.test(code)) {
-      return res.status(400).json({ error: 'קוד השפה חייב להכיל רק אותיות לועזיות (לדוגמה: hi, fil, de)' });
+    if (!/^[a-z]{2,10}(-[a-z]{2,8})?$/.test(code)) {
+      return res.status(400).json({ error: 'קוד שפה לא תקין (לדוגמה: hi, fil, zh-cn)' });
     }
 
     // Check uniqueness
