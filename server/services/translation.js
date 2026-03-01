@@ -19,7 +19,7 @@ class TranslationService {
     if (process.env.GEMINI_API_KEY) {
       try {
         this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        this.geminiModel = this.gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        this.geminiModel = this.gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
         console.log('✓ Google Gemini API initialized (FREE tier - primary provider)');
       } catch (error) {
         console.error('✗ Failed to initialize Gemini API:', error.message);
@@ -228,6 +228,27 @@ class TranslationService {
     } catch (error) {
       console.error('✗ Failed to set Google Translate API Key:', error.message);
       return false;
+    }
+  }
+
+  /**
+   * Test Gemini API connection
+   * @returns {Promise<{success: boolean, translation?: string, error?: string}>}
+   */
+  async testGemini() {
+    if (!this.geminiModel) {
+      return { success: false, error: 'Gemini not configured (GEMINI_API_KEY not set)' };
+    }
+    try {
+      const prompt = `Translate the following Hebrew text to English. Return ONLY the English translation, no explanations:\n\nשלום`;
+      const result = await this.geminiModel.generateContent(prompt);
+      const response = await result.response;
+      const translation = response.text().trim();
+      this.stats.gemini.success++;
+      return { success: true, translation, model: 'gemini-1.5-flash' };
+    } catch (error) {
+      this.stats.gemini.failed++;
+      return { success: false, error: error.message, stack: error.stack?.split('\n')[0] };
     }
   }
 

@@ -117,6 +117,16 @@ router.post('/google-translate/test', async (req, res) => {
   }
 });
 
+// GET /api/accounts/gemini/test - Test Gemini translation directly (debug)
+router.get('/gemini/test', async (req, res) => {
+  try {
+    const result = await translationService.testGemini();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================
 // General Settings Routes
 // ============================================
