@@ -194,7 +194,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       ? Number(task.estimated_duration_minutes)
       : 60;
 
-  const taskHeightPx = (dur) => Math.max(36, (dur / 60) * measuredHourHeight);
+  const taskHeightPx = (dur) => Math.max(20, (dur / 60) * measuredHourHeight);
 
   const tasksForDate = (date) =>
     employeeTasks.filter((t) => isSameDay(parseISO(t.start_date), date));
@@ -501,12 +501,38 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         return;
       }
     }
+
+    // ── Smart start_time: avoid overlap with existing tasks ──────────────────
+    // If a task already occupies the clicked slot, propose its end time instead.
+    const dateStr = toIsoDate(date);
+    const clickedMin = hour * 60; // e.g. 16:00 → 960
+    let smartStartMin = clickedMin;
+
+    employeeTasks
+      .filter((t) => t.start_date === dateStr && t.start_time)
+      .forEach((t) => {
+        const taskStartMin = timeToMinutes(t.start_time);
+        const taskDur = Number(t.estimated_duration_minutes) > 0
+          ? Number(t.estimated_duration_minutes)
+          : 60;
+        const taskEndMin = taskStartMin + taskDur;
+        // Task overlaps clicked slot: starts at or before click, ends after
+        if (taskStartMin <= clickedMin && taskEndMin > clickedMin) {
+          smartStartMin = Math.max(smartStartMin, taskEndMin);
+        }
+      });
+
+    const smartH = Math.min(Math.floor(smartStartMin / 60), 23);
+    const smartM = smartStartMin % 60;
+    const smartStartTime = `${String(smartH).padStart(2, '0')}:${String(smartM).padStart(2, '0')}`;
+    // ────────────────────────────────────────────────────────────────────────
+
     setEditingTask(null);
     setQuickCreateDefaults({
       title: '',
       employee_id: String(employee.id),
-      start_date: toIsoDate(date),
-      start_time: `${String(hour).padStart(2, '0')}:00`,
+      start_date: dateStr,
+      start_time: smartStartTime,
       frequency: 'weekly',
     });
   };
@@ -558,7 +584,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         style={{
           top: `${topOffset}px`,
           height: `${height}px`,
-          minHeight: '36px',
+          minHeight: '20px',
           backgroundColor: bgColor,
           color: textColor,
           borderLeft: `3px solid ${borderColor}`,
