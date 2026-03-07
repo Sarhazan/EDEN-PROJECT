@@ -363,25 +363,85 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         return;
       }
 
-      // Overlap guard
+      // SHIFTING ALGORITHM: Overlap resolution
       const dur = durationForTask(task);
-      if (hasDayOverlapRef(task.id, newDate, newTime, dur)) {
-        toast.error('אין אפשרות להזיז — חפיפה עם משימה אחרת', {
-          position: 'bottom-center', autoClose: 2500, rtl: true,
+      
+      let dayTasks = employeeTasksRef.current
+        .filter(t => t.id !== task.id && t.start_date === newDate)
+        .map(t => ({ ...t, startMin: timeToMinutes(t.start_time), dur: durationForTask(t), isDropped: false }));
+
+      dayTasks.push({ ...task, startMin: timeToMinutes(newTime), dur, isDropped: true });
+
+      let hasOverlap = true;
+      let maxIterations = 20;
+      while (hasOverlap && maxIterations > 0) {
+        hasOverlap = false;
+        maxIterations--;
+        
+        dayTasks.sort((a, b) => {
+          if (a.startMin === b.startMin) return a.isDropped ? -1 : 1;
+          return a.startMin - b.startMin;
         });
-        return;
+
+        for (let i = 0; i < dayTasks.length - 1; i++) {
+          let current = dayTasks[i];
+          let next = dayTasks[i+1];
+          let currentEnd = current.startMin + current.dur;
+
+          if (next.startMin < currentEnd) {
+             hasOverlap = true;
+             if (next.isDropped) {
+                // current overlaps dropped task! Move current to after dropped task.
+                current.startMin = next.startMin + next.dur;
+             } else {
+                // next overlaps current. Move next to after current.
+                next.startMin = currentEnd;
+             }
+          }
+        }
       }
 
       try {
-        const currentTask = tasks.find((t) => t.id === state.task.id);
-        await axios.put(`${API_URL}/tasks/${state.task.id}`, {
-          ...currentTask,
-          start_date: newDate,
-          start_time: newTime,
-        });
+        const updates = [];
+        for (const t of dayTasks) {
+          const origTime = t.isDropped ? null : t.start_time;
+          const newH = Math.floor(t.startMin / 60) % 24;
+          const newM = t.startMin % 60;
+          const newTimeStr = `${String(newH).padStart(2,'0')}:${String(newM).padStart(2,'0')}`;
+          
+          if (t.isDropped || origTime !== newTimeStr) {
+             const baseTask = tasks.find(x => x.id === t.id) || t;
+             // Send only the fields the server expects – avoid sending computed/joined fields
+             updates.push(
+               axios.put(`${API_URL}/tasks/${t.id}`, {
+                 title: baseTask.title,
+                 description: baseTask.description || '',
+                 system_id: baseTask.system_id || null,
+                 employee_id: baseTask.employee_id || null,
+                 frequency: baseTask.frequency || 'one-time',
+                 start_date: newDate,
+                 start_time: newTimeStr,
+                 due_date: baseTask.due_date || null,
+                 priority: baseTask.priority || 'normal',
+                 status: baseTask.status || 'draft',
+                 is_recurring: baseTask.is_recurring ? 1 : 0,
+                 weekly_days: Array.isArray(baseTask.weekly_days)
+                   ? baseTask.weekly_days
+                   : (baseTask.weekly_days ? JSON.parse(baseTask.weekly_days) : []),
+                 estimated_duration_minutes: baseTask.estimated_duration_minutes || 30,
+                 location_id: baseTask.location_id || null,
+                 building_id: baseTask.building_id || null,
+               })
+             );
+          }
+        }
+
+        await Promise.all(updates);
         await refreshData();
-      } catch {
-        toast.error('שמירה נכשלה', { position: 'bottom-center', autoClose: 2000, rtl: true });
+      } catch (err) {
+        const msg = err?.response?.data?.error || err?.message || 'שגיאה לא ידועה';
+        console.error('[Calendar drag] Save failed:', msg, err?.response?.data);
+        toast.error(`שמירה נכשלה: ${msg}`, { position: 'bottom-center', autoClose: 3000, rtl: true });
       }
     };
 
@@ -948,6 +1008,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         <QuickTaskModal
           isOpen={!!quickCreateDefaults}
           initialValues={quickCreateDefaults}
+          forceOneTime={true}
           onClose={() => {
             setQuickCreateDefaults(null);
             refreshData();

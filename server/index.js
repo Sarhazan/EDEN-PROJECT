@@ -120,9 +120,14 @@ dataRouter.setIo(io);
 setAutoCloseIo(io);
 
 // Initialize WhatsApp client (auto-reconnects if session exists)
-whatsappService.initialize().catch(err => {
-  console.error('WhatsApp initialization error:', err);
-});
+// Set DISABLE_WHATSAPP=true in .env to skip WhatsApp init (useful for local dev)
+if (process.env.DISABLE_WHATSAPP !== 'true') {
+  whatsappService.initialize().catch(err => {
+    console.error('WhatsApp initialization error:', err);
+  });
+} else {
+  console.log('⚠️  WhatsApp initialization skipped (DISABLE_WHATSAPP=true)');
+}
 
 // Dynamic route for task confirmation pages
 // This generates HTML dynamically from the database instead of serving static files
