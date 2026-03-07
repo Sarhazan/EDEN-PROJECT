@@ -58,6 +58,32 @@ const parseISODate = (value) => {
   return new Date(year, month - 1, day);
 };
 
+const TIME_OPTIONS = Array.from({ length: 24 * 4 }).map((_, i) => {
+  const h = Math.floor(i / 4);
+  const m = (i % 4) * 15;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+});
+
+const calculateEndTime = (startStr, durationMinutes = 30) => {
+  if (!startStr) return '';
+  const [h, m] = startStr.split(':').map(Number);
+  const totalMin = h * 60 + m + durationMinutes;
+  const eH = Math.floor(totalMin / 60) % 24;
+  const eM = Math.round((totalMin % 60) / 15) * 15;
+  const finalM = eM === 60 ? 0 : eM;
+  const finalH = eM === 60 ? (eH + 1) % 24 : eH;
+  return `${String(finalH).padStart(2, '0')}:${String(finalM).padStart(2, '0')}`;
+};
+
+const getDuration = (startStr, endStr) => {
+  if (!startStr || !endStr) return 30;
+  const [sh, sm] = startStr.split(':').map(Number);
+  const [eh, em] = endStr.split(':').map(Number);
+  let dur = (eh * 60 + em) - (sh * 60 + sm);
+  if (dur <= 0) dur += 24 * 60;
+  return dur;
+};
+
 const extractTimeFromTitle = (rawTitle) => {
   const text = (rawTitle || '').trim();
   const match = text.match(/^(\d{1,2}:\d{2})\s+(.+)$/);
@@ -79,8 +105,9 @@ const extractTimeFromTitle = (rawTitle) => {
   };
 };
 
-export default function QuickTaskModal({ isOpen, onClose, initialValues = null }) {
-  const { addTask, systems, employees, buildings } = useApp();
+export default function QuickTaskModal({ isOpen, onClose, initialValues = null, forceOneTime = false }) {
+  const { addTask, systems, employees, buildings, updateTask } = useApp();
+  const isEditMode = !!(initialValues && initialValues.id);
   const [taskMode, setTaskMode] = useState('one-time');
   const [title, setTitle] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -100,6 +127,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
     weekly_days: [],
     start_date: todayStr,
     start_time: '',
+    end_time: '',
     system_id: '',
     employee_id: '',
     building_id: '',
@@ -125,7 +153,16 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
     const defaultDate = initialValues?.start_date ? parseISODate(initialValues.start_date) : new Date();
     const safeDate = defaultDate || new Date();
 
-    setTaskMode('one-time');
+    const initialFreq = initialValues?.frequency || 'one-time';
+
+    // When creating from employee calendar (or other flows) and we explicitly want a
+    // one-time task, force the UI into one-time mode for NEW tasks.
+    if (forceOneTime && !isEditMode) {
+      setTaskMode('one-time');
+    } else {
+      setTaskMode(initialFreq !== 'one-time' ? 'recurring' : 'one-time');
+    }
+
     setTitle(initialValues?.title || '');
     setSelectedDate(safeDate);
     setQuickDueEnabled(false);
@@ -134,10 +171,11 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
     setFormData((prev) => ({
       ...prev,
       description: initialValues?.description || '',
-      frequency: initialValues?.frequency || 'weekly',
+      frequency: forceOneTime && !isEditMode ? 'one-time' : (initialValues?.frequency || 'weekly'),
       weekly_days: initialValues?.weekly_days || [],
       start_date: initialValues?.start_date || localDateStr(safeDate),
       start_time: initialValues?.start_time || '',
+      end_time: calculateEndTime(initialValues?.start_time || '', initialValues?.estimated_duration_minutes || 30),
       system_id: initialValues?.system_id || '',
       employee_id: initialValues?.employee_id || managerEmployeeId || prev.employee_id || '',
       building_id: initialValues?.building_id || '',
@@ -170,6 +208,39 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, onClose]);
+
+  const handleTimeChange = (field, value) => {
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+      if (field === 'start_time') {
+        if (!value) {
+          next.end_time = '';
+          next.estimated_duration_minutes = 30;
+          return next;
+        }
+        const currentDur = getDuration(prev.start_time, prev.end_time);
+        const [sh, sm] = value.split(':').map(Number);
+        const [eh, em] = (prev.end_time || '').split(':').map(Number);
+        const sTotal = sh * 60 + sm;
+        const eTotal = eh * 60 + em;
+        if (!prev.end_time || eTotal <= sTotal) {
+          next.end_time = calculateEndTime(value, 30);
+          next.estimated_duration_minutes = 30;
+        } else {
+          next.end_time = calculateEndTime(value, currentDur);
+          next.estimated_duration_minutes = currentDur;
+        }
+      } else if (field === 'end_time') {
+        if (!value) {
+           next.estimated_duration_minutes = 30;
+           return next;
+        }
+        const dur = getDuration(prev.start_time, value);
+        next.estimated_duration_minutes = dur;
+      }
+      return next;
+    });
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -322,16 +393,28 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
         start_date: formattedDate,
         due_date: dueDateFormatted,
         start_time: parsed.startTime || formData.start_time || '',
+        end_time: formData.end_time || '',
         frequency: 'one-time',
         is_recurring: false,
         priority: 'normal',
-        estimated_duration_minutes: 30,
-        status: 'draft',
+        estimated_duration_minutes: formData.estimated_duration_minutes || 30,
+        description: formData.description,
+        status: isEditMode && initialValues?.status ? initialValues.status : 'draft',
         employee_id: formData.employee_id || null
       };
 
-      const createdTask = await addTask(taskData);
-      showTaskCreatedToast(createdTask);
+      if (isEditMode) {
+        await updateTask(initialValues.id, taskData);
+        toast.success('המשימה עודכנה בהצלחה', {
+          position: 'bottom-center',
+          autoClose: 2000,
+          hideProgressBar: true,
+          rtl: true
+        });
+      } else {
+        const createdTask = await addTask(taskData);
+        showTaskCreatedToast(createdTask);
+      }
       onClose();
       // Reset form
       setTitle('');
@@ -353,7 +436,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
 
   const handleRecurringSave = async () => {
     // Validate
-    if (!title.trim() || !formData.start_time) {
+    if (!title.trim()) {
       alert('נא למלא את כל השדות החובה');
       return;
     }
@@ -395,11 +478,21 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
         building_id: formData.building_id || null,
         priority: formData.priority,
         estimated_duration_minutes: formData.estimated_duration_minutes,
-        status: 'draft'
+        status: isEditMode && initialValues?.status ? initialValues.status : 'draft'
       };
 
-      const createdTask = await addTask(taskData);
-      showTaskCreatedToast(createdTask);
+      if (isEditMode) {
+        await updateTask(initialValues.id, taskData);
+        toast.success('המשימה עודכנה בהצלחה', {
+          position: 'bottom-center',
+          autoClose: 2000,
+          hideProgressBar: true,
+          rtl: true
+        });
+      } else {
+        const createdTask = await addTask(taskData);
+        showTaskCreatedToast(createdTask);
+      }
       onClose();
       // Reset form
       setTitle('');
@@ -446,7 +539,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900 font-alef">
-            משימה חדשה
+            {isEditMode ? 'עריכת משימה' : 'משימה חדשה'}
           </h2>
           <button
             onClick={onClose}
@@ -478,6 +571,45 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
               <div className="absolute left-2 top-1/2 -translate-y-1/2">
                 <DateChip selectedDate={selectedDate} onChange={setSelectedDate} />
               </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="תיאור המשימה (אופציונלי)"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+              rows="2"
+            />
+          </div>
+
+          {/* Time Fields */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">שעת התחלה</label>
+              <select
+                value={formData.start_time}
+                onChange={(e) => handleTimeChange('start_time', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px]"
+              >
+                <option value="">ללא שעה</option>
+                {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">שעת סיום</label>
+              <select
+                value={formData.end_time}
+                onChange={(e) => handleTimeChange('end_time', e.target.value)}
+                disabled={!formData.start_time}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px] disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                <option value="">ללא שעה</option>
+                {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
           </div>
 
@@ -645,40 +777,6 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
                   </div>
                 )}
 
-                {/* Start Time + Duration */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      שעת התחלה <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="start_time"
-                      value={formData.start_time}
-                      onChange={handleChange}
-                      placeholder="HH:MM (לדוגמא: 14:30)"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      משך (דקות) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="estimated_duration_minutes"
-                      value={formData.estimated_duration_minutes}
-                      onChange={handleChange}
-                      min="5"
-                      step="5"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
-                    </p>
-                  </div>
-                </div>
-
                 <div className="pt-1">
                   <button
                     type="button"
@@ -691,18 +789,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
 
                 {showRecurringAdvanced && (
                   <div className="space-y-3 pt-1">
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm font-medium mb-1">תיאור</label>
-                      <input
-                        type="text"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        placeholder="תיאור המשימה (אופציונלי)"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                      />
-                    </div>
+                    
 
                     {/* System and Employee */}
                     <div className="grid grid-cols-2 gap-3">
@@ -782,14 +869,34 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null }
 
           {/* Save button */}
           <div className="pt-2">
-            <button
-              type="button"
-              onClick={taskMode === 'one-time' ? handleQuickSave : handleRecurringSave}
-              disabled={isSaving}
-              className="w-full bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? 'שומר...' : 'שמור'}
-            </button>
+            {isEditMode ? (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 min-h-[44px] transition-all duration-150 active:scale-95"
+                >
+                  ביטול
+                </button>
+                <button
+                  type="button"
+                  onClick={taskMode === 'one-time' ? handleQuickSave : handleRecurringSave}
+                  disabled={isSaving}
+                  className="flex-[2] bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? 'שומר...' : 'עדכן משימה'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={taskMode === 'one-time' ? handleQuickSave : handleRecurringSave}
+                disabled={isSaving}
+                className="w-full bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? 'שומר...' : 'שמור'}
+              </button>
+            )}
           </div>
         </div>
       </div>

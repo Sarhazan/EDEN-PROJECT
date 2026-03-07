@@ -4,36 +4,30 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './datepicker-custom.css';
 
-const frequencyOptions = [
-  { value: 'one-time', label: 'חד-פעמי' },
-  { value: 'weekly', label: 'שבועי' },
-  { value: 'biweekly', label: 'שבועיים' },
-  { value: 'monthly', label: 'חודשי' },
-  { value: 'semi-annual', label: 'חצי שנתי' },
-  { value: 'annual', label: 'שנתי' },
-  { value: 'daily', label: 'מותאם אישית' }
-];
+const TIME_OPTIONS = Array.from({ length: 24 * 4 }).map((_, i) => {
+  const h = Math.floor(i / 4);
+  const m = (i % 4) * 15;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+});
 
-const priorityOptions = [
-  { value: 'urgent', label: 'דחוף' },
-  { value: 'normal', label: 'רגיל' },
-  { value: 'optional', label: 'עדיפות נמוכה' }
-];
+const calculateEndTime = (startStr, durationMinutes = 30) => {
+  if (!startStr) return '';
+  const [h, m] = startStr.split(':').map(Number);
+  const totalMin = h * 60 + m + durationMinutes;
+  const eH = Math.floor(totalMin / 60) % 24;
+  const eM = Math.round((totalMin % 60) / 15) * 15;
+  const finalM = eM === 60 ? 0 : eM;
+  const finalH = eM === 60 ? (eH + 1) % 24 : eH;
+  return `${String(finalH).padStart(2, '0')}:${String(finalM).padStart(2, '0')}`;
+};
 
-const extractTimeFromTitle = (rawTitle) => {
-  const text = (rawTitle || '').trim();
-  const match = text.match(/^(\d{1,2}:\d{2})\s+(.+)$/);
-  if (!match) return { title: text, startTime: '' };
-
-  const [, time, cleanTitle] = match;
-  const [h, m] = time.split(':').map(Number);
-  const valid = Number.isInteger(h) && Number.isInteger(m) && h >= 0 && h <= 23 && m >= 0 && m <= 59;
-  if (!valid) return { title: text, startTime: '' };
-
-  return {
-    title: cleanTitle.trim(),
-    startTime: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-  };
+const getDuration = (startStr, endStr) => {
+  if (!startStr || !endStr) return 30;
+  const [sh, sm] = startStr.split(':').map(Number);
+  const [eh, em] = endStr.split(':').map(Number);
+  let dur = (eh * 60 + em) - (sh * 60 + sm);
+  if (dur <= 0) dur += 24 * 60;
+  return dur;
 };
 
 const getTodayIsraelStart = () => {
@@ -52,7 +46,7 @@ const getTodayIsraelStart = () => {
 };
 
 export default function TaskForm({ task, initialValues = null, onClose }) {
-  const { addTask, updateTask, deleteTask, deleteTaskSeries, systems, employees, locations, buildings } = useApp();
+  const { addTask, updateTask, deleteTask, deleteTaskSeries, systems, employees, buildings } = useApp();
   const isEditing = !!task;
 
   const [formData, setFormData] = useState({
@@ -60,25 +54,45 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
     description: '',
     system_id: '',
     employee_id: '',
-    location_id: '',
     building_id: '',
+    priority: 'normal',
     frequency: 'one-time',
+    base_frequency: 'one-time',
+    interval: 1,
     start_date: '',
     start_time: '',
-    priority: 'normal',
+    end_time: '',
     status: 'draft',
     is_recurring: false,
     weekly_days: [],
-    estimated_duration_minutes: 30,
-    due_date: ''
+    estimated_duration_minutes: 30
   });
 
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedDueDate, setSelectedDueDate] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
   const todayIsraelStart = getTodayIsraelStart();
 
+  const parseFrequency = (freq) => {
+    if (freq === 'biweekly') return { base: 'weekly', interval: 2 };
+    if (freq === 'semi-annual') return { base: 'monthly', interval: 6 };
+    if (freq === 'weekly') return { base: 'weekly', interval: 1 };
+    if (freq === 'monthly') return { base: 'monthly', interval: 1 };
+    if (freq === 'annual') return { base: 'annual', interval: 1 };
+    if (freq === 'daily') return { base: 'custom', interval: 1 };
+    return { base: 'one-time', interval: 1 };
+  };
+
+  const getDbFrequency = (base, interval) => {
+    if (base === 'weekly' && interval === 2) return 'biweekly';
+    if (base === 'weekly') return 'weekly';
+    if (base === 'monthly' && interval === 6) return 'semi-annual';
+    if (base === 'monthly') return 'monthly';
+    if (base === 'annual') return 'annual';
+    if (base === 'custom') return 'daily';
+    return 'one-time';
+  };
+
   const convertISOToDisplay = (isoDate) => {
-    // Convert YYYY-MM-DD to DD/MM/YYYY
     if (!isoDate) return '';
     const parts = isoDate.split('-');
     if (parts.length === 3) {
@@ -90,25 +104,27 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
 
   useEffect(() => {
     if (task) {
+      const { base, interval } = parseFrequency(task.frequency || 'one-time');
+      
       setFormData({
         title: task.title || '',
         description: task.description || '',
         system_id: task.system_id || '',
         employee_id: task.employee_id || '',
-        location_id: task.location_id || '',
         building_id: task.building_id || '',
+        priority: task.priority || 'normal',
         frequency: task.frequency || 'one-time',
+        base_frequency: base,
+        interval: interval,
         start_date: convertISOToDisplay(task.start_date) || '',
         start_time: task.start_time || '',
-        priority: task.priority || 'normal',
+        end_time: calculateEndTime(task.start_time || '', task.estimated_duration_minutes || 30),
         status: task.status || 'draft',
         is_recurring: task.is_recurring === 1,
         weekly_days: task.weekly_days ? JSON.parse(task.weekly_days) : [],
-        estimated_duration_minutes: task.estimated_duration_minutes || 30,
-        due_date: task.due_date ? convertISOToDisplay(task.due_date) : ''
+        estimated_duration_minutes: task.estimated_duration_minutes || 30
       });
 
-      // Set selectedDate from task.start_date (YYYY-MM-DD format)
       if (task.start_date) {
         const parts = task.start_date.split('-');
         if (parts.length === 3) {
@@ -116,24 +132,20 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
           setSelectedDate(new Date(parseInt(year), parseInt(month) - 1, parseInt(day)));
         }
       }
-
-      if (task.due_date) {
-        const parts = task.due_date.split('-');
-        if (parts.length === 3) {
-          const [year, month, day] = parts;
-          setSelectedDueDate(new Date(parseInt(year), parseInt(month) - 1, parseInt(day)));
-        }
-      } else {
-        setSelectedDueDate(null);
-      }
       return;
     }
 
     if (initialValues) {
+      const initFreq = initialValues.frequency || 'one-time';
+      const { base, interval } = parseFrequency(initFreq);
+
       setFormData((prev) => ({
         ...prev,
         ...initialValues,
-        is_recurring: (initialValues.frequency || prev.frequency) !== 'one-time'
+        base_frequency: base,
+        interval: interval,
+        is_recurring: initFreq !== 'one-time',
+        end_time: calculateEndTime(initialValues.start_time || '', initialValues.estimated_duration_minutes || 30)
       }));
 
       const dateStr = initialValues.start_date;
@@ -149,72 +161,72 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     let processedValue = value;
-    if (type === 'checkbox') {
-      processedValue = checked;
-    } else if (type === 'number') {
-      processedValue = value === '' ? '' : parseInt(value, 10);
-    }
+    if (type === 'checkbox') processedValue = checked;
+    else if (type === 'number') processedValue = value === '' ? '' : parseInt(value, 10);
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: processedValue
-    }));
+    setFormData((prev) => ({ ...prev, [name]: processedValue }));
   };
 
   const handleDateChange = (date) => {
     setSelectedDate(date);
-
-    // Update formData.start_date with DD/MM/YYYY format
     if (date) {
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = date.getFullYear();
-      setFormData((prev) => ({
-        ...prev,
-        start_date: `${day}/${month}/${year}`
-      }));
+      setFormData((prev) => ({ ...prev, start_date: `${day}/${month}/${year}` }));
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        start_date: ''
-      }));
+      setFormData((prev) => ({ ...prev, start_date: '' }));
     }
   };
 
-  const handleFrequencyChange = (e) => {
-    const frequency = e.target.value;
-    setFormData((prev) => ({
+  const handleTimeChange = (field, value) => {
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+      if (field === 'start_time') {
+        if (!value) {
+          next.end_time = '';
+          next.estimated_duration_minutes = 30;
+          return next;
+        }
+        const currentDur = getDuration(prev.start_time, prev.end_time);
+        const [sh, sm] = value.split(':').map(Number);
+        const [eh, em] = (prev.end_time || '').split(':').map(Number);
+        const sTotal = sh * 60 + sm;
+        const eTotal = eh * 60 + em;
+        if (!prev.end_time || eTotal <= sTotal) {
+          next.end_time = calculateEndTime(value, 30);
+          next.estimated_duration_minutes = 30;
+        } else {
+          next.end_time = calculateEndTime(value, currentDur);
+          next.estimated_duration_minutes = currentDur;
+        }
+      } else if (field === 'end_time') {
+        if (!value) {
+           next.estimated_duration_minutes = 30;
+           return next;
+        }
+        const dur = getDuration(prev.start_time, value);
+        next.estimated_duration_minutes = dur;
+      }
+      return next;
+    });
+  };
+
+  const handleBaseFreqChange = (e) => {
+    const base = e.target.value;
+    setFormData(prev => ({
       ...prev,
-      frequency,
-      is_recurring: frequency !== 'one-time',
-      weekly_days: frequency === 'daily' ? [] : prev.weekly_days,
-      due_date: frequency === 'one-time' ? prev.due_date : ''
+      base_frequency: base,
+      interval: 1,
+      is_recurring: base !== 'one-time',
+      weekly_days: base === 'custom' ? prev.weekly_days : []
     }));
-
-    if (frequency !== 'one-time') {
-      setSelectedDueDate(null);
-    }
   };
 
-  const handleDueDateChange = (date) => {
-    setSelectedDueDate(date);
-
-    if (date) {
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      setFormData((prev) => ({
-        ...prev,
-        due_date: `${day}/${month}/${year}`
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        due_date: ''
-      }));
-    }
+  const handleIntervalChange = (e) => {
+    const val = parseInt(e.target.value, 10) || 1;
+    setFormData(prev => ({ ...prev, interval: val }));
   };
 
   const handleDayToggle = (day) => {
@@ -227,7 +239,6 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
   };
 
   const convertDateToISO = (dateStr) => {
-    // Convert DD/MM/YYYY to YYYY-MM-DD
     const parts = dateStr.split('/');
     if (parts.length === 3) {
       const [day, month, year] = parts;
@@ -239,91 +250,29 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // For daily tasks, validate only title and time
-    // For other tasks, validate title, date, and time
-    if (!formData.title || (formData.frequency !== 'one-time' && !formData.start_time)) {
-      alert('נא למלא את כל השדות החובה');
+    const dbFreq = getDbFrequency(formData.base_frequency, formData.interval);
+
+    if (!formData.title) {
+      alert('נא למלא כותרת');
       return;
     }
-
-    if (formData.frequency !== 'daily' && !formData.start_date) {
-      alert('נא למלא את כל השדות החובה');
+    if (dbFreq !== 'daily' && !formData.start_date) {
+      alert('נא לבחור תאריך');
       return;
     }
-
-    // Validate time format HH:MM
-    if (formData.start_time) {
-      const timePattern = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
-      if (!timePattern.test(formData.start_time)) {
-        alert('נא להזין שעה בפורמט HH:MM (לדוגמא: 14:30)');
-        return;
-      }
-    }
-
-    // Validate that date and time are not in the past
-    if (formData.frequency !== 'daily') {
-      // For non-daily tasks, validate date and time (one-time may be without time)
-      const [day, month, year] = formData.start_date.split('/');
-      const now = new Date();
-      const todayStart = getTodayIsraelStart();
-      const startDateOnly = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-
-      // Recurring tasks: start date can be only today or future (regardless of current clock time)
-      if (!isEditing && formData.frequency !== 'one-time' && startDateOnly < todayStart) {
-        alert('במשימה חוזרת ניתן לבחור תאריך התחלה מהיום והלאה בלבד');
-        return;
-      }
-
-      // One-time tasks: if time is provided, prevent past date+time
-      if (formData.frequency === 'one-time' && formData.start_time) {
-        const [hours, minutes] = formData.start_time.split(':');
-        const selectedDateTime = new Date(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(day),
-          parseInt(hours),
-          parseInt(minutes)
-        );
-
-        if (!isEditing && selectedDateTime < now) {
-          alert('לא ניתן לבחור תאריך ושעה בעבר');
-          return;
-        }
-      }
-
-      // One-time only: due date cannot be before start date
-      if (formData.frequency === 'one-time' && formData.due_date) {
-        const [dueDay, dueMonth, dueYear] = formData.due_date.split('/');
-        const dueDateOnly = new Date(parseInt(dueYear), parseInt(dueMonth) - 1, parseInt(dueDay));
-
-        if (dueDateOnly < startDateOnly) {
-          alert('תאריך "סיום עד" לא יכול להיות לפני תאריך ההתחלה');
-          return;
-        }
-      }
-    }
-    // For daily tasks, don't validate time - the task will start from the next occurrence of the selected day(s)
 
     try {
-      const dataToSubmit = { ...formData };
+      const dataToSubmit = { 
+        ...formData, 
+        frequency: dbFreq,
+        is_recurring: dbFreq !== 'one-time'
+      };
 
-      if (dataToSubmit.frequency === 'one-time' && !dataToSubmit.start_time) {
-        const parsed = extractTimeFromTitle(dataToSubmit.title);
-        dataToSubmit.title = parsed.title;
-        dataToSubmit.start_time = parsed.startTime || '';
-      }
-
-      // For daily tasks, automatically set start_date to today
-      if (formData.frequency === 'daily') {
+      if (dbFreq === 'daily') {
         const today = new Date();
         dataToSubmit.start_date = today.toISOString().split('T')[0];
-        dataToSubmit.due_date = null;
       } else {
-        // Convert DD/MM/YYYY to YYYY-MM-DD for database
         dataToSubmit.start_date = convertDateToISO(formData.start_date);
-        dataToSubmit.due_date = formData.frequency === 'one-time' && formData.due_date
-          ? convertDateToISO(formData.due_date)
-          : null;
       }
 
       if (isEditing) {
@@ -358,68 +307,122 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 font-alef text-right" dir="rtl">
+      {/* 1. Title */}
       <div>
-        <label className="block text-sm font-medium mb-1">
-          כותרת המשימה <span className="text-red-500">*</span>
-        </label>
+        <label className="block text-sm font-medium mb-1">כותרת המשימה <span className="text-red-500">*</span></label>
         <input
           type="text"
           name="title"
           value={formData.title}
           onChange={handleChange}
+          placeholder="כותרת המשימה"
           className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
           required
         />
       </div>
 
+      {/* 2. Description */}
       <div>
         <label className="block text-sm font-medium mb-1">תיאור</label>
-        <input
-          type="text"
+        <textarea
           name="description"
           value={formData.description}
           onChange={handleChange}
           placeholder="תיאור המשימה (אופציונלי)"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+          rows="2"
         />
       </div>
 
-      {/* Frequency + Time */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium mb-1">תדירות</label>
-          <select
-            name="frequency"
-            value={formData.frequency}
-            onChange={handleFrequencyChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-          >
-            {frequencyOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            שעת התחלה {formData.frequency !== 'one-time' && <span className="text-red-500">*</span>}
-          </label>
-          <input
-            type="text"
-            name="start_time"
-            value={formData.start_time}
-            onChange={handleChange}
-            placeholder={formData.frequency === 'one-time' ? 'אופציונלי (HH:MM)' : 'HH:MM (לדוגמא: 14:30)'}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-            required={formData.frequency !== 'one-time'}
-          />
-        </div>
+      {/* Toggle One-Time / Recurring visually similar to QuickTaskModal */}
+      <div className="flex gap-2 bg-gray-100 p-1 rounded-full">
+        <button
+          type="button"
+          onClick={() => setFormData(prev => ({ ...prev, base_frequency: 'one-time', is_recurring: false }))}
+          className={`flex-1 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            formData.base_frequency === 'one-time'
+              ? 'bg-gray-900 text-white'
+              : 'bg-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          חד-פעמית
+        </button>
+        <button
+          type="button"
+          onClick={() => setFormData(prev => ({ ...prev, base_frequency: 'weekly', interval: 1, is_recurring: true }))}
+          className={`flex-1 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            formData.base_frequency !== 'one-time'
+              ? 'bg-gray-900 text-white'
+              : 'bg-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          חוזרת
+        </button>
       </div>
 
-      {/* Weekly Days Selection - Only for Daily frequency */}
-      {formData.frequency === 'daily' && (
+      {/* 3. Frequency Options (only if recurring) */}
+      {formData.base_frequency !== 'one-time' && (
+        <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+          <div>
+            <label className="block text-sm font-medium mb-1">סוג חזרה</label>
+            <select
+              value={formData.base_frequency}
+              onChange={handleBaseFreqChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px]"
+            >
+              <option value="weekly">שבועית</option>
+              <option value="monthly">חודשית</option>
+              <option value="annual">שנתית</option>
+              <option value="custom">מותאם אישית (ימים)</option>
+            </select>
+          </div>
+          
+          {formData.base_frequency === 'weekly' && (
+            <div>
+              <label className="block text-sm font-medium mb-1">כל כמה שבועות</label>
+              <input
+                type="number"
+                min="1"
+                max="2"
+                value={formData.interval}
+                onChange={handleIntervalChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px]"
+              />
+            </div>
+          )}
+          {formData.base_frequency === 'monthly' && (
+            <div>
+              <label className="block text-sm font-medium mb-1">כל כמה חודשים</label>
+              <input
+                type="number"
+                min="1"
+                max="6"
+                value={formData.interval}
+                onChange={handleIntervalChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px]"
+              />
+            </div>
+          )}
+          {formData.base_frequency === 'annual' && (
+            <div>
+              <label className="block text-sm font-medium mb-1">כל כמה שנים</label>
+              <input
+                type="number"
+                min="1"
+                max="1"
+                value={formData.interval}
+                onChange={handleIntervalChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px]"
+                disabled
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Weekly Days Selection - Only for Custom/Daily frequency */}
+      {formData.base_frequency === 'custom' && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <label className="block text-xs font-medium mb-2">בחר ימים בשבוע:</label>
           <div className="flex gap-1.5 justify-center">
@@ -446,185 +449,131 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
               </button>
             ))}
           </div>
-          {formData.weekly_days.length === 0 && (
-            <p className="text-xs text-blue-600 mt-2 text-center">
-              * אם לא תבחר ימים, המשימה תופיע בכל יום
-            </p>
-          )}
         </div>
       )}
 
-      {/* Date section (non-daily) */}
-      {formData.frequency !== 'daily' ? (
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              תאריך התחלה <span className="text-red-500">*</span>
-            </label>
-            <DatePicker
-              selected={selectedDate}
-              onChange={handleDateChange}
-              onKeyDown={(e) => e.preventDefault()}
-              dateFormat="dd/MM/yyyy"
-              placeholderText="בחר תאריך"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-              minDate={todayIsraelStart}
-              filterDate={(date) => {
-                const d = new Date(date);
-                d.setHours(0, 0, 0, 0);
-                return d >= todayIsraelStart;
-              }}
-              required
-            />
-          </div>
-
-          {formData.frequency === 'one-time' && (
-            <div>
-              <label className="block text-sm font-medium mb-1">סיום עד (אופציונלי)</label>
-              <DatePicker
-                selected={selectedDueDate}
-                onChange={handleDueDateChange}
-                dateFormat="dd/MM/yyyy"
-                placeholderText="ברירת מחדל: תאריך המשימה"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                minDate={selectedDate || new Date()}
-                isClearable
-              />
-              <p className="text-xs text-gray-500 mt-1">אם לא נבחר תאריך, האיחור יחושב לפי תאריך המשימה.</p>
-            </div>
-          )}
-
-          {formData.frequency !== 'one-time' && (
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                משך (דקות) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="estimated_duration_minutes"
-                value={formData.estimated_duration_minutes}
-                onChange={handleChange}
-                min="5"
-                step="5"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
-              </p>
-            </div>
-          )}
-        </div>
-      ) : (
+      {/* 4. Start Date */}
+      {formData.base_frequency !== 'custom' && (
         <div>
           <label className="block text-sm font-medium mb-1">
-            משך (דקות) <span className="text-red-500">*</span>
+            החל מתאריך <span className="text-red-500">*</span>
           </label>
-          <input
-            type="number"
-            name="estimated_duration_minutes"
-            value={formData.estimated_duration_minutes}
-            onChange={handleChange}
-            min="5"
-            step="5"
+          <DatePicker
+            selected={selectedDate}
+            onChange={handleDateChange}
+            onKeyDown={(e) => e.preventDefault()}
+            dateFormat="dd/MM/yyyy"
+            placeholderText="בחר תאריך"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
             required
           />
-          <p className="text-xs text-gray-500 mt-1">
-            כמה זמן צפוי לקחת ביצוע המשימה? (ברירת מחדל: 30 דקות)
-          </p>
         </div>
       )}
 
-      {/* System + Employee */}
+      {/* 5. & 6. Start Time & End Time */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium mb-1">מערכת</label>
+          <label className="block text-sm font-medium mb-1">שעת התחלה</label>
           <select
-            name="system_id"
-            value={formData.system_id}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+            value={formData.start_time}
+            onChange={(e) => handleTimeChange('start_time', e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px]"
           >
-            <option value="">משימה כללית</option>
-            {systems.map((system) => (
-              <option key={system.id} value={system.id}>
-                {system.name}
-              </option>
-            ))}
+            <option value="">ללא שעה</option>
+            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">עובד אחראי</label>
+          <label className="block text-sm font-medium mb-1">שעת סיום</label>
           <select
-            name="employee_id"
-            value={formData.employee_id}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+            value={formData.end_time}
+            onChange={(e) => handleTimeChange('end_time', e.target.value)}
+            disabled={!formData.start_time}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px] disabled:bg-gray-100 disabled:text-gray-400"
           >
-            <option value="">עובד כללי</option>
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>
-                {employee.name}
-              </option>
-            ))}
+            <option value="">ללא שעה</option>
+            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
       </div>
 
-      {/* Location + Building */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium mb-1">מיקום</label>
-          <select
-            name="location_id"
-            value={formData.location_id}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-          >
-            <option value="">ללא מיקום</option>
-            {locations && locations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">מבנה</label>
-          <select
-            name="building_id"
-            value={formData.building_id}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-          >
-            <option value="">ללא מבנה</option>
-            {buildings && buildings.map((building) => (
-              <option key={building.id} value={building.id}>
-                {building.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Priority */}
-      <div>
-        <label className="block text-sm font-medium mb-1">עדיפות</label>
-        <select
-          name="priority"
-          value={formData.priority}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+      {/* 9. Settings (Expandable) */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={() => setShowSettings(!showSettings)}
+          className="text-sm text-gray-600 hover:text-gray-900 underline"
         >
-          {priorityOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          {showSettings ? 'הסתר הגדרות נוספות' : 'עוד הגדרות'}
+        </button>
       </div>
 
+      {showSettings && (
+        <div className="space-y-3 pt-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">מערכת</label>
+              <select
+                name="system_id"
+                value={formData.system_id}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+              >
+                <option value="">משימה כללית</option>
+                {systems && systems.map((system) => (
+                  <option key={system.id} value={system.id}>{system.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">עובד אחראי</label>
+              <select
+                name="employee_id"
+                value={formData.employee_id}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+              >
+                <option value="">עובד כללי</option>
+                {employees && employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>{employee.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">מבנה</label>
+              <select
+                name="building_id"
+                value={formData.building_id}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+              >
+                <option value="">ללא מבנה</option>
+                {buildings && buildings.map((building) => (
+                  <option key={building.id} value={building.id}>{building.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">עדיפות</label>
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+              >
+                <option value="normal">רגיל</option>
+                <option value="urgent">דחוף</option>
+                <option value="optional">עדיפות נמוכה</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Actions (Cancel | Update) */}
       <div className="flex gap-3 pt-4">
         <button
           type="button"
@@ -641,9 +590,9 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
         </button>
       </div>
 
+      {/* 8. Deletion */}
       {isEditing && (
-        <div className="flex flex-col gap-2 mt-2">
-          {/* Recurring: two separate delete options */}
+        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200">
           {task.is_recurring ? (
             <>
               <button
@@ -658,7 +607,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
                 onClick={handleDeleteSeries}
                 className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 min-h-[44px] transition-all duration-150 active:scale-95 text-sm font-medium"
               >
-                🗑️ מחק משימה קבועה כולה
+                🗑️ מחק המשימה הקבועה כולה
               </button>
             </>
           ) : (
