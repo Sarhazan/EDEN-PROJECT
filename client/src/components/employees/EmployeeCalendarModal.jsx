@@ -4,7 +4,7 @@ import {
   isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek
 } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaWhatsapp } from 'react-icons/fa';
 import axios from 'axios';
 import Modal from '../shared/Modal';
 import TaskForm from '../forms/TaskForm';
@@ -86,10 +86,11 @@ function formatTimeRange(startTime, durationMinutes) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
-  const { tasks, refreshData } = useApp();
+  const { tasks, refreshData, whatsappConnected } = useApp();
 
   const [view, setView] = useState('week');
   const [anchorDate, setAnchorDate] = useState(new Date());
+  const [isSendingDay, setIsSendingDay] = useState(false);
   const [dragging, setDragging] = useState(null);   // drag-to-move state
   const [resizeState, setResizeState] = useState(null); // drag-to-resize state
   const [quickCreateDefaults, setQuickCreateDefaults] = useState(null);
@@ -198,6 +199,56 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
   const tasksForDate = (date) =>
     employeeTasks.filter((t) => isSameDay(parseISO(t.start_date), date));
+
+  const handleSendDay = async () => {
+    const dateStr = format(anchorDate, 'yyyy-MM-dd');
+    const dayTasks = tasksForDate(anchorDate).filter(
+      (t) => t.status === 'draft' && t.start_time && t.start_time !== '00:00'
+    );
+
+    if (dayTasks.length === 0) {
+      alert('אין משימות לשליחה ביום זה (כל המשימות כבר נשלחו או ללא שעת התחלה)');
+      return;
+    }
+
+    if (!confirm(`האם לשלוח ${dayTasks.length} משימות ל${employee.name} ליום ${format(anchorDate, 'dd/MM/yyyy')}?`)) return;
+
+    setIsSendingDay(true);
+    try {
+      const tasksByEmployee = {
+        [employee.id]: {
+          phone: employee.phone,
+          name: employee.name,
+          language: employee.language || 'he',
+          date: format(anchorDate, 'dd/MM/yyyy'),
+          tasks: dayTasks.map((t) => ({
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            start_time: t.start_time,
+            priority: t.priority || 'normal',
+            system_name: t.system_name,
+            estimated_duration_minutes: t.estimated_duration_minutes,
+            status: t.status,
+          })),
+        },
+      };
+
+      const response = await axios.post(`${API_URL}/whatsapp/send-bulk`, { tasksByEmployee }, { timeout: 120000 });
+      const success = (response.data?.results || []).some((r) => r.success && String(r.employeeId) === String(employee.id));
+
+      if (success) {
+        await refreshData();
+        toast.success(`יום העבודה נשלח ל${employee.name} ✓`);
+      } else {
+        alert('שגיאה בשליחה: ' + (response.data?.results?.[0]?.error || 'שגיאה לא ידועה'));
+      }
+    } catch (err) {
+      alert('שגיאה: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setIsSendingDay(false);
+    }
+  };
 
   /** Overlap check — reads from ref so it's always fresh inside effects */
   const hasDayOverlapRef = (taskId, startDate, startTime, durationMinutes) => {
@@ -744,6 +795,17 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   {v === 'day' ? 'יום' : v === 'week' ? 'שבוע' : 'חודש'}
                 </button>
               ))}
+              {whatsappConnected && (
+                <button
+                  onClick={handleSendDay}
+                  disabled={isSendingDay}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded text-sm bg-green-500 hover:bg-green-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title={`שלח את יום העבודה של ${employee?.name} ב-WhatsApp`}
+                >
+                  <FaWhatsapp className="text-base" />
+                  {isSendingDay ? 'שולח...' : `שלח יום ${format(anchorDate, 'dd/MM')}`}
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => shift(-1)} className="p-2 bg-gray-100 rounded hover:bg-gray-200">

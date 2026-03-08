@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { FaCheckCircle, FaClock, FaExclamationTriangle, FaCheckDouble, FaCamera, FaTimes, FaPaperPlane, FaThumbsUp, FaListOl } from 'react-icons/fa';
+import { FaCheckCircle, FaClock, FaExclamationTriangle, FaCheckDouble, FaCamera, FaImage, FaTimes, FaPaperPlane, FaThumbsUp, FaListOl } from 'react-icons/fa';
 import { API_URL } from '../config';
 const DEFAULT_TASKS_PER_PAGE = 3;
 
@@ -28,6 +28,7 @@ const UI_TEXT = {
     imagesLabel: 'צלם תמונות (אופציונלי, עד {{max}})',
     addImage: 'הוסף תמונה',
     takeImage: 'צלם תמונה',
+    pickImage: 'בחר מגלרייה',
     noteLabel: 'הערה (אופציונלי)',
     notePlaceholder: 'הוסף הערה...',
     sendForApproval: 'שלח לאישור',
@@ -60,6 +61,7 @@ const UI_TEXT = {
     imagesLabel: 'Take photos (optional, up to {{max}})',
     addImage: 'Add photo',
     takeImage: 'Take photo',
+    pickImage: 'Choose from gallery',
     noteLabel: 'Note (optional)',
     notePlaceholder: 'Add a note...',
     sendForApproval: 'Send for approval',
@@ -92,6 +94,7 @@ const UI_TEXT = {
     imagesLabel: 'Сделайте фото (необязательно, до {{max}})',
     addImage: 'Добавить фото',
     takeImage: 'Сделать фото',
+    pickImage: 'Выбрать из галереи',
     noteLabel: 'Примечание (необязательно)',
     notePlaceholder: 'Добавьте примечание...',
     sendForApproval: 'Отправить на проверку',
@@ -124,6 +127,7 @@ const UI_TEXT = {
     imagesLabel: 'التقط صوراً (اختياري، حتى {{max}})',
     addImage: 'أضف صورة',
     takeImage: 'التقط صورة',
+    pickImage: 'اختر من المعرض',
     noteLabel: 'ملاحظة (اختياري)',
     notePlaceholder: 'أضف ملاحظة...',
     sendForApproval: 'أرسل للموافقة',
@@ -156,6 +160,7 @@ const UI_TEXT = {
     imagesLabel: 'फ़ोटो लें (वैकल्पिक, अधिकतम {{max}})',
     addImage: 'फ़ोटो जोड़ें',
     takeImage: 'फ़ोटो लें',
+    pickImage: 'गैलरी से चुनें',
     noteLabel: 'नोट (वैकल्पिक)',
     notePlaceholder: 'नोट जोड़ें...',
     sendForApproval: 'अनुमोदन के लिए भेजें',
@@ -188,6 +193,7 @@ const UI_TEXT = {
     imagesLabel: 'ഫോട്ടോ എടുക്കുക (ഐച്ഛികം, {{max}} വരെ)',
     addImage: 'ഫോട്ടോ ചേർക്കുക',
     takeImage: 'ഫോട്ടോ എടുക്കുക',
+    pickImage: 'ഗ്യാലറിയിൽ നിന്ന് തിരഞ്ഞെടുക്കുക',
     noteLabel: 'കുറിപ്പ് (ഐച്ഛികം)',
     notePlaceholder: 'കുറിപ്പ് ചേർക്കുക...',
     sendForApproval: 'അംഗീകാരത്തിനായി അയയ്ക്കുക',
@@ -217,6 +223,7 @@ export default function TaskConfirmationPage() {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [submittingCompletion, setSubmittingCompletion] = useState(false);
   const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
   const MAX_IMAGES = 5;
 
   // Pagination state
@@ -624,9 +631,10 @@ export default function TaskConfirmationPage() {
                           </div>
                         )}
 
-                        {/* Camera button - always visible unless max reached */}
+                        {/* Camera + Gallery buttons */}
                         {completionImages.length < MAX_IMAGES && (
-                          <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* Camera — opens camera directly */}
                             <input
                               ref={fileInputRef}
                               type="file"
@@ -643,8 +651,27 @@ export default function TaskConfirmationPage() {
                               <FaCamera size={20} />
                               <span>{imagePreviews.length > 0 ? t('addImage') : t('takeImage')}</span>
                             </label>
+
+                            {/* Gallery — opens file picker / gallery */}
+                            <input
+                              ref={galleryInputRef}
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleImageSelect}
+                              className="hidden"
+                              id={`gallery-input-${task.id}`}
+                            />
+                            <label
+                              htmlFor={`gallery-input-${task.id}`}
+                              className="inline-flex items-center gap-2 px-4 py-3 bg-gray-500 text-white rounded-lg cursor-pointer hover:bg-gray-600 transition-colors"
+                            >
+                              <FaImage size={20} />
+                              <span>{t('pickImage')}</span>
+                            </label>
+
                             {imagePreviews.length > 0 && (
-                              <span className="mr-2 text-sm text-gray-500">
+                              <span className="text-sm text-gray-500">
                                 ({imagePreviews.length}/{MAX_IMAGES})
                               </span>
                             )}
