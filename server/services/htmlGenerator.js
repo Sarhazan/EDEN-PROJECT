@@ -179,7 +179,7 @@ class HtmlGeneratorService {
       if (isProduction) {
         baseUrl = publicClientUrl || publicApiUrl || localClientUrl || apiUrl;
       } else {
-        baseUrl = publicClientUrl || localClientUrl || publicApiUrl || apiUrl;
+        baseUrl = publicClientUrl || localClientUrl || publicApiUrl || 'http://localhost:5174';
       }
 
       const publicUrl = `${baseUrl.replace(/\/$/, '')}/confirm/${data.token}`;

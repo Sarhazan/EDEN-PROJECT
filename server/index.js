@@ -201,6 +201,13 @@ app.get('/docs/task-:token.html', async (req, res) => {
   }
 });
 
+// In development: redirect /confirm/:token to Vite dev server
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/confirm/:token', (req, res) => {
+    res.redirect(`http://localhost:5174/confirm/${req.params.token}`);
+  });
+}
+
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from the React app build directory
