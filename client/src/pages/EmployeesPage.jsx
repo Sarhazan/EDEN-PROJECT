@@ -245,11 +245,15 @@ export default function EmployeesPage() {
 
               <div className="text-sm text-gray-600 mb-3">
                 <span className="font-medium">שפה:</span>{' '}
-                {employee.language === 'he' && '🇮🇱 עברית'}
-                {employee.language === 'en' && '🇬🇧 English'}
-                {employee.language === 'ru' && '🇷🇺 Русский'}
-                {employee.language === 'ar' && '🇸🇦 العربية'}
-                {!employee.language && '🇮🇱 עברית'}
+                {(() => {
+                  const lang = employee.language;
+                  if (!lang || lang === 'he') return '🇮🇱 עברית';
+                  if (lang === 'en') return '🇬🇧 English';
+                  if (lang === 'ru') return '🇷🇺 Русский';
+                  if (lang === 'ar') return '🇸🇦 العربية';
+                  // Any other language — show code as-is
+                  return lang;
+                })()}
               </div>
 
               <div className="border-t pt-4 mt-4 relative">
