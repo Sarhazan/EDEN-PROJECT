@@ -1,0 +1,8 @@
+{
+  "greeting": "नमस्ते {{name}}",
+  "taskListHeader": "{{date}} के लिए कार्य",
+  "time": "समय",
+  "description": "विवरण",
+  "clickToView": "देखने और पुष्टि करने के लिए नीचे दिए लिंक पर क्लिक करें",
+  "extraTasksHeader": "📋 अतिरिक्त कार्य:"
+}

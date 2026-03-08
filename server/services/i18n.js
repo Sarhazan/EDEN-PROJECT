@@ -8,7 +8,7 @@ i18next
   .init({
     lng: 'he',              // Default language
     fallbackLng: 'he',      // Fallback if translation missing
-    supportedLngs: ['he', 'en', 'ru', 'ar'],
+    supportedLngs: ['he', 'en', 'ru', 'ar', 'hi', 'ml'],
     ns: ['common', 'tasks', 'whatsapp'],  // Namespaces
     defaultNS: 'common',
     backend: {
@@ -18,7 +18,7 @@ i18next
       escapeValue: false    // Not needed for server-side (no XSS risk)
     },
     saveMissing: false,      // Don't auto-create missing keys in production
-    preload: ['he', 'en', 'ru', 'ar'],  // Preload all languages at startup
+    preload: ['he', 'en', 'ru', 'ar', 'hi', 'ml'],  // Preload all languages at startup
     initImmediate: false     // Initialize synchronously (blocks until all preloaded languages are loaded)
   });
 

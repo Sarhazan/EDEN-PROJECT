@@ -1,0 +1,8 @@
+{
+  "greeting": "ഹലോ {{name}}",
+  "taskListHeader": "{{date}} തീയതിയിലെ ജോലികൾ",
+  "time": "സമയം",
+  "description": "വിവരണം",
+  "clickToView": "കാണാനും സ്ഥിരീകരിക്കാനും ചുവടെയുള്ള ലിങ്ക് ക്ലിക്ക് ചെയ്യുക",
+  "extraTasksHeader": "📋 അധിക ജോലികൾ:"
+}

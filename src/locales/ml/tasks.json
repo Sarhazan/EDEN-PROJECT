@@ -1,0 +1,34 @@
+{
+  "pageTitle": "Tasks to Complete",
+  "greeting": "Hello {{name}}",
+  "acknowledgeButton": "Acknowledge Receipt of All Tasks",
+  "acknowledgeDescription": "Clicking this button confirms you received all tasks and will notify the manager",
+  "acknowledgeRequired": "Please click the \"Acknowledge Receipt of All Tasks\" button first before completing individual tasks",
+  "completeButton": "Submit Completion",
+  "addNoteLabel": "Notes (optional)",
+  "addNotePlaceholder": "Add notes about the task...",
+  "uploadImageLabel": "Upload Image",
+  "uploadImageHint": "Up to 5MB, JPG or PNG only",
+  "taskCompleted": "Task completed successfully!",
+  "acknowledgedAtText": "Tasks acknowledged at ",
+  "loading": "Loading...",
+  "footerText": "Maintenance Management System - Eden",
+  "completionDetails": "Completion Details",
+  "sending": "Sending...",
+  "error": "Error",
+  "errorUnknown": "Unknown error",
+  "errorSending": "Error sending data",
+  "acknowledging": "Acknowledging...",
+  "acknowledgeSuccess": "Tasks acknowledged successfully!",
+  "acknowledgeError": "Error acknowledging tasks",
+  "priority": {
+    "urgent": "Urgent",
+    "normal": "Normal",
+    "optional": "Optional"
+  },
+  "badge": {
+    "time": "Time",
+    "duration": "{{minutes}} minutes",
+    "completed": "Completed"
+  }
+}
