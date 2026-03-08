@@ -171,14 +171,12 @@ function initializeDatabase() {
   db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('ar', 'Arabic', 1)`).run();
   db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('hi', 'Hindi', 0)`).run();
 
-  // Migrate: normalize language names to English-only
-  const langNormalize = [
-    { code: 'he', name: 'Hebrew' }, { code: 'en', name: 'English' },
-    { code: 'ru', name: 'Russian' }, { code: 'ar', name: 'Arabic' },
-    { code: 'hi', name: 'Hindi' },
-  ];
-  langNormalize.forEach(({ code, name }) => {
-    db.prepare(`UPDATE languages SET name = ? WHERE code = ? AND name != ?`).run(name, code, name);
+  // Migrate: force English-only names for base languages (runs every startup, idempotent)
+  [
+    ['he', 'Hebrew'], ['en', 'English'], ['ru', 'Russian'],
+    ['ar', 'Arabic'], ['hi', 'Hindi'],
+  ].forEach(([code, name]) => {
+    db.prepare(`UPDATE languages SET name = ? WHERE code = ?`).run(name, code);
   });
 
   // Add manager_id to employees table (MVP manager support: employees can manage other employees)
