@@ -165,6 +165,38 @@ const UI_TEXT = {
     footer: 'Eden रखरखाव प्रबंधन',
     status: { draft: 'नया', sent: 'भेजा', received: 'मिला', pending_approval: 'अनुमोदन प्रतीक्षित', completed: 'पूर्ण' },
     priority: { urgent: 'अत्यावश्यक', normal: 'सामान्य', optional: 'वैकल्पिक' }
+  },
+  ml: {
+    loadingTasks: 'ടാസ്‌കുകൾ ലോഡ് ചെയ്യുന്നു...',
+    errorTitle: 'പിശക്',
+    ackSuccess: 'ടാസ്‌കുകൾ വിജയകരമായി ലഭിച്ചു!',
+    ackError: 'ടാസ്‌ക് സ്ഥിരീകരിക്കുന്നതിൽ പരാജയം',
+    taskUpdateError: 'ടാസ്‌ക് അപ്‌ഡേറ്റ് ചെയ്യുന്നതിൽ പരാജയം',
+    completionSent: 'ടാസ്‌ക് മാനേജർക്ക് അംഗീകാരത്തിനായി അയച്ചു!',
+    completionError: 'ടാസ്‌ക് അയയ്‌ക്കുന്നതിൽ പരാജയം',
+    pageTitle: 'ചെയ്യേണ്ട ജോലികൾ',
+    hello: 'ഹലോ',
+    waitingCount: '{{count}} ജോലികൾ കാത്തിരിക്കുന്നു',
+    ackPrompt: 'ജോലികൾ കാണാൻ ബട്ടൺ അമർത്തുക',
+    ackBtn: 'മനസ്സിലായി',
+    approving: 'സ്ഥിരീകരിക്കുന്നു...',
+    queueLabel: '{{visible}} ടാസ്‌കുകൾ | {{queued}} ക്യൂവിൽ',
+    completedCounter: '{{count}} ടാസ്‌കുകൾ പൂർത്തിയായി',
+    allDoneTitle: 'ശാബാഷ്! 🎉',
+    allDoneSub: 'എല്ലാ ജോലികളും പൂർത്തിയാക്കി',
+    completeSectionTitle: 'ടാസ്‌ക് പൂർത്തിയാക്കുക',
+    imagesLabel: 'ഫോട്ടോ എടുക്കുക (ഐച്ഛികം, {{max}} വരെ)',
+    addImage: 'ഫോട്ടോ ചേർക്കുക',
+    takeImage: 'ഫോട്ടോ എടുക്കുക',
+    noteLabel: 'കുറിപ്പ് (ഐച്ഛികം)',
+    notePlaceholder: 'കുറിപ്പ് ചേർക്കുക...',
+    sendForApproval: 'അംഗീകാരത്തിനായി അയയ്ക്കുക',
+    sending: 'അയക്കുന്നു...',
+    cancel: 'റദ്ദാക്കുക',
+    doneAndSend: 'പൂർത്തിയായി — അംഗീകാരത്തിനായി അയയ്ക്കുക',
+    footer: 'Eden മെയിന്റനൻസ് മാനേജ്‌മെന്റ്',
+    status: { draft: 'പുതിയത്', sent: 'അയച്ചു', received: 'ലഭിച്ചു', pending_approval: 'അംഗീകാരം കാത്തിരിക്കുന്നു', completed: 'പൂർത്തിയായി' },
+    priority: { urgent: 'അടിയന്തിരം', normal: 'സാധാരണ', optional: 'ഐച്ഛികം' }
   }
 };
 export default function TaskConfirmationPage() {
