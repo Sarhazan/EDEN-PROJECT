@@ -938,27 +938,41 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                         return (
                           <div
                             key={`${day.toISOString()}-${hour}`}
-                            className={`border-r first:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''}`}
+                            className={`border-r first:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? 'bg-blue-50/60' : ''}`}
                             onClick={() => {
                               if (!dragging) openCreateForm(day, hour);
                             }}
                           >
                             {/* Task blocks */}
                             {isTargetCell && (
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  top: `${((dragging?.currentMinute || 0) / 60) * measuredHourHeight}px`,
-                                  left: 2, right: 2,
-                                  height: `${taskHeightPx(durationForTask(dragging?.task))}px`,
-                                  backgroundColor: STATUS_BG[dragging?.task?.status] || '#bfdbfe',
-                                  borderLeft: `3px solid ${STATUS_BORDER[dragging?.task?.status] || '#2563eb'}`,
-                                  borderRadius: '4px',
-                                  opacity: 0.6,
-                                  pointerEvents: 'none',
-                                  zIndex: 8,
-                                }}
-                              />
+                              <>
+                                {/* Dashed indicator line — aligned exactly to drop position */}
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    top: `${((dragging?.currentMinute || 0) / 60) * measuredHourHeight}px`,
+                                    left: 0, right: 0,
+                                    borderTop: '2px dashed #60a5fa',
+                                    pointerEvents: 'none',
+                                    zIndex: 9,
+                                  }}
+                                />
+                                {/* Ghost preview block */}
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    top: `${((dragging?.currentMinute || 0) / 60) * measuredHourHeight}px`,
+                                    left: 2, right: 2,
+                                    height: `${taskHeightPx(durationForTask(dragging?.task))}px`,
+                                    backgroundColor: STATUS_BG[dragging?.task?.status] || '#bfdbfe',
+                                    borderLeft: `3px solid ${STATUS_BORDER[dragging?.task?.status] || '#2563eb'}`,
+                                    borderRadius: '4px',
+                                    opacity: 0.6,
+                                    pointerEvents: 'none',
+                                    zIndex: 8,
+                                  }}
+                                />
+                              </>
                             )}
                             {cellTasks.map((task) => renderTaskBlock(task))}
                           </div>
