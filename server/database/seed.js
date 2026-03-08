@@ -138,11 +138,11 @@ function seedDatabase() {
 
 // Default languages always available (restored after clear too)
 const DEFAULT_LANGUAGES = [
-  { code: 'he', name: 'עברית' },
+  { code: 'he', name: 'Hebrew' },
   { code: 'en', name: 'English' },
-  { code: 'ru', name: 'Русский' },
-  { code: 'ar', name: 'العربية' },
-  { code: 'hi', name: 'हिन्दी' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'ar', name: 'Arabic' },
+  { code: 'hi', name: 'Hindi' },
 ];
 
 function seedDefaultLanguages() {
