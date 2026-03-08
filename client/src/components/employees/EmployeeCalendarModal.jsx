@@ -795,17 +795,19 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   {v === 'day' ? 'יום' : v === 'week' ? 'שבוע' : 'חודש'}
                 </button>
               ))}
-              {whatsappConnected && (
-                <button
-                  onClick={handleSendDay}
-                  disabled={isSendingDay}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded text-sm bg-green-500 hover:bg-green-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title={`שלח את יום העבודה של ${employee?.name} ב-WhatsApp`}
-                >
-                  <FaWhatsapp className="text-base" />
-                  {isSendingDay ? 'שולח...' : `שלח יום ${format(anchorDate, 'dd/MM')}`}
-                </button>
-              )}
+              <button
+                onClick={whatsappConnected ? handleSendDay : undefined}
+                disabled={isSendingDay || !whatsappConnected}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded text-sm text-white transition-colors ${
+                  whatsappConnected
+                    ? 'bg-green-500 hover:bg-green-600'
+                    : 'bg-gray-300 cursor-not-allowed'
+                } disabled:opacity-60`}
+                title={whatsappConnected ? `שלח את יום העבודה של ${employee?.name} ב-WhatsApp` : 'WhatsApp לא מחובר'}
+              >
+                <FaWhatsapp className="text-base" />
+                {isSendingDay ? 'שולח...' : `שלח יום ${format(anchorDate, 'dd/MM')}`}
+              </button>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => shift(-1)} className="p-2 bg-gray-100 rounded hover:bg-gray-200">
