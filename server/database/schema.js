@@ -165,11 +165,21 @@ function initializeDatabase() {
   `);
 
   // Seed default languages
-  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('he', 'עברית (Hebrew)', 1)`).run();
+  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('he', 'Hebrew', 1)`).run();
   db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('en', 'English', 1)`).run();
-  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('ru', 'Русский (Russian)', 1)`).run();
-  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('ar', 'العربية (Arabic)', 1)`).run();
-  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('hi', 'हिन्दी (Hindi)', 0)`).run();
+  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('ru', 'Russian', 1)`).run();
+  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('ar', 'Arabic', 1)`).run();
+  db.prepare(`INSERT OR IGNORE INTO languages (code, name, is_default) VALUES ('hi', 'Hindi', 0)`).run();
+
+  // Migrate: normalize language names to English-only
+  const langNormalize = [
+    { code: 'he', name: 'Hebrew' }, { code: 'en', name: 'English' },
+    { code: 'ru', name: 'Russian' }, { code: 'ar', name: 'Arabic' },
+    { code: 'hi', name: 'Hindi' },
+  ];
+  langNormalize.forEach(({ code, name }) => {
+    db.prepare(`UPDATE languages SET name = ? WHERE code = ? AND name != ?`).run(name, code, name);
+  });
 
   // Add manager_id to employees table (MVP manager support: employees can manage other employees)
   // Non-breaking: nullable column; existing rows remain valid.
