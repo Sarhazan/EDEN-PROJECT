@@ -73,9 +73,14 @@ const { initializeDailyScheduleSender } = require('./services/dailyScheduleSende
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
-  // Send current QR code if available (for clients connecting after QR was generated)
+  // Sync WhatsApp state to newly connected client
   const whatsappService = require('./services/whatsapp');
-  if (whatsappService.qrDataUrl && !whatsappService.isReady) {
+  if (whatsappService.isReady) {
+    // WhatsApp already connected — tell this client immediately
+    socket.emit('whatsapp:ready');
+    console.log('✓ Sent whatsapp:ready to new client (already connected)');
+  } else if (whatsappService.qrDataUrl) {
+    // QR available — send it so SettingsPage can display it
     socket.emit('whatsapp:qr', { qrDataUrl: whatsappService.qrDataUrl });
     console.log('✓ Sent existing QR to new client');
   }
