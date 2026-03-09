@@ -1,229 +1,267 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-01-19
+**Analysis Date:** 2026-03-09
 
 ## Directory Layout
 
 ```
-eden-claude/
-├── client/                 # React SPA frontend
-│   ├── dist/              # Vite build output
-│   ├── public/            # Static assets
-│   ├── src/               # Source code
-│   │   ├── assets/        # Images, fonts
-│   │   ├── components/    # Reusable UI components
-│   │   │   ├── forms/     # Entity forms
-│   │   │   ├── layout/    # Sidebar, DataControls
-│   │   │   └── shared/    # Modal, TaskCard
-│   │   ├── context/       # React Context providers
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── pages/         # Route pages
-│   │   ├── utils/         # Utility functions
-│   │   ├── App.jsx        # Root component with router
-│   │   ├── main.jsx       # React entry point
-│   │   └── index.css      # Global styles with Tailwind
-│   ├── index.html         # HTML shell
-│   ├── package.json       # Frontend dependencies
-│   ├── vite.config.js     # Vite configuration
-│   └── tailwind.config.js # Tailwind + RTL configuration
-├── server/                # Express REST API backend
-│   ├── database/          # Database schema and seeds
-│   │   ├── schema.js      # Table definitions + DB instance
-│   │   └── seed.js        # Sample data
-│   ├── routes/            # API route handlers
-│   │   ├── tasks.js       # Task CRUD + recurring logic
-│   │   ├── systems.js     # Systems CRUD
-│   │   ├── employees.js   # Employees CRUD
-│   │   ├── suppliers.js   # Suppliers CRUD
-│   │   ├── locations.js   # Locations CRUD
-│   │   ├── whatsapp.js    # WhatsApp integration
-│   │   ├── taskConfirmation.js # Token-based confirmations
-│   │   └── data.js        # Seed/clear endpoints
-│   ├── services/          # Business logic services
-│   │   ├── whatsapp.js    # WhatsApp client singleton
-│   │   └── htmlGenerator.js # Static HTML generation
-│   ├── templates/         # HTML templates
-│   ├── uploads/           # File upload storage
-│   ├── .wwebjs_auth/      # WhatsApp session data
-│   ├── index.js           # Express server entry
-│   └── .env               # Environment variables
-├── docs/                  # Generated confirmation pages
-│   └── task-*.html        # Token-based static pages
-├── .planning/             # GSD planning artifacts
-│   └── codebase/          # Codebase documentation
-├── .auto-claude/          # Auto-Claude artifacts
-├── maintenance.db         # SQLite database file
-├── package.json           # Root dependencies + scripts
-└── vercel.json            # Vercel deployment config
+EDEN-PROJECT_LOCAL/            # Monorepo root
+├── server/                    # Express backend (Node.js / CommonJS)
+│   ├── index.js               # Server entry point
+│   ├── database/
+│   │   ├── schema.js          # DB init, migrations, shared `db` connection
+│   │   └── seed.js            # Demo data seeder
+│   ├── routes/                # Express routers — one file per domain
+│   │   ├── tasks.js
+│   │   ├── taskConfirmation.js
+│   │   ├── whatsapp.js
+│   │   ├── hq.js
+│   │   ├── forms.js
+│   │   ├── accounts.js
+│   │   ├── data.js            # Seed/clear (blocked in production)
+│   │   ├── history.js
+│   │   ├── employees.js
+│   │   ├── systems.js
+│   │   ├── suppliers.js
+│   │   ├── locations.js
+│   │   ├── buildings.js
+│   │   ├── tenants.js
+│   │   ├── billing.js
+│   │   └── languages.js
+│   ├── services/              # Business logic + background jobs
+│   │   ├── whatsapp.js        # WhatsApp Web singleton service
+│   │   ├── taskService.js     # Task timing enrichment utilities
+│   │   ├── taskAutoClose.js   # End-of-day cron: mark tasks not_completed
+│   │   ├── taskRollover.js    # End-of-day cron: advance one-time tasks
+│   │   ├── dailyScheduleSender.js  # Morning WhatsApp schedule dispatch
+│   │   ├── htmlGenerator.js   # Dynamic task-confirmation HTML generation
+│   │   ├── translation.js     # Gemini / Google Translate hybrid service
+│   │   ├── i18n.js            # Server-side i18next instance
+│   │   ├── dataRetention.js   # Cron: delete old completed tasks
+│   │   └── urlShortener.js    # URL shortening for WhatsApp links
+│   ├── templates/
+│   │   └── task-confirmation.html  # HTML template for employee confirmation pages
+│   ├── utils/
+│   │   └── dateUtils.js       # getCurrentTimestampIsrael()
+│   └── uploads/               # Runtime file store (task photos, form files)
+│
+├── client/                    # React frontend (Vite / ES Modules)
+│   ├── src/
+│   │   ├── main.jsx           # React entry point
+│   │   ├── App.jsx            # Router + global modal host + layout switcher
+│   │   ├── config.js          # API_URL, SOCKET_URL, LS_KEYS constants
+│   │   ├── index.css          # Global Tailwind imports
+│   │   ├── App.css
+│   │   ├── context/
+│   │   │   └── AppContext.jsx # Global state: entities, auth, Socket.IO
+│   │   ├── pages/             # Route-level page components
+│   │   │   ├── MyDayPage.jsx
+│   │   │   ├── AllTasksPage.jsx
+│   │   │   ├── HistoryPage.jsx
+│   │   │   ├── SystemsPage.jsx
+│   │   │   ├── SuppliersPage.jsx
+│   │   │   ├── EmployeesPage.jsx
+│   │   │   ├── LocationsPage.jsx
+│   │   │   ├── BuildingsPage.jsx
+│   │   │   ├── TenantsPage.jsx
+│   │   │   ├── BillingPage.jsx
+│   │   │   ├── SiteFormsPage.jsx
+│   │   │   ├── FormFillPage.jsx
+│   │   │   ├── SettingsPage.jsx
+│   │   │   ├── LoginPage.jsx
+│   │   │   ├── TaskConfirmationPage.jsx  # Public — no auth
+│   │   │   ├── HQDashboardPage.jsx
+│   │   │   ├── HQDispatchPage.jsx
+│   │   │   ├── HQListsPage.jsx
+│   │   │   ├── HQReportsPage.jsx
+│   │   │   ├── HQFormsPage.jsx
+│   │   │   ├── HQLoginPage.jsx
+│   │   │   └── HQPlaceholderPage.jsx
+│   │   ├── components/        # Reusable UI components
+│   │   │   ├── layout/        # Sidebar, HQSidebar, MobileDrawer, HamburgerButton
+│   │   │   ├── shared/        # Modal, TaskCard, DataControls
+│   │   │   ├── forms/         # TaskForm, QuickTaskModal, SystemForm, EmployeeForm, etc.
+│   │   │   ├── myday/         # TaskListPanel, CalendarPanel, ForecastChart, StatsBar, PendingApprovalSection
+│   │   │   ├── employees/     # EmployeeCalendarModal
+│   │   │   ├── history/       # HistoryTable, HistoryFilters, HistoryStats, ManagerSection
+│   │   │   └── settings/      # WhatsAppSection, WorkdaySection, VersionSection
+│   │   └── hooks/             # Custom React hooks (co-located with pages)
+│   │       ├── useBulkWhatsApp.js
+│   │       ├── useColumnResize.js
+│   │       ├── useHistoryFilters.js
+│   │       ├── useManagerFilter.js
+│   │       ├── useMediaQuery.js
+│   │       ├── useNavigateToTask.js
+│   │       ├── useTaskFilters.js
+│   │       └── useVersionCheck.js
+│   ├── e2e/                   # Playwright end-to-end tests
+│   │   ├── auth.spec.js
+│   │   ├── tasks.spec.js
+│   │   ├── myday.spec.js
+│   │   ├── settings.spec.js
+│   │   ├── eden.spec.js
+│   │   └── helpers/
+│   └── dist/                  # Vite production build output (gitignored)
+│
+├── src/
+│   └── locales/               # i18n JSON translation files
+│       ├── he/                # Hebrew (default)
+│       ├── en/
+│       ├── ru/
+│       ├── ar/
+│       ├── hi/
+│       └── ml/
+│
+├── docs/                      # Served at /docs — generated task confirmation HTML (dev only)
+├── uploads/                   # Runtime upload storage (task photos, form logos/contracts)
+├── maintenance.db             # SQLite database file (production uses DB_PATH env var)
+├── package.json               # Root — server deps + monorepo scripts
+├── playwright.config.js       # E2E test config
+├── nodemon.json               # Dev reload config
+└── .planning/                 # GSD planning documents (not application code)
 ```
 
 ## Directory Purposes
 
-**client/src/components/forms:**
-- Purpose: Entity creation/editing forms
-- Contains: TaskForm, SystemForm, SupplierForm, EmployeeForm, LocationForm
-- Key files: All forms use controlled inputs and submit to AppContext methods
+**`server/database/`:**
+- Purpose: Single source of truth for the DB schema, migration logic, and the shared `db` connection
+- Contains: `schema.js` (exported `db`, `initializeDatabase`, `checkAndSeedDatabase`), `seed.js`
+- Key files: `server/database/schema.js` — import `{ db }` from here in all server code that touches the DB
 
-**client/src/components/layout:**
-- Purpose: Persistent layout components
-- Contains: Sidebar for navigation, DataControls for seed/clear operations
-- Key files: `Sidebar.jsx` renders navigation with route highlighting, `DataControls.jsx` positioned bottom-left
+**`server/routes/`:**
+- Purpose: HTTP routing — one Express router per domain entity
+- Contains: Plain Express router files that `require('../database/schema')` and call services
+- Key files: `server/routes/tasks.js` (most complex; handles recurring task generation), `server/routes/taskConfirmation.js` (multipart upload + token auth)
 
-**client/src/components/shared:**
-- Purpose: Reusable UI components
-- Contains: Modal wrapper, TaskCard display component
-- Key files: `Modal.jsx` handles overlay and close, `TaskCard.jsx` displays task with status badges
+**`server/services/`:**
+- Purpose: Domain logic that does not belong in a route handler: scheduled jobs, integrations, generators
+- Contains: Singleton classes and module-level state; cron jobs use `node-cron`
+- Key files: `server/services/whatsapp.js` (WhatsApp lifecycle), `server/services/taskService.js` (timing), `server/services/translation.js` (i18n AI)
 
-**client/src/context:**
-- Purpose: Global state management
-- Contains: AppContext provider with all entity state and methods
-- Key files: `AppContext.jsx` - single context file with fetch/CRUD methods for tasks, systems, employees, suppliers, locations
+**`server/templates/`:**
+- Purpose: Static HTML template used by `htmlGenerator.js` to build per-employee confirmation pages
+- Contains: `task-confirmation.html` (single file)
 
-**client/src/pages:**
-- Purpose: Route-specific page components
-- Contains: MyDayPage, AllTasksPage, SystemsPage, SuppliersPage, EmployeesPage, LocationsPage, SettingsPage, TaskConfirmationPage
-- Key files: `MyDayPage.jsx` (main dashboard with stats), `TaskConfirmationPage.jsx` (public confirmation page)
+**`client/src/context/`:**
+- Purpose: Global React state shared across all pages
+- Contains: `AppContext.jsx` — the only context provider; exported as `AppProvider` and `useApp`
+- Key pattern: All pages call `const { tasks, employees, ... } = useApp()` — do not fetch independently unless necessary
 
-**server/database:**
-- Purpose: Database schema and initialization
-- Contains: Table creation, migrations, seed data
-- Key files: `schema.js` exports db instance and initializeDatabase(), `seed.js` for sample data
+**`client/src/pages/`:**
+- Purpose: One component per route; imports from context and components
+- Contains: All route-level views for both portals plus public pages
+- Naming: `PascalCase` + `Page` suffix (e.g., `MyDayPage.jsx`, `HQDashboardPage.jsx`)
 
-**server/routes:**
-- Purpose: API endpoint handlers
-- Contains: Express routers for each entity and integration
-- Key files: `tasks.js` (complex recurring logic), `whatsapp.js` (bulk send orchestration)
+**`client/src/components/`:**
+- Purpose: Reusable UI grouped by feature domain
+- Contains: Seven subdirectories (see layout above)
+- Key files: `components/shared/TaskCard.jsx` (used across multiple pages), `components/shared/Modal.jsx` (wrapper for all modals)
 
-**server/services:**
-- Purpose: External integrations and business logic
-- Contains: WhatsApp client management, HTML generation
-- Key files: `whatsapp.js` (singleton with QR auth), `htmlGenerator.js` (template + git deployment)
+**`client/src/hooks/`:**
+- Purpose: Extract stateful logic from pages into reusable hooks
+- Contains: Eight custom hooks; all files follow `use` prefix convention
+- Key files: `useBulkWhatsApp.js` (WhatsApp dispatch logic), `useTaskFilters.js` (filter state for task lists)
 
-**docs:**
-- Purpose: Static HTML confirmation pages
-- Contains: Generated task confirmation pages
-- Generated: Yes
-- Committed: Yes (pushed via htmlGenerator service)
+**`src/locales/`:**
+- Purpose: Translation JSON files consumed by `server/services/i18n.js` (server-side i18next)
+- Structure: `src/locales/{languageCode}/{namespace}.json` — namespaces are `common`, `tasks`, `whatsapp`
+- Supported codes: `he`, `en`, `ru`, `ar`, `hi`, `ml`
 
 ## Key File Locations
 
 **Entry Points:**
-- `c:/dev/projects/claude projects/eden claude/client/src/main.jsx`: React app mount
-- `c:/dev/projects/claude projects/eden claude/server/index.js`: Express server startup
+- `server/index.js`: Backend entry point — start here to trace any server-side request
+- `client/src/main.jsx`: Frontend entry point
+- `client/src/App.jsx`: Route definitions and global modal host
 
 **Configuration:**
-- `c:/dev/projects/claude projects/eden claude/client/vite.config.js`: Vite dev server config
-- `c:/dev/projects/claude projects/eden claude/client/tailwind.config.js`: Tailwind + RTL config
-- `c:/dev/projects/claude projects/eden claude/vercel.json`: Static site deployment config
-- `c:/dev/projects/claude projects/eden claude/server/.env`: API keys and URLs
+- `client/src/config.js`: All client constants (`API_URL`, `SOCKET_URL`, `LS_KEYS`)
+- `server/database/schema.js`: DB connection and all table definitions
 
 **Core Logic:**
-- `c:/dev/projects/claude projects/eden claude/client/src/context/AppContext.jsx`: Client state + API calls
-- `c:/dev/projects/claude projects/eden claude/server/routes/tasks.js`: Task business logic (recurring)
-- `c:/dev/projects/claude projects/eden claude/server/services/whatsapp.js`: WhatsApp integration
-- `c:/dev/projects/claude projects/eden claude/server/database/schema.js`: Database schema
+- `server/services/whatsapp.js`: WhatsApp integration
+- `server/services/taskService.js`: Task timing enrichment (called in every task route)
+- `server/services/taskAutoClose.js`: End-of-day automation (chains to `taskRollover.js`)
+- `client/src/context/AppContext.jsx`: All client-side state and Socket.IO event handling
 
 **Testing:**
-- No test files detected in codebase
+- `client/e2e/*.spec.js`: Playwright E2E tests
+- `playwright.config.js`: Test configuration at repo root
 
 ## Naming Conventions
 
-**Files:**
-- React components: PascalCase with .jsx extension (e.g., `TaskForm.jsx`, `MyDayPage.jsx`)
-- Node modules: camelCase with .js extension (e.g., `whatsapp.js`, `htmlGenerator.js`)
-- Config files: kebab-case or dotfiles (e.g., `vite.config.js`, `.env`)
-- Database: Single SQLite file `maintenance.db` at root
+**Server files:**
+- Route files: `camelCase` matching the resource name (e.g., `tasks.js`, `taskConfirmation.js`)
+- Service files: `camelCase` describing the concern (e.g., `dailyScheduleSender.js`, `htmlGenerator.js`)
+- Utility files: `camelCase` (e.g., `dateUtils.js`)
+
+**Client files:**
+- Page components: `PascalCase` + `Page` suffix (e.g., `MyDayPage.jsx`, `HQLoginPage.jsx`)
+- Form components: `PascalCase` + `Form` or `Modal` suffix (e.g., `TaskForm.jsx`, `QuickTaskModal.jsx`)
+- Layout components: `PascalCase` descriptive name (e.g., `Sidebar.jsx`, `MobileDrawer.jsx`)
+- Hooks: `camelCase` with `use` prefix (e.g., `useTaskFilters.js`, `useBulkWhatsApp.js`)
+- Shared components: `PascalCase` (e.g., `TaskCard.jsx`, `Modal.jsx`)
 
 **Directories:**
-- Lowercase for server (e.g., `routes/`, `services/`, `database/`)
-- Lowercase for client structure (e.g., `components/`, `pages/`, `context/`)
-- Subdirectories lowercase (e.g., `components/forms/`, `components/shared/`)
-
-**Components:**
-- Default exports for all React components
-- Named exports for Context hook (e.g., `useApp`)
-- PascalCase component names matching filename
-
-**Routes:**
-- API routes prefixed with `/api/*`
-- Route files export `router` from express.Router()
-- Mounted in `server/index.js` with `app.use()`
+- Server: `lowercase` (e.g., `routes/`, `services/`, `database/`)
+- Client: `lowercase` for feature folders (e.g., `myday/`, `layout/`, `forms/`)
+- Pages are flat in `client/src/pages/` — no subdirectories
 
 ## Where to Add New Code
 
-**New Feature:**
-- Primary code: Depends on feature type
-  - Client UI: `client/src/components/` or `client/src/pages/`
-  - API endpoint: `server/routes/`
-  - Business logic: `server/services/`
-- Tests: No test infrastructure exists
+**New backend resource (e.g., a new entity):**
+- Route: Create `server/routes/{resourceName}.js` following the pattern of `server/routes/employees.js`
+- Mount in: `server/index.js` with `app.use('/api/{resourceName}', require('./routes/{resourceName}'))`
+- DB table: Add `CREATE TABLE IF NOT EXISTS` block to `server/database/schema.js` inside `initializeDatabase()`
+- If the route emits Socket.IO events: add `setIo()` export and wire it in `server/index.js`
 
-**New Component/Module:**
-- Implementation:
-  - Shared UI component: `client/src/components/shared/`
-  - Form component: `client/src/components/forms/`
-  - Page component: `client/src/pages/`
-  - Layout component: `client/src/components/layout/`
-  - Backend route: `server/routes/` (then mount in `server/index.js`)
-  - Backend service: `server/services/`
+**New business logic / scheduled job:**
+- Create `server/services/{serviceName}.js`
+- Initialize in `server/index.js` after the `io` instance is created
 
-**Utilities:**
-- Shared helpers:
-  - Client utilities: `client/src/utils/`
-  - Server utilities: `server/services/` (no dedicated utils folder)
+**New frontend page:**
+- Create `client/src/pages/{FeatureName}Page.jsx`
+- Add a `<Route>` in `client/src/App.jsx`
+- Add nav item to the appropriate sidebar (`Sidebar.jsx` for maintenance, `HQSidebar.jsx` for HQ)
 
-**New Entity Type:**
-1. Add table to `server/database/schema.js`
-2. Create route handler in `server/routes/[entity].js`
-3. Mount route in `server/index.js`
-4. Add state and methods to `client/src/context/AppContext.jsx`
-5. Create form in `client/src/components/forms/[Entity]Form.jsx`
-6. Create page in `client/src/pages/[Entities]Page.jsx`
-7. Add route to `client/src/App.jsx`
-8. Add sidebar link to `client/src/components/layout/Sidebar.jsx`
+**New reusable component:**
+- Place in the appropriate subdirectory of `client/src/components/`
+- If truly shared across domains: `client/src/components/shared/`
 
-**New API Endpoint:**
-1. Add route handler to existing file in `server/routes/` OR
-2. Create new route file in `server/routes/[feature].js`
-3. Mount in `server/index.js` with `app.use('/api/[feature]', require('./routes/[feature]'))`
+**New custom hook:**
+- Create `client/src/hooks/use{FeatureName}.js`
+
+**New translation string:**
+- Add key/value to `src/locales/{lng}/common.json` (or `tasks.json` / `whatsapp.json`) for all supported languages
 
 ## Special Directories
 
-**.wwebjs_auth:**
-- Purpose: WhatsApp Web session persistence
-- Generated: Yes (by whatsapp-web.js library)
-- Committed: No (gitignored)
+**`uploads/`:**
+- Purpose: Runtime storage for task completion photos and form files (logos, contracts)
+- Generated: Yes (at runtime by multer / file system calls)
+- Committed: No (files are user data)
+- Subpaths: `uploads/` (task photos), `uploads/forms/logos/`, `uploads/forms/contracts/`
 
-**.wwebjs_cache:**
-- Purpose: WhatsApp Web browser cache
-- Generated: Yes (by whatsapp-web.js library)
-- Committed: No (gitignored)
+**`docs/`:**
+- Purpose: Houses dynamically generated HTML confirmation pages in development
+- Generated: Yes (by `htmlGenerator.js` in development; served dynamically in production)
+- Committed: No
 
-**client/dist:**
-- Purpose: Vite production build output
-- Generated: Yes (by `npm run build`)
-- Committed: No (gitignored)
+**`.wwebjs_auth_development/` and `server/.wwebjs_auth_development/`:**
+- Purpose: WhatsApp Web session persistence (Chromium profile data)
+- Generated: Yes (by `whatsapp-web.js` LocalAuth)
+- Committed: No
 
-**node_modules:**
-- Purpose: NPM dependencies
-- Generated: Yes (by `npm install`)
-- Committed: No (gitignored)
+**`client/dist/`:**
+- Purpose: Vite production build output; served as static files by Express in production
+- Generated: Yes (via `npm run build`)
+- Committed: No
 
-**docs:**
-- Purpose: Static HTML pages for task confirmations
-- Generated: Yes (by htmlGenerator service)
-- Committed: Yes (pushed to GitHub for GitHub Pages/Vercel hosting)
-
-**.auto-claude:**
-- Purpose: Auto-Claude ideation and specs
-- Generated: Yes (by Auto-Claude)
-- Committed: Typically yes
-
-**.planning:**
-- Purpose: GSD planning artifacts and codebase documentation
-- Generated: Yes (by GSD commands)
-- Committed: Typically yes
+**`.planning/`:**
+- Purpose: GSD planning documents — milestones, phases, todos, codebase maps
+- Generated: No (manually created by GSD tooling)
+- Committed: Yes
 
 ---
 
-*Structure analysis: 2026-01-19*
+*Structure analysis: 2026-03-09*

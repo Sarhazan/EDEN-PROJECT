@@ -1,294 +1,207 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-01-19
-
-## Tech Debt
-
-**Environment Variable Management:**
-- Issue: Custom `.env` file parser instead of using standard dotenv library
-- Files: `c:\dev\projects\claude projects\eden claude\server\index.js` (lines 7-17)
-- Impact: Non-standard parsing may miss edge cases (quoted values, comments, multi-line values), harder to maintain
-- Fix approach: Replace with `dotenv` package - `npm install dotenv` and use `require('dotenv').config()`
-
-**Hardcoded Network IP Addresses:**
-- Issue: Multiple environment files and code contain hardcoded local IP addresses (192.168.1.35)
-- Files:
-  - `c:\dev\projects\claude projects\eden claude\server\.env` (PORT, CLIENT_URL, API_URL)
-  - `c:\dev\projects\claude projects\eden claude\server\index.js` (line 64)
-  - `c:\dev\projects\claude projects\eden claude\server\services\htmlGenerator.js` (line 27)
-- Impact: Breaks when network changes, not portable across environments/developers
-- Fix approach: Use environment-based configuration with fallbacks, remove hardcoded IPs from code
-
-**No Error Boundary in React:**
-- Issue: React app lacks error boundaries to catch component errors
-- Files: `c:\dev\projects\claude projects\eden claude\client\src\App.jsx`
-- Impact: Component errors crash entire app instead of graceful degradation
-- Fix approach: Add ErrorBoundary component wrapping main app
-
-**Console.log Debugging Left in Production:**
-- Issue: 90+ console.log/error/warn statements throughout codebase
-- Files: Extensive logging in `server\services\whatsapp.js`, `server\routes\whatsapp.js`, `server\services\htmlGenerator.js`, and 8 other files
-- Impact: Performance overhead, exposes implementation details, clutters production logs
-- Fix approach: Replace with proper logging library (winston/pino) with log levels, remove debug statements
-
-**Global Singleton Pattern for Services:**
-- Issue: WhatsApp service and HTML generator use module-level singletons without dependency injection
-- Files:
-  - `c:\dev\projects\claude projects\eden claude\server\services\whatsapp.js` (line 183)
-  - `c:\dev\projects\claude projects\eden claude\server\services\htmlGenerator.js` (line 123)
-- Impact: Difficult to test, impossible to have multiple instances, tight coupling
-- Fix approach: Export class constructors and instantiate in routes with proper DI
-
-**No API Rate Limiting:**
-- Issue: No rate limiting on any endpoints including bulk WhatsApp send
-- Files: `c:\dev\projects\claude projects\eden claude\server\index.js`
-- Impact: Vulnerable to abuse, could spam WhatsApp messages, no protection against DoS
-- Fix approach: Add `express-rate-limit` middleware, especially on `/api/whatsapp/send-bulk`
-
-**Git Operations in Application Code:**
-- Issue: HTML generator executes git commands synchronously in request handlers
-- Files: `c:\dev\projects\claude projects\eden claude\server\services\htmlGenerator.js` (lines 63-93)
-- Impact: Blocks event loop during git operations (add, commit, push, vercel deploy), single point of failure if git unavailable
-- Fix approach: Move to background job queue (Bull/BullMQ), decouple file generation from git operations
-
-## Known Bugs
-
-**Environment Variable Mismatch:**
-- Symptoms: Client and server have different API_URL defaults
-- Files:
-  - `c:\dev\projects\claude projects\eden claude\client\.env` (VITE_API_URL=http://localhost:3001)
-  - `c:\dev\projects\claude projects\eden claude\server\.env` (API_URL=http://192.168.1.35:3001)
-- Trigger: Running client and server separately with default configs
-- Workaround: Manually ensure both .env files match
-
-**Incomplete Error Handling in Context:**
-- Symptoms: API fetch errors only log to console, no user feedback
-- Files: `c:\dev\projects\claude projects\eden claude\client\src\context\AppContext.jsx` (lines 36-40, 256-262)
-- Trigger: Network failure or API error during data fetch
-- Workaround: None - errors silently fail
-
-**WhatsApp QR Code 30-Second Timeout:**
-- Symptoms: QR code request times out after 30 seconds if client not initialized
-- Files: `c:\dev\projects\claude projects\eden claude\server\services\whatsapp.js` (lines 124-130)
-- Trigger: Slow Puppeteer initialization or browser startup
-- Workaround: User must retry connection
-
-## Security Considerations
-
-**.env Files Committed in Server Directory:**
-- Risk: Environment files with sensitive configuration are present in repository
-- Files:
-  - `c:\dev\projects\claude projects\eden claude\server\.env`
-  - `c:\dev\projects\claude projects\eden claude\client\.env`
-- Current mitigation: Files in .gitignore but already exist in working directory
-- Recommendations: Audit git history to ensure no secrets committed, use .env.example templates only
-
-**No Authentication/Authorization:**
-- Risk: All API endpoints are completely open, anyone can CRUD all data
-- Files: All routes in `c:\dev\projects\claude projects\eden claude\server\routes\`
-- Current mitigation: None
-- Recommendations: Implement authentication middleware, add user roles, protect sensitive endpoints
-
-**SQL Injection via Template Strings:**
-- Risk: Database queries use template strings which could allow SQL injection
-- Files: All routes using `db.prepare()` with string interpolation
-- Current mitigation: Using prepared statements (`db.prepare().all(param)`) which are safe
-- Recommendations: Current approach is secure - continue using parameterized queries
-
-**Task Confirmation Token Predictability:**
-- Risk: Tokens generated with crypto.randomBytes(32) but no HMAC validation
-- Files:
-  - `c:\dev\projects\claude projects\eden claude\server\routes\whatsapp.js` (line 191)
-  - `c:\dev\projects\claude projects\eden claude\server\routes\taskConfirmation.js`
-- Current mitigation: 32-byte random tokens provide 2^256 possible values
-- Recommendations: Add token expiration enforcement (currently stored but not validated), add HMAC signing
-
-**No HTTPS in Production:**
-- Risk: No SSL/TLS configuration visible
-- Files: `c:\dev\projects\claude projects\eden claude\server\index.js`
-- Current mitigation: Likely handled by reverse proxy/Vercel
-- Recommendations: Document SSL termination strategy, enforce HTTPS redirects
-
-**WhatsApp Session Data Exposed:**
-- Risk: 88MB .wwebjs_auth directory stores WhatsApp authentication locally
-- Files: `c:\dev\projects\claude projects\eden claude\server\.wwebjs_auth\` (entire directory)
-- Current mitigation: Directory in .gitignore
-- Recommendations: Encrypt session data at rest, implement session rotation, add backup/recovery mechanism
-
-## Performance Bottlenecks
-
-**Synchronous Git Operations Block Event Loop:**
-- Problem: execSync blocks Node.js for git add/commit/push/vercel deploy
-- Files: `c:\dev\projects\claude projects\eden claude\server\services\htmlGenerator.js` (lines 68-88)
-- Cause: Using child_process.execSync in async request handler
-- Improvement path: Use async exec or spawn, move to job queue, return immediately and process async
-
-**60-Second Polling Wait for Vercel Deployment:**
-- Problem: Each WhatsApp message send waits up to 60 seconds for Vercel URL to become available
-- Files: `c:\dev\projects\claude projects\eden claude\server\routes\whatsapp.js` (lines 222-228, polling at 3s intervals)
-- Cause: Synchronous wait in request handler (20 attempts × 3000ms = 60s max)
-- Improvement path: Pre-generate static pages and deploy separately, use webhooks for deployment confirmation, use CDN with immediate availability
-
-**Fetch All Data on Every Mount:**
-- Problem: AppContext fetches all tasks/systems/employees/suppliers/locations on every app mount
-- Files: `c:\dev\projects\claude projects\eden claude\client\src\context\AppContext.jsx` (lines 20-41)
-- Cause: No caching, pagination, or incremental loading
-- Improvement path: Implement pagination, add query params for filtering server-side, use React Query for caching
-
-**N+1 Queries in Bulk Send:**
-- Problem: Sequential task status updates in loop during bulk send
-- Files: `c:\dev\projects\claude projects\eden claude\client\src\pages\MyDayPage.jsx` (lines 111-113)
-- Cause: For loop with await on each individual updateTaskStatus call
-- Improvement path: Batch update API endpoint, use Promise.all for parallel updates
-
-**Large Component Re-renders:**
-- Problem: MyDayPage.jsx is 761 lines with multiple useMemo dependencies causing frequent recalculations
-- Files: `c:\dev\projects\claude projects\eden claude\client\src\pages\MyDayPage.jsx`
-- Cause: Complex statistics calculations re-run on every task/date change
-- Improvement path: Split into smaller components, memoize expensive calculations separately, consider server-side aggregation
-
-## Fragile Areas
-
-**WhatsApp Client Lifecycle Management:**
-- Files: `c:\dev\projects\claude projects\eden claude\server\services\whatsapp.js`
-- Why fragile: Complex state machine (initialized/authenticated/ready), singleton instance, puppeteer dependencies, disconnection handling
-- Safe modification: Always check isReady before operations, add integration tests for connection lifecycle, implement reconnection strategy
-- Test coverage: No tests detected
-
-**Recurring Task Generation Logic:**
-- Files: `c:\dev\projects\claude projects\eden claude\server\routes\tasks.js` (lines 95+)
-- Why fragile: Complex date calculations for daily/weekly/monthly/annual recurrence, timezone handling, edge cases around month boundaries
-- Safe modification: Add comprehensive date tests, validate against date-fns edge cases, add dry-run validation
-- Test coverage: No tests detected
-
-**Task Confirmation Token System:**
-- Files:
-  - `c:\dev\projects\claude projects\eden claude\server\routes\taskConfirmation.js`
-  - `c:\dev\projects\claude projects\eden claude\server\database\schema.js` (lines 102-115)
-- Why fragile: Token storage, expiration checking, task_ids as JSON string, foreign key cascade deletes
-- Safe modification: Test token expiration thoroughly, validate JSON parsing, ensure cascade deletes don't orphan tasks
-- Test coverage: No tests detected
-
-**HTML Template Replacement:**
-- Files: `c:\dev\projects\claude projects\eden claude\server\services\htmlGenerator.js` (lines 30-36)
-- Why fragile: Simple string replace for template variables - breaks if placeholder format changes or appears in content
-- Safe modification: Use proper templating engine (Handlebars/EJS), validate template before replacement
-- Test coverage: No tests detected
-
-## Scaling Limits
-
-**SQLite Concurrent Write Limitations:**
-- Current capacity: Single writer, ~1000 writes/sec theoretical
-- Limit: Concurrent bulk sends or task updates will serialize/lock
-- Scaling path: Migrate to PostgreSQL/MySQL for write concurrency, add write queue, implement optimistic locking
-
-**88MB WhatsApp Session Storage:**
-- Current capacity: Local filesystem storage
-- Limit: Single server instance, no replication, lost on server restart/crash
-- Scaling path: Store session in encrypted blob storage (S3), implement session persistence service, add multi-instance support
-
-**Git Repository as Static File Host:**
-- Current capacity: Docs folder accumulating HTML files indefinitely
-- Limit: Repository bloat (git clone times increase), GitHub file size limits (1GB repo warning)
-- Scaling path: Use proper static hosting (S3/Cloudflare R2), implement cleanup of old files (<30 days), separate content repo from code repo
-
-**No Database Connection Pooling:**
-- Current capacity: Single better-sqlite3 connection
-- Limit: Only one connection for all requests, blocking operations serialize
-- Scaling path: SQLite doesn't pool - must migrate to client-server DB (Postgres) with connection pooling
-
-**In-Memory QR Code Callback Queue:**
-- Current capacity: Array of callbacks in memory
-- Limit: Lost on server restart, no persistence, grows unbounded if QR codes generated but not consumed
-- Scaling path: Use Redis for callback storage, add TTL cleanup, implement max queue size
-
-## Dependencies at Risk
-
-**whatsapp-web.js Unofficial Library:**
-- Risk: Unofficial WhatsApp Web API wrapper, breaks when WhatsApp changes web client
-- Impact: Core feature (WhatsApp integration) completely breaks
-- Migration plan: Monitor project actively, have fallback to official WhatsApp Business API, implement circuit breaker for WhatsApp failures
-
-**better-sqlite3 Native Dependency:**
-- Risk: Requires compilation for specific Node.js version and OS
-- Impact: Deployment failures on version mismatches, platform-specific builds
-- Migration plan: Pre-build for target platforms, consider pure JavaScript alternative (sql.js) or PostgreSQL
-
-**React 19.2.0 (Very New):**
-- Risk: Using latest major version may have undiscovered bugs or ecosystem incompatibility
-- Impact: Package updates might break, fewer Stack Overflow answers
-- Migration plan: Pin versions strictly, test updates in staging, consider dropping to React 18 LTS
-
-**Puppeteer Transitive Dependency:**
-- Risk: Large Chromium download (~300MB), headless browser for WhatsApp Web automation
-- Impact: Slow deployments, large container images, high memory usage
-- Migration plan: Optimize Docker layers to cache Chromium, consider lighter alternatives
-
-## Missing Critical Features
-
-**No Backup System:**
-- Problem: SQLite database has no automated backups
-- Blocks: Data loss recovery, rollback capability
-- Priority: High
-
-**No Test Suite:**
-- Problem: Zero unit/integration/e2e tests detected
-- Blocks: Safe refactoring, regression prevention, confidence in changes
-- Priority: High
-
-**No Logging Infrastructure:**
-- Problem: Console.log only, no log aggregation or monitoring
-- Blocks: Production debugging, error tracking, audit trails
-- Priority: Medium
-
-**No Job Queue:**
-- Problem: Long-running tasks (git push, Vercel deploy) block request threads
-- Blocks: Scalability, reliability, proper async processing
-- Priority: High
-
-**No Database Migrations System:**
-- Problem: Schema changes use try/catch ALTER TABLE (lines 62-73 in schema.js)
-- Blocks: Safe schema evolution, version tracking, rollback capability
-- Priority: Medium
-
-## Test Coverage Gaps
-
-**WhatsApp Integration:**
-- What's not tested: QR code generation, message sending, authentication flow, disconnection handling
-- Files: `c:\dev\projects\claude projects\eden claude\server\services\whatsapp.js`, `c:\dev\projects\claude projects\eden claude\server\routes\whatsapp.js`
-- Risk: Breaking changes undetected, race conditions in state machine
-- Priority: High
-
-**Recurring Task Generation:**
-- What's not tested: Date calculations for all frequency types, weekly_days parsing, timezone edge cases
-- Files: `c:\dev\projects\claude projects\eden claude\server\routes\tasks.js`
-- Risk: Incorrect task scheduling, duplicate tasks, missing tasks
-- Priority: High
-
-**Bulk WhatsApp Send Workflow:**
-- What's not tested: End-to-end flow including HTML generation, git operations, URL polling, message delivery
-- Files: `c:\dev\projects\claude projects\eden claude\server\routes\whatsapp.js` (lines 143-294)
-- Risk: Partial sends, data inconsistency, timeout failures
-- Priority: High
-
-**React Context State Management:**
-- What's not tested: CRUD operations, optimistic updates, error handling
-- Files: `c:\dev\projects\claude projects\eden claude\client\src\context\AppContext.jsx`
-- Risk: State corruption, memory leaks, race conditions
-- Priority: Medium
-
-**Database Schema Migrations:**
-- What's not tested: Schema evolution, foreign key constraints, cascade deletes
-- Files: `c:\dev\projects\claude projects\eden claude\server\database\schema.js`
-- Risk: Data loss on schema changes, orphaned records
-- Priority: Medium
-
-**Task Confirmation Token Flow:**
-- What's not tested: Token generation, expiration validation, acknowledgment persistence
-- Files: `c:\dev\projects\claude projects\eden claude\server\routes\taskConfirmation.js`
-- Risk: Unauthorized access, expired tokens working, token reuse
-- Priority: High
+**Analysis Date:** 2026-03-09
 
 ---
 
-*Concerns audit: 2026-01-19*
+## Security Considerations
+
+**No API Authentication on Any Route:**
+- Risk: Every API endpoint (`/api/tasks`, `/api/employees`, `/api/whatsapp/send`, etc.) is completely unauthenticated. Any actor who can reach the server can read all data, send WhatsApp messages, delete tasks, and wipe the database.
+- Files: `server/index.js`, `server/routes/tasks.js`, `server/routes/whatsapp.js`, `server/routes/employees.js` — all routes
+- Current mitigation: None server-side. Client login is localStorage-only (see below).
+- Recommendations: Add a middleware auth check (even a simple shared secret header) to all API routes before any production-scale deployment.
+
+**Client-Side-Only Authentication:**
+- Risk: "Authentication" is just a boolean in `localStorage`. Clearing localStorage or hitting the API directly bypasses all access control.
+- Files: `client/src/context/AppContext.jsx` lines 20–27, `client/src/config.js`
+- Current mitigation: None. The server accepts all requests regardless of auth state.
+- Recommendations: Issue a server-side session token on login; validate it in API middleware.
+
+**Wildcard CORS on Both HTTP and Socket.IO:**
+- Risk: `origin: "*"` allows any website to make cross-origin requests to the API and establish Socket.IO connections.
+- Files: `server/index.js` lines 44–48 (Socket.IO), line 51 (`app.use(cors())`)
+- Recommendations: Restrict to known frontend origins in production.
+
+**Custom .env Parser Breaks on Values Containing `=`:**
+- Risk: The custom `.env` loader splits on the first `=` using `line.split('=')`, which gives an array — if a value contains `=` (common in base64 API keys), `value` becomes the second element only, silently truncating the key. This could cause silent auth failures for `GEMINI_API_KEY` or `GOOGLE_TRANSLATE_API_KEY`.
+- Files: `server/index.js` lines 28–36
+- Recommendations: Replace with `dotenv` package (`require('dotenv').config()`).
+
+**WhatsApp Bulk Send: Task IDs from Untrusted Client Payload:**
+- Risk: The `/api/whatsapp/send-bulk` endpoint accepts `tasksByEmployee` from the client body (including `task.id` arrays). These IDs are used in a DB `UPDATE ... WHERE id IN (...)` with parameterized values — safe from injection — but a malicious caller could mark arbitrary task IDs as `'sent'` that belong to other employees.
+- Files: `server/routes/whatsapp.js` lines 288–291
+- Current mitigation: IDs are passed as bound parameters (no SQL injection risk), but no ownership check.
+
+---
+
+## Tech Debt
+
+**Duplicate `/api/billing` Route Registration:**
+- Issue: `require('./routes/billing')` is registered twice on `app.use('/api/billing', ...)`.
+- Files: `server/index.js` lines 108 and 119
+- Impact: The second registration silently shadows the first. Express will match the first route handler found — currently harmless only because they are the same module, but confusing and fragile.
+- Fix approach: Remove the duplicate `app.use('/api/billing', ...)` at line 119.
+
+**Migration Logic Inline in `initializeDatabase()`:**
+- Issue: All schema migrations (12+ `ALTER TABLE` try/catch blocks, full table recreations for tasks and employees) live inside the single `initializeDatabase()` function in `server/database/schema.js`. This function is 796 lines. There is no migration versioning or tracking — every migration re-executes on every server start and relies on catching "duplicate column" errors.
+- Files: `server/database/schema.js` lines 73–714
+- Impact: Adding new migrations risks interfering with existing ones; difficult to audit what schema version is running; the `employees` table recreation (lines 128–156) runs inside a multi-statement `db.exec` block that bypasses the per-statement error handling.
+- Fix approach: Adopt a migration library (e.g., `better-sqlite3-migrations` or `knex`) with versioned migration files.
+
+**`dailyScheduleSender.js` Has a Hardcoded Test Phone and `TEST_MODE = true`:**
+- Issue: `TEST_MODE` is hardcoded to `true` and `TEST_PHONE` is hardcoded to a specific number (`+972587400300`). The daily schedule sender will never reach real employees until this is manually changed in source code.
+- Files: `server/services/dailyScheduleSender.js` lines 8–9
+- Impact: The automated daily schedule feature is effectively disabled in the current codebase; deploying as-is would send all schedule messages only to the test number.
+- Fix approach: Move `TEST_MODE` and `TEST_PHONE` to environment variables; default `TEST_MODE` to `false`.
+
+**`dailyScheduleSender.js` Queries Non-Existent `is_active` Column:**
+- Issue: The query at line 64–70 filters `WHERE is_active = 1`, but the `employees` table schema (checked in `server/database/schema.js`) has no `is_active` column. SQLite will return zero rows silently for every daily schedule run.
+- Files: `server/services/dailyScheduleSender.js` line 64, `server/database/schema.js` (employees CREATE TABLE)
+- Impact: The daily schedule sender sends to no employees (zero rows returned), which masks the underlying bug.
+- Fix approach: Either add `is_active` column to employees schema + migration, or remove the filter until the feature is implemented.
+
+**Recurring Task Spawn Logic Duplicated Across Three Places:**
+- Issue: The logic that creates the next recurring task instance after completion is copy-pasted verbatim in three separate handlers: `PUT /:id/status` (lines 637–700), `POST /:id/approve` (lines 137–193), and inside task creation (lines 312–414).
+- Files: `server/routes/tasks.js`
+- Impact: A fix to recurring logic must be applied in all three locations or behavior diverges. This has already led to the `approve` path not inheriting `estimated_duration_minutes`, `location_id`, or `building_id` when spawning next instances (those INSERT statements at lines 157–159 and 661–663 omit those fields).
+- Fix approach: Extract recurring-instance creation into a shared helper in `server/services/taskService.js`.
+
+**Recurring Task DELETE /series Uses Title+Employee+Frequency as Key:**
+- Issue: `DELETE /:id/series` identifies the series by matching `title`, `employee_id`, and `frequency` — not by a series ID or `parent_task_id`. Renaming a task title or assigning it to a different employee will orphan the other instances.
+- Files: `server/routes/tasks.js` lines 728–749
+- Fix approach: Add a `series_id` column (UUID generated at task creation) and match on that.
+
+**AppContext Fetches All Attachments Per Task in N+1 Pattern:**
+- Issue: `fetchTasks()` in `AppContext.jsx` fetches the full task list then makes one additional HTTP request per task to fetch its attachments: `tasksData.map(async (task) => fetch(.../{task.id}/attachments))`. For 100 tasks this is 101 HTTP requests on every page load and every socket event that triggers a refresh.
+- Files: `client/src/context/AppContext.jsx` lines 147–160, and again on `task:updated` at lines 67–76
+- Impact: Slow load times, high server load. The server already returns attachments inline in `GET /api/tasks` and `GET /api/tasks/today`, making the client fetches redundant.
+- Fix approach: Remove the per-task attachment fetch in the client; rely on the attachments already embedded in the task response from the server.
+
+**AppContext is a 560-line God Context:**
+- Issue: All application state — tasks, employees, systems, suppliers, locations, buildings, tenants, WhatsApp state, auth, and Socket.IO — is managed in a single React context with 40+ exported values.
+- Files: `client/src/context/AppContext.jsx`
+- Impact: Any component consuming the context re-renders when any piece of state changes. Adding features requires editing this single file. Testing individual features requires mocking the entire context.
+- Fix approach: Split into domain-specific contexts or adopt Zustand/React Query for server state.
+
+**`updateTask` and `addTask` in AppContext Re-fetch All Tasks After Mutation:**
+- Issue: After every mutation (add, update, delete, status change, star toggle), the client calls `fetchTasks()` which re-fetches the entire task list plus attachments. Real-time updates via Socket.IO also trigger `fetchTasks()`. This creates redundant double-fetches after mutations.
+- Files: `client/src/context/AppContext.jsx` lines 164–203
+- Fix approach: Optimistically update local state on mutation; let Socket.IO events serve as the source of truth for remote changes.
+
+---
+
+## Known Bugs
+
+**`send-bulk` Translates Using Client-Sent `language` Instead of DB `language`:**
+- Symptoms: Task titles/descriptions are translated using the `language` field from the client payload, but the DB language is fetched separately for the i18n strings. If the client sends a stale or default language, translations will be in the wrong language even though the greeting is correct.
+- Files: `server/routes/whatsapp.js` lines 233, 258 (uses `language` from destructured data, not `employeeLanguage` from DB)
+- Trigger: Sending to an employee whose client-provided language doesn't match their DB record.
+- Fix: Replace `language` with `employeeLanguage` in the translation calls at lines 233 and 258.
+
+**Recurring Task Next-Instance Spawn Loses `estimated_duration_minutes`, `location_id`, `building_id`:**
+- Symptoms: When a recurring task is completed or approved, the next instance is created without `estimated_duration_minutes`, `location_id`, or `building_id`, so those fields revert to defaults (30 minutes, null, null).
+- Files: `server/routes/tasks.js` lines 157–159 (approve path), 661–663 (status path)
+- Trigger: Complete or approve any recurring task that has a non-default duration or location assigned.
+
+**`deliveryStatus` Not Tracked After Bulk Send:**
+- Symptoms: The `form_dispatches` table has `delivery_status` and `delivery_error` columns, but the bulk WhatsApp send in `whatsapp.js` updates task status to `sent` but never updates `delivery_status` in `form_dispatches`. The dispatch record stays at `queued` indefinitely.
+- Files: `server/routes/whatsapp.js` lines 287–292
+
+---
+
+## Performance Bottlenecks
+
+**Employee Stats: N+1 Queries in `GET /api/employees`:**
+- Problem: For each employee in the result set, a second heavy aggregation SQL query runs synchronously to calculate stats. With 50 employees this is 51 synchronous DB queries per request.
+- Files: `server/routes/employees.js` lines 16–83
+- Cause: Stats are computed per-employee inside a `.map()` loop using `db.prepare(...).get(employee.id)`.
+- Improvement path: Use a single SQL query with `GROUP BY employee_id` to aggregate all stats in one pass.
+
+**`GET /api/tasks` Fetches All Tasks + All Attachments:**
+- Problem: The endpoint fetches every task from the database (no pagination), then fetches all attachments and joins them in-memory. As the dataset grows this will become slow.
+- Files: `server/routes/tasks.js` lines 24–58
+- Improvement path: Add pagination (`LIMIT`/`OFFSET`) or cursor-based pagination; use a JOIN instead of fetching all attachments and grouping in JS.
+
+**WhatsApp Bulk Send is Sequential with 1-Second Delays:**
+- Problem: Messages are sent one at a time with a hardcoded `setTimeout(1000)` between each. For 20 employees this adds 20+ seconds of minimum send time, all blocking a single HTTP request that the client waits on.
+- Files: `server/services/whatsapp.js` lines 553–554
+- Improvement path: Return immediately, process sends in background, report progress via Socket.IO.
+
+---
+
+## Fragile Areas
+
+**WhatsApp Client Uses Puppeteer/Chromium in the Main Server Process:**
+- Files: `server/services/whatsapp.js`, `server/index.js`
+- Why fragile: `whatsapp-web.js` runs a headless Chrome browser in the same process as the Express server. A Puppeteer crash (frame detachment, OOM, protocol error) can destabilize the entire server. Global `uncaughtException` and `unhandledRejection` handlers plus a `setInterval` keepalive were added specifically to work around this.
+- Safe modification: Never modify `initialize()` without testing reconnect, auth failure, and disconnect paths. The polling workaround (`startReadyPolling`) runs every 5 seconds and interacts with client state — changes to the client lifecycle can break it silently.
+- Test coverage: No automated tests exist for the WhatsApp service.
+
+**Schema Migrations Run on Every Server Start Without Versioning:**
+- Files: `server/database/schema.js`
+- Why fragile: All migrations are guarded only by catching "duplicate column" SQLite errors. If a future migration modifies an existing column type or drops a column, it will silently do nothing (because the `CREATE TABLE IF NOT EXISTS` guard will prevent re-creation), or it will apply every restart if the guard condition matches again. The employees-table recreation (lines 128–156) uses a multi-statement `db.exec` inside a `BEGIN TRANSACTION` — if the server crashes mid-migration, the DB may be left in a partial state with `employees` dropped and `employees_new` not yet renamed.
+- Safe modification: Never add a migration that can partially fail without a corresponding rollback.
+
+**Task Confirmation Token Stored as JSON String Array in `task_ids` Column:**
+- Files: `server/database/schema.js` (task_confirmations table), `server/index.js` lines 163–178, `server/routes/taskConfirmation.js`
+- Why fragile: Task IDs are stored as a JSON-stringified array in a `TEXT` column. They are parsed with `JSON.parse(confirmation.task_ids)` and then interpolated into `WHERE t.id IN (...)` with `?` placeholders. If `task_ids` is ever corrupted or manually edited in the DB, the `JSON.parse` throws an unhandled exception that returns a 500 HTML page to the employee.
+- Safe modification: Always `JSON.parse` inside a try/catch; consider a junction table instead.
+
+---
+
+## Missing Critical Features
+
+**No Rate Limiting on Any Endpoint:**
+- Problem: There is no rate limiting on any API route, including sensitive operations like `/api/whatsapp/send`, `/api/data/clear`, and the task confirmation acknowledgement endpoint.
+- Blocks: Without rate limiting, a misconfigured client loop or bot can flood WhatsApp sends, drain translation quotas, or DOS the SQLite database.
+
+**No Input Validation / Sanitization Library:**
+- Problem: Route handlers check only for presence of required fields (e.g., `if (!title || !start_date)`). There is no validation of field types, lengths, or content. Long strings can be inserted into TEXT columns without limit; `system_id`, `employee_id` integers are passed directly to SQL without type coercion checks.
+- Files: All route files under `server/routes/`
+
+---
+
+## Test Coverage Gaps
+
+**Server Routes: Zero Automated Tests:**
+- What's not tested: All business logic in `server/routes/tasks.js`, `server/routes/whatsapp.js`, `server/routes/employees.js`, recurring task scheduling, rollover, auto-close, and daily schedule sender.
+- Files: `server/routes/`, `server/services/`
+- Risk: Regressions in core task lifecycle (complete → spawn next instance, auto-close, rollover) go undetected until manual observation.
+- Priority: High
+
+**WhatsApp Service: Zero Automated Tests:**
+- What's not tested: `sendMessage`, `sendBulkMessages`, reconnection logic, polling workaround, phone number normalization.
+- Files: `server/services/whatsapp.js`
+- Risk: Changes to normalization or LID fallback logic break silently; detected only when real messages fail to deliver.
+- Priority: High
+
+**Client Context / Data Flow: Zero Unit Tests:**
+- What's not tested: `AppContext.jsx` mutations, Socket.IO event handlers, auth state transitions.
+- Files: `client/src/context/AppContext.jsx`
+- Risk: State management bugs (double-fetch, stale state after bulk update) are only caught during manual QA.
+- Priority: Medium
+
+**E2E Tests Are Fragile and Scope-Limited:**
+- What's not tested: HQ flows, billing, forms dispatch, WhatsApp connection UI, multi-employee bulk send, history filtering.
+- Files: `client/e2e/eden.spec.js`, `e2e/auth.spec.js`, `e2e/tasks.spec.js`
+- Risk: No automated coverage for recently added features (forms, HQ dispatch, rollover).
+- Priority: Medium
+
+---
+
+## Scaling Limits
+
+**SQLite Single-File Database:**
+- Current capacity: Adequate for single-tenant use with hundreds of tasks. All writes are serialized.
+- Limit: SQLite's WAL mode allows concurrent reads but only one writer at a time. Under high write load (bulk send updating many task statuses simultaneously, auto-close running, rollover running) lock contention will emerge.
+- Scaling path: Migrate to PostgreSQL if multi-tenant or high-frequency write use cases emerge.
+
+**WhatsApp Session Tied to One Server Instance:**
+- Current capacity: One active WhatsApp session per deployment.
+- Limit: Cannot horizontally scale (multiple server instances) because the WhatsApp session + Puppeteer Chrome are in-process and use local file auth (`LocalAuth` with `dataPath`).
+- Scaling path: Extract WhatsApp into a dedicated microservice with a shared persistent volume.
+
+---
+
+*Concerns audit: 2026-03-09*

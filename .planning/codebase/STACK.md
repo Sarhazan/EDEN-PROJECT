@@ -1,100 +1,142 @@
 # Technology Stack
 
-**Analysis Date:** 2026-01-19
+**Analysis Date:** 2026-03-09
 
 ## Languages
 
 **Primary:**
-- JavaScript (ES6+) - Used throughout client and server
-  - Client uses ES modules (`type: "module"` in `client/package.json`)
-  - Server uses CommonJS (`type: "commonjs"` in `package.json`)
+- JavaScript (CommonJS) - Server (`server/`) and root build tooling
+- JavaScript (ES Modules) - Client (`client/src/`) and Vite config
 
 **Secondary:**
-- HTML - Task confirmation pages in `docs/` directory
-- CSS - Via Tailwind CSS utility classes
+- JSX - React component files in `client/src/`
+- JSON - Locale files in `src/locales/`
 
 ## Runtime
 
 **Environment:**
-- Node.js v24.11.1
+- Node.js 20 (declared in `nixpacks.toml` via `nixPkgs = ['nodejs_20']`; local env is v24.x)
 
 **Package Manager:**
-- npm v11.6.2
-- Lockfile: Not present (package-lock.json not committed)
+- npm
+- Lockfiles: present at root `package-lock.json` and `client/package-lock.json`
+
+## Project Structure
+
+Three separate npm packages:
+1. **Root** (`package.json`) - Server + E2E test runner
+2. **Client** (`client/package.json`) - React SPA (Vite, ES module)
+3. **WhatsApp Gateway** (`whatsapp-gateway/package.json`) - Standalone local gateway (optional, not used in production)
 
 ## Frameworks
 
-**Core:**
-- Express.js v5.2.1 - Backend REST API server
-- React v19.2.0 - Frontend UI framework
-- React Router DOM v7.12.0 - Client-side routing
+**Backend:**
+- Express 5 (`^5.2.1`) - HTTP server and REST API; entry point `server/index.js`
+
+**Frontend:**
+- React 19 (`^19.2.0`) - SPA rendering; entry `client/src/main.jsx`
+- React Router DOM 7 (`^7.12.0`) - Client-side routing
+
+**Real-time:**
+- Socket.IO 4 (`^4.8.3`) - Server and client; bidirectional events for WhatsApp status, task updates
+
+**Build / Dev:**
+- Vite 7 (`^7.2.4`) - Frontend bundler and dev server (port 5174)
+- nodemon 3 (`^3.1.11`) - Server hot reload in development
+- concurrently (`^9.2.1`) - Runs server + client dev servers in parallel
 
 **Testing:**
-- Not detected
+- Playwright 1 (`^1.58.2`) - E2E tests; config at `playwright.config.js`; tests in `e2e/`
 
-**Build/Dev:**
-- Vite v7.2.4 - Frontend build tool and dev server
-- Nodemon v3.1.11 - Server hot-reload during development
-- Concurrently v9.2.1 - Run client and server simultaneously
-- ESLint v9.39.1 - JavaScript linting
-- @vitejs/plugin-react v5.1.1 - React support for Vite
+**Styling:**
+- Tailwind CSS 3 (`^3.4.19`) - Utility-first CSS; config `client/tailwind.config.js`
+- tailwindcss-rtl (`^0.9.0`) - RTL (Hebrew/Arabic) layout support
+- PostCSS (`^8.5.6`) + Autoprefixer - CSS processing
 
 ## Key Dependencies
 
-**Critical:**
-- whatsapp-web.js v1.34.4 - WhatsApp Web integration via Puppeteer
-- better-sqlite3 v12.6.0 - SQLite database driver (synchronous)
-- axios v1.13.2 - HTTP client (used in both client and server)
+**Database:**
+- `better-sqlite3` `^12.6.0` - Synchronous SQLite driver; primary data store; `server/database/schema.js`
 
-**Infrastructure:**
-- cors v2.8.5 - Cross-origin resource sharing middleware
-- multer v2.0.2 - Multipart form data handling (file uploads)
-- qrcode-terminal v0.12.0 - QR code generation for WhatsApp authentication
+**WhatsApp Integration:**
+- `whatsapp-web.js` `^1.34.4` - WhatsApp Web automation via Puppeteer
+- `puppeteer-core` `^24.36.0` - Headless Chromium driver
+- `@sparticuz/chromium` `^143.0.4` - Chromium binary for Railway/cloud production
+- `qrcode` `^1.5.4` - Generates QR data URLs for browser display
+- `qrcode-terminal` `^0.12.0` - QR output for CLI debugging
 
-**UI/Styling:**
-- Tailwind CSS v3.4.19 - Utility-first CSS framework
-- PostCSS v8.5.6 + Autoprefixer v10.4.23 - CSS processing
-- tailwindcss-rtl v0.9.0 - Right-to-left text support (Hebrew)
-- react-icons v5.5.0 - Icon library
-- react-datepicker v9.1.0 - Date picker component
+**AI / Translation:**
+- `@google/generative-ai` `^0.24.1` - Google Gemini API (primary translation, free tier)
+- `@google-cloud/translate` `^9.3.0` - Google Cloud Translation API (paid fallback)
 
-**Utilities:**
-- date-fns v4.1.0 - Date formatting and manipulation (used in both client and server)
+**File Handling:**
+- `multer` `^2.0.2` - Multipart form uploads (task photo confirmations)
+- `sharp` `^0.34.5` - Image conversion (HEIC/HEIF to JPEG)
+
+**HTTP / Utilities:**
+- `axios` `^1.13.2` - HTTP client (used server-side for TinyURL API; client-side for API calls)
+- `cors` `^2.8.5` - CORS middleware
+- `date-fns` `^4.1.0` - Date utilities (server and client)
+- `node-cron` `^4.2.1` - Scheduled tasks (daily schedule sender, data retention)
+- `jsdom` `^27.4.0` - Server-side DOM manipulation
+
+**Internationalisation:**
+- `i18next` `^25.8.0` - Server-side i18n framework; `server/services/i18n.js`
+- `i18next-fs-backend` `^2.6.1` - Loads locale JSON files from `src/locales/`
+- Supported locales: `he`, `en`, `ru`, `ar`, `hi`, `ml`
+
+**Client UI Libraries:**
+- `react-icons` `^5.5.0`
+- `react-toastify` `^11.0.5`
+- `react-datepicker` `^9.1.0`
+- `react-tailwindcss-datepicker` `^2.0.0`
+- `react-swipeable` `^7.0.2`
+- `re-resizable` `^6.9.17`
+
+**Linting:**
+- ESLint 9 (`^9.39.1`) with `eslint-plugin-react-hooks` and `eslint-plugin-react-refresh`; config `client/eslint.config.js`
 
 ## Configuration
 
 **Environment:**
-- Configuration via `.env` file in server directory
-- Manual parsing in `server/index.js` (lines 8-17)
-- Key environment variables:
-  - `PORT` - Server port (default: 3001)
-  - `NODE_ENV` - Environment mode (development/production)
-  - `VITE_API_URL` - API URL for client (build-time)
-  - `API_URL` - API URL for HTML templates (runtime)
-  - `VERCEL_PROJECT_URL` - Vercel deployment URL
+- Server reads `.env` manually at startup (custom parser in `server/index.js` lines 27-36)
+- `whatsapp-gateway/` uses `dotenv` package
+- Template: `.env.example` at root
+
+**Key env vars (from `.env.example` and code):**
+- `PORT` - Server listen port (default `3002`)
+- `NODE_ENV` - `development` | `production`
+- `PUBLIC_API_URL` - Public-facing URL for WhatsApp confirmation links
+- `DB_PATH` - SQLite database file path (defaults to `maintenance.db` at root)
+- `GEMINI_API_KEY` - Google Gemini API key (primary translation)
+- `GOOGLE_TRANSLATE_API_KEY` - Google Cloud Translation API key (fallback)
+- `GOOGLE_APPLICATION_CREDENTIALS` - Path to GCP service account JSON
+- `URL_SHORTENER_ENABLED` - Toggle TinyURL shortening (`true`/`false`)
+- `DISABLE_WHATSAPP` - Set `true` to skip WhatsApp init in dev
+- `DEV_ONLY_PHONE` - Dev safeguard: restrict WhatsApp sends to one number
+
+**Frontend env vars (Vite):**
+- `VITE_API_URL` - Backend API base URL (falls back to `http://localhost:3002/api`)
+- `VITE_SOCKET_URL` - Socket.IO server URL
 
 **Build:**
-- `client/vite.config.js` - Vite configuration (dev server, plugins)
-- `client/tailwind.config.js` - Tailwind theme, colors, fonts
-- `client/postcss.config.js` - PostCSS plugins
-- `client/eslint.config.js` - ESLint flat config format
-- `vercel.json` - Vercel deployment configuration
+- Vite config: `client/vite.config.js` - custom `versionPlugin` writes `version.json` on build
+- Tailwind config: `client/tailwind.config.js`
+- PostCSS config: `client/postcss.config.js`
 
 ## Platform Requirements
 
 **Development:**
-- Node.js v24+ (or compatible version)
-- npm v11+
-- Git (for HTML page deployment via `server/services/htmlGenerator.js`)
-- Vercel CLI (for deployment automation)
+- Node.js 20+, npm
+- `npm run dev` starts server (nodemon, port 3002) + client (Vite, port 5174) concurrently
+- Chromium must be available for WhatsApp (can set `DISABLE_WHATSAPP=true` to skip)
 
 **Production:**
-- Server: Node.js runtime (port 3001, binds to 0.0.0.0)
-- Client: Static files served from `client/dist/`
-- Database: SQLite file at root (`maintenance.db`)
-- WhatsApp: Puppeteer with headless Chrome
-- Static HTML hosting: Vercel (for task confirmation pages in `docs/`)
+- Railway (primary): `nixpacks.toml` provisions Node 20 + Chromium apt packages; starts with `node server/index.js`
+- Render (alternative): `render.yaml` defines web service, Frankfurt region
+- Client built to `client/dist/` and served as static files by Express in production
+- Persistent SQLite via `DB_PATH` env pointing to a Railway Volume
 
 ---
 
-*Stack analysis: 2026-01-19*
+*Stack analysis: 2026-03-09*
