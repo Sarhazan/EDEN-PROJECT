@@ -481,6 +481,16 @@ function initializeDatabase() {
     }
   }
 
+  // Add rollover_days column to tasks table (counts how many days a one-time task was rolled over)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN rollover_days INTEGER DEFAULT 0`);
+    console.log('Added rollover_days column to tasks table');
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
   // Billing: tenant charges
   db.exec(`
     CREATE TABLE IF NOT EXISTS charges (

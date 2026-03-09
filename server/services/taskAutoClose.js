@@ -1,8 +1,12 @@
 const cron = require('node-cron');
 const { db } = require('../database/schema');
+const { rolloverOneTimeTasks, setIo: setRolloverIo } = require('./taskRollover');
 
 let io;
-function setIo(ioInstance) { io = ioInstance; }
+function setIo(ioInstance) {
+  io = ioInstance;
+  setRolloverIo(ioInstance);
+}
 
 const LAST_RUN_KEY = 'task_autoclose_last_run_date';
 const END_TIME_KEY = 'workday_end_time';
@@ -84,7 +88,10 @@ function checkAndRunAutoClose(now = new Date()) {
     io.emit('tasks:bulk_updated', { changed, date: dateStr, source: 'autoclose' });
   }
 
-  return { dateStr, configuredEndTime, changed };
+  // Roll over unfinished one-time tasks to the next day
+  const rollover = rolloverOneTimeTasks(dateStr);
+
+  return { dateStr, configuredEndTime, changed, rollover };
 }
 
 function initializeTaskAutoClose() {
