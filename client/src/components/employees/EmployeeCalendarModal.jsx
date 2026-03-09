@@ -98,7 +98,6 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [hours, setHours] = useState(DEFAULT_HOURS);
   const [measuredHourHeight, setMeasuredHourHeight] = useState(64);
   const [tooltip, setTooltip] = useState(null); // { task, x, y }
-  const [isSendingDay, setIsSendingDay] = useState(false);
 
   // Refs for stale-closure-safe access inside document event handlers
   const draggingRef = useRef(null);
@@ -656,53 +655,6 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       ? `${format(weekDays[0], 'dd/MM')} – ${format(weekDays[6], 'dd/MM')}`
       : format(anchorDate, 'EEEE dd/MM', { locale: he });
 
-  // The "send day" date: in week/month view use today if visible, else anchorDate
-  const sendDayDate = (view === 'day') ? anchorDate : new Date();
-
-  const sendDaySchedule = async () => {
-    if (!whatsappConnected || !employee?.phone) return;
-    const dateStr = toIsoDate(sendDayDate);
-    const dayTasks = employeeTasks.filter((t) => t.start_date === dateStr);
-    if (dayTasks.length === 0) {
-      toast.info('אין משימות ביום זה לשליחה', { position: 'bottom-center', autoClose: 2500, rtl: true });
-      return;
-    }
-    try {
-      setIsSendingDay(true);
-      const tasksByEmployee = {
-        [employee.id]: {
-          phone: employee.phone,
-          name: employee.name,
-          language: employee.language || 'he',
-          date: format(sendDayDate, 'dd/MM/yyyy'),
-          tasks: dayTasks
-            .filter((t) => t.start_time && t.start_time !== '00:00')
-            .map((t) => ({
-              id: t.id,
-              title: t.title,
-              description: t.description,
-              start_time: t.start_time,
-              priority: t.priority || 'normal',
-              system_name: t.system_name,
-              estimated_duration_minutes: t.estimated_duration_minutes,
-              status: t.status,
-            })),
-          extraTasks: dayTasks
-            .filter((t) => !t.start_time || t.start_time === '00:00')
-            .map((t) => ({ id: t.id, title: t.title, description: t.description })),
-        },
-      };
-      await axios.post(`${API_URL}/whatsapp/send-bulk`, { tasksByEmployee }, { timeout: 60000 });
-      toast.success(`סידור יום ${format(sendDayDate, 'dd/MM')} נשלח ל-${employee.name} ✓`, {
-        position: 'bottom-center', autoClose: 3000, rtl: true,
-      });
-    } catch (err) {
-      toast.error(err?.response?.data?.error || 'שליחה נכשלה', { position: 'bottom-center', autoClose: 3000, rtl: true });
-    } finally {
-      setIsSendingDay(false);
-    }
-  };
-
   const shift = (dir) => {
     if (view === 'month') setAnchorDate(addDays(anchorDate, dir * 30));
     else if (view === 'week') setAnchorDate(addDays(anchorDate, dir * 7));
@@ -867,26 +819,6 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
               </button>
             </div>
 
-            {/* Send day via WhatsApp */}
-            <button
-              onClick={sendDaySchedule}
-              disabled={!whatsappConnected || isSendingDay || !employee?.phone}
-              title={
-                !employee?.phone
-                  ? 'לעובד אין מספר טלפון'
-                  : !whatsappConnected
-                  ? 'WhatsApp לא מחובר'
-                  : `שלח סידור יום ${format(sendDayDate, 'dd/MM')} ב-WhatsApp`
-              }
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-all
-                ${whatsappConnected && employee?.phone && !isSendingDay
-                  ? 'bg-green-500 hover:bg-green-600 text-white cursor-pointer'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-            >
-              <FaWhatsapp className="text-base" />
-              <span>{isSendingDay ? 'שולח...' : `שלח יום ${format(sendDayDate, 'dd/MM')}`}</span>
-            </button>
           </div>
 
           {/* Status legend */}
