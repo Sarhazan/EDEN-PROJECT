@@ -39,6 +39,12 @@ export function AppProvider({ children }) {
 
     socket.on('connect', () => {
       setConnectionStatus('connected');
+      // Re-check WhatsApp status every time socket connects/reconnects
+      // (catches missed events during disconnection)
+      fetch(`${API_URL}/whatsapp/status`)
+        .then(r => r.json())
+        .then(data => setWhatsappConnected(!!data.isReady))
+        .catch(() => setWhatsappConnected(false));
     });
 
     socket.on('disconnect', () => {
@@ -96,6 +102,7 @@ export function AppProvider({ children }) {
     socket.on('whatsapp:ready', () => setWhatsappConnected(true));
     socket.on('whatsapp:disconnected', () => setWhatsappConnected(false));
     socket.on('whatsapp:auth_failure', () => setWhatsappConnected(false));
+    socket.on('whatsapp:qr', () => setWhatsappConnected(false)); // QR = not connected yet
 
     // Store socket in ref for cleanup
     socketRef.current = socket;
@@ -108,6 +115,7 @@ export function AppProvider({ children }) {
       socket.off('whatsapp:ready');
       socket.off('whatsapp:disconnected');
       socket.off('whatsapp:auth_failure');
+      socket.off('whatsapp:qr');
       socket.disconnect();
     };
   }, []);
