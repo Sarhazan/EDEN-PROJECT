@@ -284,6 +284,13 @@ router.post('/send-bulk', async (req, res) => {
         await whatsappService.sendMessage(phone, shortUrl);
         console.log('Link message sent successfully');
 
+        // Update task statuses to 'sent' in DB
+        if (taskIds.length > 0) {
+          const placeholders = taskIds.map(() => '?').join(',');
+          db.prepare(`UPDATE tasks SET status = 'sent' WHERE id IN (${placeholders})`).run(...taskIds);
+          console.log(`✓ Updated ${taskIds.length} tasks to status 'sent'`);
+        }
+
         results.push({
           employeeId,
           name,

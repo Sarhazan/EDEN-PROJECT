@@ -933,6 +933,11 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                                 title={task.title}
                               >
                                 {task.title || 'ללא כותרת'}
+                                {task.rollover_days > 0 && (
+                                  <span style={{ fontSize: '0.65rem', marginLeft: 4, opacity: 0.75 }}>
+                                    🔄{task.rollover_days}
+                                  </span>
+                                )}
                               </div>
                             ))}
                           </div>

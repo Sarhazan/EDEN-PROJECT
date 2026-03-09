@@ -1798,7 +1798,12 @@ export default function MyDayPage() {
                       ✓ אשר
                     </button>
                     <div className="flex-1 text-right min-w-0">
-                      <div className="text-sm font-semibold truncate">{task.title}</div>
+                      <div className="text-sm font-semibold truncate">
+                        {task.title}
+                        {task.rollover_days > 0 && (
+                          <span className="text-xs text-orange-500 mr-1">🔄{task.rollover_days}</span>
+                        )}
+                      </div>
                       <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>
                     </div>
                     {hasDetails && (
