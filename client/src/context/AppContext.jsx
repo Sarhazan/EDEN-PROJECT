@@ -92,6 +92,11 @@ export function AppProvider({ children }) {
       fetchEmployees();
     });
 
+    // Listen for WhatsApp status changes (keep whatsappConnected in sync)
+    socket.on('whatsapp:ready', () => setWhatsappConnected(true));
+    socket.on('whatsapp:disconnected', () => setWhatsappConnected(false));
+    socket.on('whatsapp:auth_failure', () => setWhatsappConnected(false));
+
     // Store socket in ref for cleanup
     socketRef.current = socket;
 
@@ -100,6 +105,9 @@ export function AppProvider({ children }) {
       socket.off('task:updated');
       socket.off('task:deleted');
       socket.off('tasks:bulk_updated');
+      socket.off('whatsapp:ready');
+      socket.off('whatsapp:disconnected');
+      socket.off('whatsapp:auth_failure');
       socket.disconnect();
     };
   }, []);
