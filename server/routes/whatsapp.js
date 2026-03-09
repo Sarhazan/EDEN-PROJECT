@@ -157,15 +157,10 @@ router.post('/send-bulk', async (req, res) => {
         let { phone, name, tasks, date, language, extraTasks } = data;
         console.log(`Employee: ${name}, Phone: ${phone}, Tasks: ${tasks.length}`);
 
-        // Fallback: if client doesn't send language, query from database
-        if (!language) {
-          const employee = db.prepare('SELECT language FROM employees WHERE id = ?').get(employeeId);
-          language = employee?.language || 'he';
-          console.log(`Language not provided in request, queried from DB: ${language}`);
-        }
-
-        const employeeLanguage = language || 'he';
-        console.log(`Employee ${name} language: ${employeeLanguage}`);
+        // Always verify language from DB (client value may be stale or defaulted to 'he')
+        const employeeRow = db.prepare('SELECT language FROM employees WHERE id = ?').get(employeeId);
+        const employeeLanguage = employeeRow?.language || language || 'he';
+        console.log(`Employee ${name} language: ${employeeLanguage} (db: ${employeeRow?.language}, client sent: ${language})`);
 
         // Get translations for this employee's language
         const t = i18n.getFixedT(employeeLanguage, 'whatsapp');
