@@ -2,6 +2,25 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
 
 /**
+ * Normalize a phone number to WhatsApp format (digits only, with country code).
+ * Supports international numbers (+91, +1, etc.) and Israeli local numbers.
+ */
+function normalizePhone(phoneNumber) {
+  const raw = String(phoneNumber || '').trim();
+  // Has explicit + country code: +972..., +91..., +1...
+  if (raw.startsWith('+')) return raw.replace(/\D/g, '');
+  // Has 00 international prefix
+  if (raw.startsWith('00')) return raw.replace(/\D/g, '').replace(/^00/, '');
+  const digits = raw.replace(/\D/g, '');
+  // Already has a country code (more than 10 digits, starts with non-zero)
+  if (digits.length > 10 && !digits.startsWith('0')) return digits;
+  // Israeli local: starts with 0 (e.g. 0501234567)
+  if (digits.startsWith('0')) return '972' + digits.slice(1);
+  // Israeli without leading 0 (e.g. 501234567)
+  return '972' + digits;
+}
+
+/**
  * WhatsApp Service - Singleton with Socket.IO Integration
  *
  * This service manages the WhatsApp Web client directly in the main server process.
@@ -379,15 +398,10 @@ class WhatsAppService {
       }
       // ─────────────────────────────────────────────────────────────────────
 
-      // Format phone number for WhatsApp (Israel country code)
-      let formattedNumber = phoneNumber.replace(/\D/g, '');
+      // Format phone number for WhatsApp (international support)
+      let formattedNumber = normalizePhone(phoneNumber);
 
-      // Add Israel country code if not present
-      if (!formattedNumber.startsWith('972')) {
-        formattedNumber = '972' + formattedNumber.replace(/^0+/, '');
-      }
-
-      const localDigits = formattedNumber.replace(/^972/, '');
+      const localDigits = formattedNumber.slice(-9); // last 9 digits for lookup
       let chatId = this.knownContactChatIds.get(localDigits)
         || this.knownContactChatIds.get(formattedNumber)
         || `${formattedNumber}@c.us`;
@@ -529,10 +543,7 @@ class WhatsAppService {
             continue;
           }
         }
-        let formattedNumber = phoneNumber.replace(/\D/g, '');
-        if (!formattedNumber.startsWith('972')) {
-          formattedNumber = '972' + formattedNumber.replace(/^0+/, '');
-        }
+        const formattedNumber = normalizePhone(phoneNumber);
         const chatId = `${formattedNumber}@c.us`;
 
         await this.client.sendMessage(chatId, message, { sendSeen: false });
