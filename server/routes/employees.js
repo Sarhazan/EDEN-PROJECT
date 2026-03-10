@@ -175,16 +175,44 @@ router.put('/:id', (req, res) => {
   }
 });
 
-// Delete employee
+// Delete employee (keep tasks by unassigning them first)
 router.delete('/:id', (req, res) => {
   try {
-    const result = db.prepare('DELETE FROM employees WHERE id = ?').run(req.params.id);
+    const employeeId = Number(req.params.id);
 
-    if (result.changes === 0) {
+    const tx = db.transaction(() => {
+      const employee = db.prepare('SELECT id FROM employees WHERE id = ?').get(employeeId);
+      if (!employee) {
+        return { notFound: true };
+      }
+
+      // Keep tasks and remove only employee assignment
+      const unassigned = db.prepare(`
+        UPDATE tasks
+        SET employee_id = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE employee_id = ?
+      `).run(employeeId);
+
+      const deleted = db.prepare('DELETE FROM employees WHERE id = ?').run(employeeId);
+
+      return {
+        notFound: false,
+        unassignedTasks: unassigned.changes || 0,
+        deletedEmployee: deleted.changes || 0,
+      };
+    });
+
+    const result = tx();
+
+    if (result.notFound) {
       return res.status(404).json({ error: 'עובד לא נמצא' });
     }
 
-    res.json({ message: 'העובד נמחק בהצלחה' });
+    res.json({
+      message: 'העובד נמחק בהצלחה',
+      unassignedTasks: result.unassignedTasks,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

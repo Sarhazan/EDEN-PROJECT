@@ -148,6 +148,7 @@ router.post('/send-bulk', async (req, res) => {
     console.log('WhatsApp is ready, proceeding with send');
 
     const results = [];
+    let totalUpdatedTasks = 0;
     const crypto = require('crypto');
 
     // Send to each employee
@@ -287,8 +288,9 @@ router.post('/send-bulk', async (req, res) => {
         // Update task statuses to 'sent' in DB
         if (taskIds.length > 0) {
           const placeholders = taskIds.map(() => '?').join(',');
-          db.prepare(`UPDATE tasks SET status = 'sent' WHERE id IN (${placeholders})`).run(...taskIds);
-          console.log(`✓ Updated ${taskIds.length} tasks to status 'sent'`);
+          const updated = db.prepare(`UPDATE tasks SET status = 'sent' WHERE id IN (${placeholders})`).run(...taskIds);
+          totalUpdatedTasks += (updated?.changes || 0);
+          console.log(`✓ Updated ${updated?.changes || 0} tasks to status 'sent'`);
         }
 
         results.push({
@@ -317,6 +319,10 @@ router.post('/send-bulk', async (req, res) => {
     const failureCount = results.filter(r => !r.success).length;
 
     console.log(`Results: ${successCount} success, ${failureCount} failures`);
+
+    if (totalUpdatedTasks > 0 && whatsappService.io) {
+      whatsappService.io.emit('tasks:bulk_updated', { source: 'whatsapp_send_bulk', changed: totalUpdatedTasks });
+    }
 
     res.json({
       success: true,

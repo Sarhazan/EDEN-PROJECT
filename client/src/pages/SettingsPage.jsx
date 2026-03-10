@@ -53,6 +53,9 @@ export default function SettingsPage() {
   const [workdayEndTime, setWorkdayEndTime] = useState('18:00');
   const [workdayEndTimeSaving, setWorkdayEndTimeSaving] = useState(false);
   const [workdayEndTimeSaved, setWorkdayEndTimeSaved] = useState(false);
+  const [autoSendWorkdayTime, setAutoSendWorkdayTime] = useState('');
+  const [autoSendWorkdayTimeSaving, setAutoSendWorkdayTimeSaving] = useState(false);
+  const [autoSendWorkdayTimeSaved, setAutoSendWorkdayTimeSaved] = useState(false);
 
   // Manager selection state
   const [managerEmployeeId, setManagerEmployeeId] = useState('');
@@ -186,12 +189,14 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchWorkdaySettings = async () => {
       try {
-        const [startRes, endRes] = await Promise.all([
+        const [startRes, endRes, autoSendRes] = await Promise.all([
           axios.get(`${API_URL}/accounts/settings/workday_start_time`),
           axios.get(`${API_URL}/accounts/settings/workday_end_time`),
+          axios.get(`${API_URL}/accounts/settings/auto_send_workday_time`),
         ]);
         if (startRes.data.value) setWorkdayStartTime(startRes.data.value);
         if (endRes.data.value) setWorkdayEndTime(endRes.data.value);
+        if (autoSendRes.data.value) setAutoSendWorkdayTime(autoSendRes.data.value);
       } catch (err) {
         console.error('Error fetching workday settings:', err);
       }
@@ -360,6 +365,21 @@ export default function SettingsPage() {
       console.error('Error saving workday end time:', err);
     } finally {
       setWorkdayEndTimeSaving(false);
+    }
+  };
+
+  const handleAutoSendWorkdayTimeChange = async (newValue) => {
+    setAutoSendWorkdayTime(newValue);
+    setAutoSendWorkdayTimeSaving(true);
+    setAutoSendWorkdayTimeSaved(false);
+    try {
+      await axios.put(`${API_URL}/accounts/settings/auto_send_workday_time`, { value: newValue });
+      setAutoSendWorkdayTimeSaved(true);
+      setTimeout(() => setAutoSendWorkdayTimeSaved(false), 2000);
+    } catch (err) {
+      console.error('Error saving auto send workday time:', err);
+    } finally {
+      setAutoSendWorkdayTimeSaving(false);
     }
   };
 
@@ -733,13 +753,13 @@ export default function SettingsPage() {
         </div>
 
         <p className="text-gray-600 mb-4">
-          שעות יום העבודה. משימות חד-פעמיות שנוצרו ליום מסוים יישלחו באחרי שעה זו.
+          שעות יום העבודה והגדרות שליחה אוטומטית לעובדים.
         </p>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">שעת תחילת יום</label>
           <p className="text-xs text-gray-500 mb-2">
-            בשעה זו ישלחו לעובדים משימות היום דרך WhatsApp (א-ה)
+            משמש להצגת שעות יום העבודה במערכת.
           </p>
           <div className="flex items-center gap-4">
             <input
@@ -760,6 +780,32 @@ export default function SettingsPage() {
             )}
           </div>
           <p className="text-xs text-gray-500 mt-2">ברירת מחדל: 08:00</p>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">שליחת יום עבודה אוטומטי</label>
+          <p className="text-xs text-gray-500 mb-2">
+            אם הוגדרה שעה ו-WhatsApp מחובר, בכל יום תישלח לכל עובד רשימת משימות היום שלו (ללא המנהל).
+          </p>
+          <div className="flex items-center gap-4">
+            <input
+              type="time"
+              value={autoSendWorkdayTime}
+              onChange={(e) => handleAutoSendWorkdayTimeChange(e.target.value)}
+              className="w-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg"
+            />
+            {autoSendWorkdayTimeSaving && (
+              <span className="text-blue-500 flex items-center gap-1">
+                <FaSpinner className="animate-spin" /> שומר...
+              </span>
+            )}
+            {autoSendWorkdayTimeSaved && (
+              <span className="text-green-500 flex items-center gap-1">
+                <FaCheck /> נשמר!
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">אם WhatsApp לא מחובר בשעה הזו, המערכת תדלג על השליחה להיום.</p>
         </div>
 
         <div className="mb-4">

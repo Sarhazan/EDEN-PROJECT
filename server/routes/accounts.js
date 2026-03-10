@@ -167,7 +167,7 @@ router.put('/settings/:key', (req, res) => {
       }
     }
 
-    if (key === 'workday_start_time') {
+    if (key === 'workday_start_time' || key === 'auto_send_workday_time') {
       db.prepare(`DELETE FROM settings WHERE key = 'daily_schedule_last_run_date'`).run();
     }
 
