@@ -7,9 +7,10 @@ function setIo(ioInstance) { io = ioInstance; }
  * Returns tomorrow's date string (YYYY-MM-DD) given today's date string.
  */
 function getTomorrow(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + 1);
+  return dt.toISOString().slice(0, 10);
 }
 
 /**
@@ -25,6 +26,7 @@ function rolloverOneTimeTasks(dateStr) {
   const result = db.prepare(`
     UPDATE tasks
     SET start_date     = ?,
+        start_time     = '',
         rollover_days  = COALESCE(rollover_days, 0) + 1,
         updated_at     = CURRENT_TIMESTAMP
     WHERE is_recurring = 0

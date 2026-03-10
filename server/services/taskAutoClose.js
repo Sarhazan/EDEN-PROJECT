@@ -75,13 +75,14 @@ function checkAndRunAutoClose(now = new Date()) {
   // This makes the job resilient if the server restarts or misses the exact minute.
   if (hhmm < configuredEndTime) return null;
 
-  const lastRunDate = getLastRunDate();
-  if (lastRunDate === dateStr) return null;
-
+  // Important: keep checking after end-time as well.
+  // If a manager creates a one-time task after end-time, it should still be closed/rolled over immediately.
   const changed = autoCloseOpenTasksForDate(dateStr);
   setLastRunDate(dateStr);
 
-  console.log(`[TaskAutoClose] ${dateStr} ${configuredEndTime} -> marked ${changed} tasks as not_completed`);
+  if (changed > 0) {
+    console.log(`[TaskAutoClose] ${dateStr} ${configuredEndTime} -> marked ${changed} tasks as not_completed`);
+  }
 
   // Notify all connected clients to refresh their task list
   if (io && changed > 0) {

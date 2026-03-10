@@ -381,7 +381,8 @@ export default function MyDayPage() {
   };
 
   const isRecurringTask = (task) => Number(task?.is_recurring) === 1;
-  const isTaskClosed = (task) => ['completed', 'not_completed'].includes(task?.status);
+  // "not_completed" should remain visible as unfinished work (not counted as completed).
+  const isTaskClosed = (task) => task?.status === 'completed';
 
   // Helper function to check if a task should appear on the selected date
   const shouldTaskAppearOnDate = (task, date) => {
@@ -1801,7 +1802,7 @@ export default function MyDayPage() {
                       <div className="text-sm font-semibold truncate">
                         {task.title}
                         {task.rollover_days > 0 && (
-                          <span className="text-xs text-orange-500 mr-1">🔄{task.rollover_days}</span>
+                          <span className="text-xs text-orange-500 mr-1">נגרר {task.rollover_days} {task.rollover_days === 1 ? 'יום' : 'ימים'}</span>
                         )}
                       </div>
                       <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>

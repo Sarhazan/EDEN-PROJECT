@@ -281,6 +281,11 @@ export default function TaskCard({ task, onEdit, forceExpand = false }) {
             `}>
               {task.title}
             </span>
+            {Number(task.rollover_days || 0) > 0 && (
+              <span className="text-[10px] text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                נגרר {task.rollover_days} {task.rollover_days === 1 ? 'יום' : 'ימים'}
+              </span>
+            )}
           </div>
 
           {/* Col 3: Date */}
