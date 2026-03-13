@@ -48,6 +48,8 @@ const getTodayIsraelStart = () => {
 export default function TaskForm({ task, initialValues = null, onClose }) {
   const { addTask, updateTask, deleteTask, deleteTaskSeries, systems, employees, buildings } = useApp();
   const isEditing = !!task;
+  const [showRecurringUpdateDialog, setShowRecurringUpdateDialog] = useState(false);
+  const [pendingSubmitData, setPendingSubmitData] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -260,6 +262,15 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       alert('נא לבחור תאריך');
       return;
     }
+    if (dbFreq !== 'daily' && dbFreq !== 'one-time' && formData.start_date) {
+      const [d, m, y] = formData.start_date.split('/').map(Number);
+      const selectedDate = new Date(y, m - 1, d);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        alert('תאריך "החל מ" חייב להיות היום או בעתיד');
+        return;
+      }
+    }
 
     try {
       const dataToSubmit = { 
@@ -276,10 +287,25 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       }
 
       if (isEditing) {
+        // If recurring task in edit mode → show scope dialog
+        if (task.is_recurring) {
+          setPendingSubmitData(dataToSubmit);
+          setShowRecurringUpdateDialog(true);
+          return;
+        }
         await updateTask(task.id, dataToSubmit);
       } else {
         await addTask(dataToSubmit);
       }
+      onClose();
+    } catch (error) {
+      alert('שגיאה: ' + error.message);
+    }
+  };
+
+  const executeUpdate = async (data, updateScope) => {
+    try {
+      await updateTask(task.id, { ...data, update_scope: updateScope });
       onClose();
     } catch (error) {
       alert('שגיאה: ' + error.message);
@@ -307,6 +333,40 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
   };
 
   return (
+    <>
+    {/* Recurring update scope dialog */}
+    {showRecurringUpdateDialog && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+          <h3 className="text-lg font-bold text-gray-900 font-alef">עדכון משימה חוזרת</h3>
+          <p className="text-sm text-gray-600">איזו משימות ברצונך לעדכן?</p>
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => { setShowRecurringUpdateDialog(false); executeUpdate(pendingSubmitData, 'single'); }}
+              className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
+            >
+              משימה זו בלבד
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowRecurringUpdateDialog(false); executeUpdate(pendingSubmitData, 'all'); }}
+              className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
+            >
+              כל המשימות החוזרות
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowRecurringUpdateDialog(false); setPendingSubmitData(null); }}
+              className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+            >
+              ביטול
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <form onSubmit={handleSubmit} className="space-y-4 font-alef text-right" dir="rtl">
       {/* 1. Title */}
       <div>
@@ -622,5 +682,6 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
         </div>
       )}
     </form>
+    </>
   );
 }

@@ -518,8 +518,12 @@ router.put('/:id', (req, res) => {
       : 0;
     const dayShiftModifier = dayDelta === 0 ? null : `${dayDelta >= 0 ? '+' : ''}${dayDelta} day`;
 
+    // Detect frequency change between two recurring types
+    const frequencyChanged = wasRecurring && nowRecurring && currentTask.frequency !== frequency;
+
     // ── update_scope='all': update all future sibling recurring instances ─────
-    if (update_scope === 'all' && wasRecurring && nowRecurring) {
+    // (only when frequency did NOT change — if it changed, see block below)
+    if (update_scope === 'all' && wasRecurring && nowRecurring && !frequencyChanged) {
       db.prepare(`
         UPDATE tasks
         SET title = ?, description = ?, system_id = ?, employee_id = ?,
@@ -558,6 +562,62 @@ router.put('/:id', (req, res) => {
         currentTask.frequency,
         currentTask.start_time
       );
+    }
+
+    // ── recurring frequency changed (scope=all): replace future instances ────
+    // Delete old series instances (future, not completed) + create new ones
+    if (update_scope === 'all' && frequencyChanged) {
+      // 1. Delete future undone instances of OLD series
+      db.prepare(`
+        DELETE FROM tasks
+        WHERE id != ?
+          AND is_recurring = 1
+          AND status IN ('draft', 'sent', 'received')
+          AND start_date >= ?
+          AND COALESCE(employee_id, -1) = COALESCE(?, -1)
+          AND COALESCE(system_id, -1) = COALESCE(?, -1)
+          AND frequency = ?
+          AND start_time = ?
+      `).run(
+        req.params.id,
+        todayStr,
+        currentTask.employee_id,
+        currentTask.system_id,
+        currentTask.frequency,
+        currentTask.start_time
+      );
+
+      // 2. Create new instances with NEW frequency from start_date
+      const startDateObj = new Date(start_date);
+      const insertInstance = db.prepare(`
+        INSERT INTO tasks (title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+      `);
+
+      if (frequency === 'daily' && weekly_days && weekly_days.length > 0) {
+        for (let i = 1; i <= 30; i++) {
+          const checkDate = addDays(startDateObj, i);
+          if (weekly_days.includes(checkDate.getDay())) {
+            const dateStr = format(checkDate, 'yyyy-MM-dd');
+            insertInstance.run(title, description, system_id || null, employee_id || null, frequency, dateStr, normalizedStartTime, null, priority || 'normal', resolveCreateStatusForDate(dateStr, 'draft'), weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+          }
+        }
+      } else if (frequency !== 'one-time') {
+        const maxInstances = { weekly: 12, biweekly: 6, monthly: 6, 'semi-annual': 4, annual: 3 }[frequency] || 1;
+        for (let i = 1; i <= maxInstances; i++) {
+          let instanceDate;
+          switch (frequency) {
+            case 'weekly':      instanceDate = addWeeks(startDateObj, i); break;
+            case 'biweekly':    instanceDate = addWeeks(startDateObj, i * 2); break;
+            case 'monthly':     instanceDate = addMonths(startDateObj, i); break;
+            case 'semi-annual': instanceDate = addMonths(startDateObj, i * 6); break;
+            case 'annual':      instanceDate = addMonths(startDateObj, i * 12); break;
+            default:            instanceDate = addDays(startDateObj, i);
+          }
+          const dateStr = format(instanceDate, 'yyyy-MM-dd');
+          insertInstance.run(title, description, system_id || null, employee_id || null, frequency, dateStr, normalizedStartTime, null, priority || 'normal', resolveCreateStatusForDate(dateStr, 'draft'), weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
+        }
+      }
     }
 
     // ── recurring → one-time: delete future sibling instances ────────────────
@@ -637,7 +697,7 @@ router.put('/:id', (req, res) => {
     if (io) {
       io.emit('task:updated', { task: enrichedTask });
       // Also broadcast bulk update so clients refresh the full task list
-      if (wasRecurring !== nowRecurring) {
+      if (wasRecurring !== nowRecurring || frequencyChanged) {
         io.emit('tasks:bulk_updated', { source: 'recurrence_change' });
       }
     }
