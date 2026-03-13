@@ -1136,7 +1136,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         <QuickTaskModal
           isOpen={!!quickCreateDefaults}
           initialValues={quickCreateDefaults}
-          forceOneTime={true}
+          forceOneTime={false}
           onClose={() => {
             setQuickCreateDefaults(null);
             refreshData();
