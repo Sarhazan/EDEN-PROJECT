@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FaChartLine, FaCheckCircle, FaClock, FaExclamationTriangle, FaUsers } from 'react-icons/fa';
 import { useApp } from '../context/AppContext';
 import { API_URL } from '../config';
+import { LoadingSection } from '../components/ui/Spinner';
 
 function formatDateInput(value) {
   if (!value) return '';
@@ -367,7 +368,7 @@ export default function HQDashboardPage() {
         </div>
 
         {loading ? (
-          <div className="text-gray-500 py-6">טוען נתונים...</div>
+          <LoadingSection text="טוען נתונים..." />
         ) : effectiveDrilldown.length === 0 ? (
           <div className="text-gray-500 py-6">אין פירוט למשימות עבור המנהל הנבחר</div>
         ) : (

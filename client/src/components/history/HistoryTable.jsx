@@ -3,12 +3,13 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import Modal from '../shared/Modal';
 import { BACKEND_URL } from '../../config';
+import { LoadingSection } from '../ui/Spinner';
 
 export default function HistoryTable({ tasks, loading }) {
   const [lightboxImage, setLightboxImage] = useState(null);
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">טוען...</div>;
+    return <LoadingSection text="טוען היסטוריה..." />;
   }
 
   if (tasks.length === 0) {

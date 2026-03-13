@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import Modal from '../components/shared/Modal';
 import axios from 'axios';
 import { API_URL } from '../config';
+import { LoadingSection } from '../components/ui/Spinner';
 
 export default function LocationsPage() {
   const { locations, addLocation, updateLocation, deleteLocation, loading } = useApp();
@@ -139,7 +140,7 @@ export default function LocationsPage() {
   };
 
   if (loading) {
-    return <div className="p-6">טוען...</div>;
+    return <LoadingSection text="טוען מיקומים..." className="mt-20" />;
   }
 
   return (

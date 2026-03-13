@@ -964,9 +964,9 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
                   type="button"
                   onClick={taskMode === 'one-time' ? handleQuickSave : handleRecurringSave}
                   disabled={isSaving}
-                  className="flex-[2] bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-[2] bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {isSaving ? 'שומר...' : 'עדכן משימה'}
+                  {isSaving ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /><span>שומר...</span></> : 'עדכן משימה'}
                 </button>
               </div>
             ) : (
@@ -974,9 +974,9 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
                 type="button"
                 onClick={taskMode === 'one-time' ? handleQuickSave : handleRecurringSave}
                 disabled={isSaving}
-                className="w-full bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isSaving ? 'שומר...' : 'שמור'}
+                {isSaving ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /><span>שומר...</span></> : 'שמור'}
               </button>
             )}
           </div>

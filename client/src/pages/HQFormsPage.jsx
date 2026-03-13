@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { API_URL } from '../config';
+import Spinner from '../components/ui/Spinner';
 
 export default function HQFormsPage() {
   const [items, setItems] = useState([]);
@@ -199,7 +200,7 @@ export default function HQFormsPage() {
         <div>
           <h3 className="font-semibold mb-3">חוזים קיימים במתחם</h3>
           {loading ? (
-            <div className="text-gray-500">טוען...</div>
+            <div className="flex items-center gap-2 text-gray-500 py-2"><Spinner size="sm" />טוען...</div>
           ) : !selected || !selected.contracts || selected.contracts.length === 0 ? (
             <div className="text-gray-500">אין חוזים למתחם זה</div>
           ) : (

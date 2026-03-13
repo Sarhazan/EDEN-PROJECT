@@ -3,6 +3,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../components/forms/datepicker-custom.css';
 import { API_URL } from '../config';
+import Spinner from '../components/ui/Spinner';
 
 const parseISODate = (value) => {
   if (!value) return null;
@@ -213,7 +214,7 @@ export default function HQDispatchPage() {
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">בחר מנהלים</p>
             {loading ? (
-              <div className="text-sm text-gray-500">טוען מנהלים...</div>
+              <div className="flex items-center gap-2 text-sm text-gray-500 py-2"><Spinner size="sm" />טוען...</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {employees.map((emp) => (

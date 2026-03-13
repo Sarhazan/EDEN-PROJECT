@@ -50,6 +50,7 @@ const getTodayIsraelStart = () => {
 export default function TaskForm({ task, initialValues = null, onClose }) {
   const { addTask, updateTask, deleteTask, deleteTaskSeries, systems, employees, buildings } = useApp();
   const isEditing = !!task;
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRecurringUpdateDialog, setShowRecurringUpdateDialog] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState(null);
 
@@ -275,6 +276,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
     }
 
     try {
+      setIsSubmitting(true);
       const dataToSubmit = { 
         ...formData, 
         frequency: dbFreq,
@@ -293,6 +295,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
         if (task.is_recurring) {
           setPendingSubmitData(dataToSubmit);
           setShowRecurringUpdateDialog(true);
+          setIsSubmitting(false);
           return;
         }
         await updateTask(task.id, dataToSubmit);
@@ -302,6 +305,8 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       onClose();
     } catch (error) {
       toastApiError(toast, error, 'שגיאה בשמירת המשימה');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -646,9 +651,12 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
         </button>
         <button
           type="submit"
-          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95"
+          disabled={isSubmitting}
+          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 min-h-[44px] transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {isEditing ? 'עדכן משימה' : 'צור משימה'}
+          {isSubmitting
+            ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /><span>שומר...</span></>
+            : isEditing ? 'עדכן משימה' : 'צור משימה'}
         </button>
       </div>
 
