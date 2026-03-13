@@ -13,7 +13,7 @@ import { useApp } from '../../context/AppContext';
 import { toast } from 'react-toastify';
 import { API_URL } from '../../config';
 
-const DEFAULT_HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00–21:00
+const DEFAULT_HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 06:00-21:00
 const TIME_COL_WIDTH = 80; // px for left time label column
 
 // ── Status colour maps ────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ function formatTimeRange(startTime, durationMinutes) {
   const totalMin = (h || 0) * 60 + (m || 0) + durationMinutes;
   const eH = Math.floor(totalMin / 60) % 24;
   const eM = totalMin % 60;
-  return `${String(h || 0).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}–${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`;
+  return `${String(h || 0).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}-${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -95,6 +95,8 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [resizeState, setResizeState] = useState(null); // drag-to-resize state
   const [showRecurringDragDialog, setShowRecurringDragDialog] = useState(false);
   const [pendingDragData, setPendingDragData] = useState(null); // { task, newDate, newTime, dayTasks }
+  const [showRecurringResizeDialog, setShowRecurringResizeDialog] = useState(false);
+  const [pendingResizeData, setPendingResizeData] = useState(null); // { task, oldDuration, newDuration }
   const [quickCreateDefaults, setQuickCreateDefaults] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [hours, setHours] = useState(DEFAULT_HOURS);
@@ -113,7 +115,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const employeeTasksRef = useRef([]);
   const didResizeRef = useRef(false);
   const suppressNextClickRef = useRef(false);
-  
+
   const ghostRef = useRef(null);
   const measuredHourHeightRef = useRef(measuredHourHeight);
 
@@ -180,7 +182,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(anchorDate, { weekStartsOn: 0 });
-    return Array.from({ length: 7 }, (_, i) => addDays(start, i)); // Sun–Sat full week
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i)); // Sun-Sat full week
   }, [anchorDate]);
 
   // Keep refs up-to-date every render
@@ -252,7 +254,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     }
   };
 
-  /** Overlap check — reads from ref so it's always fresh inside effects */
+  /** Overlap check - reads from ref so it's always fresh inside effects */
   const hasDayOverlapRef = (taskId, startDate, startTime, durationMinutes) => {
     const all = employeeTasksRef.current;
     const cStart = timeToMinutes(startTime);
@@ -296,6 +298,19 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   }, []);
 
   // ── Drag save executor (shared by direct drop + recurring scope dialog) ─────
+  const executeResizeSave = useCallback(async ({ task, newDuration }, updateScope) => {
+    try {
+      await axios.put(`${API_URL}/tasks/${task.id}`, {
+        ...task,
+        estimated_duration_minutes: newDuration,
+        update_scope: updateScope,
+      });
+      await refreshData();
+    } catch {
+      toast.error('שמירת משך הזמן נכשלה', { position: 'bottom-center', autoClose: 2000, rtl: true });
+    }
+  }, [refreshData]);
+
   const executeDragSave = useCallback(async ({ task, newDate, newTime, dayTasks }, updateScope) => {
     try {
       const updates = [];
@@ -410,14 +425,14 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         ? [anchorDateRef.current]
         : (weekDaysRef.current || []);
       const currentDay = days[dayIndex] || state.currentDay;
-      
+
       // Check overlap for current drop position
       const dropTimeStr  = `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
       const dropDateStr  = toIsoDate(currentDay);
       const taskDur      = durationForTask(state.task);
       const hasConflict  = checkDragConflict(state.task.id, dropDateStr, dropTimeStr, taskDur);
 
-      // Update ghost DOM directly — 60fps, no React render
+      // Update ghost DOM directly - 60fps, no React render
       if (ghostRef.current) {
         ghostRef.current.style.display = 'block';
         ghostRef.current.style.left = (e.clientX - (state.clickOffsetX || 0)) + 'px';
@@ -434,7 +449,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       }
 
       // Only trigger React re-render when the target TIME SLOT changes (not every pixel)
-      // Ghost DOM updates already handle the visual — this just updates the drop zone highlight
+      // Ghost DOM updates already handle the visual - this just updates the drop zone highlight
       const slotChanged =
         !state.hasMoved ||
         state.currentHour !== hour ||
@@ -483,11 +498,11 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         return;
       }
 
-      // Overlap check — block if conflict, no shifting
+      // Overlap check - block if conflict, no shifting
       const dur = durationForTask(task);
       const conflict = checkDragConflict(task.id, newDate, newTime, dur);
       if (conflict) {
-        toast.error('יש חפיפה במשימות — לא ניתן להזיז לשעה זו', {
+        toast.error('יש חפיפה במשימות - לא ניתן להזיז לשעה זו', {
           position: 'bottom-center', autoClose: 3000, rtl: true,
         });
         return;
@@ -495,7 +510,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
       const dayTasks = [{ ...task, startMin: timeToMinutes(newTime), dur, isDropped: true }];
 
-      // If recurring task – show scope dialog before saving
+      // If recurring task - show scope dialog before saving
       if (task.is_recurring) {
         setPendingDragData({ task, newDate, newTime, dayTasks });
         setShowRecurringDragDialog(true);
@@ -556,7 +571,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           `${s.startDate}T${String(Math.floor((timeToMinutes(s.startTime) + s.resizeCurrentDuration) / 60) % 24).padStart(2, '0')}:${String((timeToMinutes(s.startTime) + s.resizeCurrentDuration) % 60).padStart(2, '0')}:00`
         );
         if (endDt < nowIsrael) {
-          toast.error('לא ניתן לשנות משך — הזמן כבר עבר', {
+          toast.error('לא ניתן לשנות משך - הזמן כבר עבר', {
             position: 'bottom-center', autoClose: 2000, rtl: true,
           });
           setResizeState(null);
@@ -573,6 +588,17 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
         try {
           const currentTask = tasks.find((t) => t.id === s.resizingTaskId);
+          // If recurring → show scope dialog instead of saving directly
+          if (currentTask?.is_recurring) {
+            setPendingResizeData({
+              task: currentTask,
+              oldDuration: s.resizeInitialDuration,
+              newDuration: s.resizeCurrentDuration,
+            });
+            setShowRecurringResizeDialog(true);
+            setResizeState(null);
+            return;
+          }
           await axios.put(`${API_URL}/tasks/${s.resizingTaskId}`, {
             ...currentTask,
             estimated_duration_minutes: s.resizeCurrentDuration,
@@ -662,7 +688,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     view === 'month'
       ? format(anchorDate, 'MMMM yyyy', { locale: he })
       : view === 'week'
-      ? `${format(weekDays[0], 'dd/MM')} – ${format(weekDays[6], 'dd/MM')}`
+      ? `${format(weekDays[0], 'dd/MM')} - ${format(weekDays[6], 'dd/MM')}`
       : format(anchorDate, 'EEEE dd/MM', { locale: he });
 
   const shift = (dir) => {
@@ -761,7 +787,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           />
         )}
 
-        {/* Resize handle — stops propagation so drag-move doesn't fire */}
+        {/* Resize handle - stops propagation so drag-move doesn't fire */}
         <div
           className="absolute bottom-0 left-0 w-full flex items-center justify-center cursor-ns-resize z-20"
           style={{ height: '8px', background: `${borderColor}55` }}
@@ -907,7 +933,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   ))}
                 </div>
 
-                {/* All-day tasks (one-time, no time) — week view */}
+                {/* All-day tasks (one-time, no time) - week view */}
                 {view === 'week' && (() => {
                   const hasAnyAllDay = weekDays.some(day =>
                     employeeTasks.some(t =>
@@ -953,7 +979,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   );
                 })()}
 
-                {/* All-day tasks (one-time, no time) — day view only */}
+                {/* All-day tasks (one-time, no time) - day view only */}
                 {view === 'day' && (() => {
                   const allDayTasks = employeeTasks.filter(t =>
                     isSameDay(parseISO(t.start_date), anchorDate) &&
@@ -1022,7 +1048,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                             {/* Task blocks */}
                             {isTargetCell && (
                               <>
-                                {/* Dashed indicator line — aligned exactly to drop position */}
+                                {/* Dashed indicator line - aligned exactly to drop position */}
                                 <div
                                   style={{
                                     position: 'absolute',
@@ -1067,7 +1093,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       {showRecurringDragDialog && pendingDragData && (() => {
         const { task, newDate, newTime } = pendingDragData;
         const fmtDate = (iso) => {
-          if (!iso) return '—';
+          if (!iso) return '-';
           const [y, m, d] = iso.split('-');
           return `${d}.${m}`;
         };
@@ -1135,7 +1161,62 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         );
       })()}
 
-      {/* Ghost — always in DOM, hidden when not dragging */}
+      {/* Recurring resize scope dialog */}
+      {showRecurringResizeDialog && pendingResizeData && (() => {
+        const { task, oldDuration, newDuration } = pendingResizeData;
+        const fmtDur = (min) => {
+          if (min < 60) return `${min} דק׳`;
+          const h = Math.floor(min / 60);
+          const m = min % 60;
+          return m > 0 ? `${h}:${String(m).padStart(2,'0')} שע׳` : `${h} שע׳`;
+        };
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowRecurringResizeDialog(false); setPendingResizeData(null); }} />
+            <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+              <h3 className="text-lg font-bold text-gray-900 font-alef">עדכון משימה חוזרת</h3>
+
+              {/* Change summary card */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
+                <p className="font-semibold text-gray-800 text-sm truncate">📋 {task.title}</p>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>⏱️</span>
+                  <span className="text-gray-400">{fmtDur(oldDuration)}</span>
+                  <span className="text-gray-400">→</span>
+                  <span className="font-medium text-gray-800">{fmtDur(newDuration)}</span>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600">אילו משימות ברצונך לעדכן?</p>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringResizeDialog(false); executeResizeSave(pendingResizeData, 'single'); setPendingResizeData(null); }}
+                  className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
+                >
+                  משימה זו בלבד
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringResizeDialog(false); executeResizeSave(pendingResizeData, 'all'); setPendingResizeData(null); }}
+                  className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
+                >
+                  כל המשימות החוזרות
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringResizeDialog(false); setPendingResizeData(null); }}
+                  className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+                >
+                  ביטול
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Ghost - always in DOM, hidden when not dragging */}
       <div
         ref={ghostRef}
         style={{
@@ -1178,7 +1259,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         />
       )}
 
-      {/* Hover tooltip — clamped strictly within viewport; no overflow possible */}
+      {/* Hover tooltip - clamped strictly within viewport; no overflow possible */}
       {tooltip && !dragging && !resizeState && (() => {
         const TOOLTIP_W = 260;
         const TOOLTIP_MAX_H = 160;
