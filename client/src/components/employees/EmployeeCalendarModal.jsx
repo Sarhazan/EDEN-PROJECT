@@ -93,6 +93,8 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [isSendingDay, setIsSendingDay] = useState(false);
   const [dragging, setDragging] = useState(null);   // drag-to-move state
   const [resizeState, setResizeState] = useState(null); // drag-to-resize state
+  const [showRecurringDragDialog, setShowRecurringDragDialog] = useState(false);
+  const [pendingDragData, setPendingDragData] = useState(null); // { task, newDate, newTime, dayTasks }
   const [quickCreateDefaults, setQuickCreateDefaults] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [hours, setHours] = useState(DEFAULT_HOURS);
@@ -279,6 +281,53 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     };
   }, [dragging?.hasMoved]);
 
+  // ── Drag save executor (shared by direct drop + recurring scope dialog) ─────
+  const executeDragSave = useCallback(async ({ task, newDate, newTime, dayTasks }, updateScope) => {
+    try {
+      const updates = [];
+      for (const t of dayTasks) {
+        const origTime = t.isDropped ? null : t.start_time;
+        const newH = Math.floor(t.startMin / 60) % 24;
+        const newM = t.startMin % 60;
+        const newTimeStr = `${String(newH).padStart(2,'0')}:${String(newM).padStart(2,'0')}`;
+
+        if (t.isDropped || origTime !== newTimeStr) {
+          const baseTask = tasks.find(x => x.id === t.id) || t;
+          updates.push(
+            axios.put(`${API_URL}/tasks/${t.id}`, {
+              title: baseTask.title,
+              description: baseTask.description || '',
+              system_id: baseTask.system_id || null,
+              employee_id: baseTask.employee_id || null,
+              frequency: baseTask.frequency || 'one-time',
+              start_date: newDate,
+              start_time: newTimeStr,
+              due_date: baseTask.due_date || null,
+              priority: baseTask.priority || 'normal',
+              status: baseTask.status || 'draft',
+              is_recurring: baseTask.is_recurring ? 1 : 0,
+              weekly_days: Array.isArray(baseTask.weekly_days)
+                ? baseTask.weekly_days
+                : (baseTask.weekly_days ? JSON.parse(baseTask.weekly_days) : []),
+              estimated_duration_minutes: baseTask.estimated_duration_minutes || 30,
+              location_id: baseTask.location_id || null,
+              building_id: baseTask.building_id || null,
+              // Pass scope only for the dragged task itself
+              ...(t.isDropped && updateScope ? { update_scope: updateScope } : {}),
+            })
+          );
+        }
+      }
+
+      await Promise.all(updates);
+      await refreshData();
+    } catch (err) {
+      const msg = err?.response?.data?.error || err?.message || 'שגיאה לא ידועה';
+      console.error('[Calendar drag] Save failed:', msg, err?.response?.data);
+      toast.error(`שמירה נכשלה: ${msg}`, { position: 'bottom-center', autoClose: 3000, rtl: true });
+    }
+  }, [tasks, refreshData]);
+
   // ── FEATURE 1: Drag-to-Move ──────────────────────────────────────────────────
   const handleTaskMouseDown = useCallback((e, task) => {
     if (e.button !== 0) return;
@@ -442,58 +491,23 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           if (next.startMin < currentEnd) {
              hasOverlap = true;
              if (next.isDropped) {
-                // current overlaps dropped task! Move current to after dropped task.
                 current.startMin = next.startMin + next.dur;
              } else {
-                // next overlaps current. Move next to after current.
                 next.startMin = currentEnd;
              }
           }
         }
       }
 
-      try {
-        const updates = [];
-        for (const t of dayTasks) {
-          const origTime = t.isDropped ? null : t.start_time;
-          const newH = Math.floor(t.startMin / 60) % 24;
-          const newM = t.startMin % 60;
-          const newTimeStr = `${String(newH).padStart(2,'0')}:${String(newM).padStart(2,'0')}`;
-          
-          if (t.isDropped || origTime !== newTimeStr) {
-             const baseTask = tasks.find(x => x.id === t.id) || t;
-             // Send only the fields the server expects – avoid sending computed/joined fields
-             updates.push(
-               axios.put(`${API_URL}/tasks/${t.id}`, {
-                 title: baseTask.title,
-                 description: baseTask.description || '',
-                 system_id: baseTask.system_id || null,
-                 employee_id: baseTask.employee_id || null,
-                 frequency: baseTask.frequency || 'one-time',
-                 start_date: newDate,
-                 start_time: newTimeStr,
-                 due_date: baseTask.due_date || null,
-                 priority: baseTask.priority || 'normal',
-                 status: baseTask.status || 'draft',
-                 is_recurring: baseTask.is_recurring ? 1 : 0,
-                 weekly_days: Array.isArray(baseTask.weekly_days)
-                   ? baseTask.weekly_days
-                   : (baseTask.weekly_days ? JSON.parse(baseTask.weekly_days) : []),
-                 estimated_duration_minutes: baseTask.estimated_duration_minutes || 30,
-                 location_id: baseTask.location_id || null,
-                 building_id: baseTask.building_id || null,
-               })
-             );
-          }
-        }
-
-        await Promise.all(updates);
-        await refreshData();
-      } catch (err) {
-        const msg = err?.response?.data?.error || err?.message || 'שגיאה לא ידועה';
-        console.error('[Calendar drag] Save failed:', msg, err?.response?.data);
-        toast.error(`שמירה נכשלה: ${msg}`, { position: 'bottom-center', autoClose: 3000, rtl: true });
+      // If recurring task – show scope dialog before saving
+      if (task.is_recurring) {
+        setPendingDragData({ task, newDate, newTime, dayTasks });
+        setShowRecurringDragDialog(true);
+        return;
       }
+
+      // Non-recurring: save immediately
+      await executeDragSave({ task, newDate, newTime, dayTasks }, 'single');
     };
 
     document.addEventListener('mousemove', onMouseMove);
@@ -1052,6 +1066,40 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
           )}
         </div>
       </Modal>
+
+      {/* Recurring drag scope dialog */}
+      {showRecurringDragDialog && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowRecurringDragDialog(false); setPendingDragData(null); }} />
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+            <h3 className="text-lg font-bold text-gray-900 font-alef">עדכון משימה חוזרת</h3>
+            <p className="text-sm text-gray-600">איזו משימות ברצונך לעדכן?</p>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowRecurringDragDialog(false); executeDragSave(pendingDragData, 'single'); setPendingDragData(null); }}
+                className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
+              >
+                משימה זו בלבד
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowRecurringDragDialog(false); executeDragSave(pendingDragData, 'all'); setPendingDragData(null); }}
+                className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
+              >
+                כל המשימות החוזרות
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowRecurringDragDialog(false); setPendingDragData(null); }}
+                className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Ghost — always in DOM, hidden when not dragging */}
       <div
