@@ -1,37 +1,44 @@
-# Changelog
+# CHANGELOG — EDEN Maintenance System
 
-## 2026-02-27 — Stable Release (end-of-day + employee calendar)
+כל גרסה שעולה לפרודקשן מתועדת כאן.
+פורמט: `vMAJOR.MINOR.PATCH — YYYY-MM-DD`
 
-### Added
-- מנגנון סוף יום אוטומטי למשימות (`taskAutoClose`) לפי `workday_end_time`.
-- סטטוס חדש `not_completed` ("לא בוצע") ב-DB, שרת ו-UI.
-- לייבל חזותי "לא בוצע" בכרטיסי משימה.
-- קונטיינר "לא בוצע" בכרטיס עובד (Employees Page).
-- יומן עובד חדש בכרטיס עובד (מודאל):
-  - תצוגות יום / שבוע / חודש
-  - Drag & Drop לשינוי תאריך/שעה
-  - צבע לפי סטטוס
-  - עריכת משימה בלחיצה
-  - יצירה מהיומן דרך QuickTaskModal עם prefill של תאריך/שעה/עובד
+---
 
-### Changed
-- `MyDay` → משימות חד-פעמיות ב"משימות מנהל" נשארות גלויות גם אחרי שיוך לעובד אחר.
-- `MyDay` → משימות `not_completed` נשארות מוצגות באותו יום (לא נגררות ליום הבא).
-- שינוי שעת סוף יום בהגדרות מפעיל בדיקה מיידית של auto-close.
-- לוגיקת סוף יום עודכנה לריצה גם אחרי השעה (לא רק בדקה המדויקת).
-- יצירת משימות אחרי סוף יום מסמנת `not_completed` בהתאם ללוגיקה.
+## v1.1.0 — 2026-03-13
 
-### Fixed
-- חסימת תאריך עבר במשימות חוזרות (UI + server-side validation).
-- תיקוני datepicker (פתיחה תקינה + מניעת הקלדת תאריך עבר).
-- תיקוני RTL במוד שבועי ביומן עובד (overflow / separators).
-- הסרת גלילה אופקית במוד יום/שבוע ביומן עובד.
+### ✨ פיצ'רים חדשים
+- **דיאלוג scope לגרירת משימה חוזרת** — בחירה "משימה זו בלבד" / "כל המשימות" + סיכום שינוי (תאריך/שעה ישן → חדש)
+- **דיאלוג scope לשינוי משך זמן** — אותו דיאלוג כשגוררים תחתית המשימה, עם סיכום "30 דק׳ → 45 דק׳"
+- **שינוי תדירות (weekly→monthly)** — מוחק ישנות, יוצר חדשות; scope=all עם דיאלוג
+- **חסימת חפיפה** — גרירה לשעה תפוסה: ghost אדום + toast "יש חפיפה" + חסימת שמירה
+- **ברירת מחדל "חוזרת"** — יצירת משימה מיומן נפתחת במצב "חוזרת" במקום "חד פעמי"
+- **שעת ברירת מחדל** — dropdown שעה נפתח תמיד מהשעה הנוכחית מעוגלת
+- **TimePicker מותאם** — תמיד נפתח כלפי מטה, גולל לשעה הנבחרת
 
-### Internal
-- עודכנו סטטיסטיקות active/history כך ש-`not_completed` לא ייספר כ-active.
-- סדרת תיקוני schema/migration לסטטוס החדש.
+### 🐛 תיקוני באגים
+- **frequency change root cause** — UPDATE רץ לפני DELETE שגרם לתיקון חלקי; תוקן ע"י חישוב `frequencyChanged` לפני ה-UPDATE
+- **תיקון date compare בconflict detection** — השוואת string ישירה ללא המרת Date
 
-### Release refs
-- Range: `619f328` → `21793f6`
-- Branch: `master`
-- Remote: `origin/master`
+### ⚡ שיפורי ביצועים
+- **Index חדש בDB** — `idx_tasks_recurring_series` על `(employee_id, start_time, frequency, start_date)` לשאילתות scope=all
+
+### 🎨 UI / UX
+- **Spinner component** — `<Spinner>` + `<LoadingSection>` לשימוש אחיד בכל המסכים
+- **כפתורי שמירה** — spinner + disabled בזמן שמירה (TaskForm, QuickTaskModal)
+- **Loading states** — כל "טוען..." הוחלף ב-spinner מונפש (Dashboard, Dispatch, History, Locations, Forms, Lists)
+
+### 🏗️ תשתית
+- **Error handling אחיד** — `server/middleware/errorHandler.js` + `client/src/utils/apiError.js`; כל `alert()` הוחלף ב-`toast.error()`
+- **API Test Suite** — `server/tests/runner.js`: 6 בדיקות, 21 assertions (Create, Update, Scope=All, Frequency Change, Past Protection, Delete)
+- **restart-server.ps1** — סקריפט בטוח לאתחול שרת EDEN בלבד (לא הורג Gateway)
+
+---
+
+## v1.0.0 — 2026-03-01
+
+גרסה ראשונה בפרודקשן.
+- יומן עובדים עם גרירה
+- משימות חוזרות
+- שליחת WhatsApp
+- דשבורד HQ
