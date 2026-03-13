@@ -287,7 +287,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     const dropEnd   = dropStart + dur;
     return employeeTasksRef.current.some(t => {
       if (t.id === taskId) return false;
-      if (toIsoDate(new Date(t.start_date + 'T00:00:00')) !== newDateStr) return false;
+      if (t.start_date !== newDateStr) return false;   // direct string compare
       if (!t.start_time) return false;
       const tStart = timeToMinutes(t.start_time);
       const tEnd   = tStart + durationForTask(t);
