@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
+import TimePicker from '../ui/TimePicker';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './datepicker-custom.css';
@@ -541,26 +542,20 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium mb-1">שעת התחלה</label>
-          <select
+          <TimePicker
             value={formData.start_time}
-            onChange={(e) => handleTimeChange('start_time', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px]"
-          >
-            <option value="">ללא שעה</option>
-            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+            onChange={(v) => handleTimeChange('start_time', v)}
+            placeholder="ללא שעה"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">שעת סיום</label>
-          <select
+          <TimePicker
             value={formData.end_time}
-            onChange={(e) => handleTimeChange('end_time', e.target.value)}
+            onChange={(v) => handleTimeChange('end_time', v)}
             disabled={!formData.start_time}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px] disabled:bg-gray-100 disabled:text-gray-400"
-          >
-            <option value="">ללא שעה</option>
-            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+            placeholder="ללא שעה"
+          />
         </div>
       </div>
 
