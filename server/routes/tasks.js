@@ -504,12 +504,28 @@ router.put('/:id', (req, res) => {
     const nowRecurring = !!is_recurring;
     const { dateStr: todayStr } = getIsraelDateParts(new Date());
 
+    // Compute day delta for recurring scope updates (used by drag across days)
+    const toUtcMs = (isoDate) => {
+      if (!isoDate || typeof isoDate !== 'string') return null;
+      const [y, m, d] = isoDate.split('-').map(Number);
+      if (!y || !m || !d) return null;
+      return Date.UTC(y, m - 1, d);
+    };
+    const newStartMs = toUtcMs(start_date);
+    const currentStartMs = toUtcMs(currentTask?.start_date);
+    const dayDelta = (newStartMs != null && currentStartMs != null)
+      ? Math.round((newStartMs - currentStartMs) / 86400000)
+      : 0;
+    const dayShiftModifier = dayDelta === 0 ? null : `${dayDelta >= 0 ? '+' : ''}${dayDelta} day`;
+
     // ── update_scope='all': update all future sibling recurring instances ─────
     if (update_scope === 'all' && wasRecurring && nowRecurring) {
       db.prepare(`
         UPDATE tasks
         SET title = ?, description = ?, system_id = ?, employee_id = ?,
-            frequency = ?, start_time = ?, priority = ?,
+            frequency = ?, start_time = ?,
+            start_date = CASE WHEN ? IS NULL THEN start_date ELSE date(start_date, ?) END,
+            priority = ?,
             weekly_days = ?, estimated_duration_minutes = ?,
             location_id = ?, building_id = ?,
             updated_at = CURRENT_TIMESTAMP
@@ -519,6 +535,7 @@ router.put('/:id', (req, res) => {
           AND start_date >= ?
           AND COALESCE(employee_id, -1) = COALESCE(?, -1)
           AND COALESCE(system_id, -1) = COALESCE(?, -1)
+          AND frequency = ?
           AND start_time = ?
       `).run(
         title,
@@ -527,6 +544,8 @@ router.put('/:id', (req, res) => {
         employee_id || null,
         frequency,
         normalizedStartTime || '',
+        dayShiftModifier,
+        dayShiftModifier,
         priority,
         weeklyDaysJson,
         estimated_duration_minutes || 30,
@@ -536,6 +555,7 @@ router.put('/:id', (req, res) => {
         currentTask.start_date,
         currentTask.employee_id,
         currentTask.system_id,
+        currentTask.frequency,
         currentTask.start_time
       );
     }
