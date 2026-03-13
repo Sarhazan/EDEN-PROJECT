@@ -516,17 +516,19 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       return;
     }
 
-    // Validate recurring start date is today or future (Israel timezone)
-    const selectedStart = parseISODate(formData.start_date);
-    if (!selectedStart) {
-      alert('נא לבחור תאריך התחלה תקין');
-      return;
-    }
-    const selectedStartDay = new Date(selectedStart);
-    selectedStartDay.setHours(0, 0, 0, 0);
-    if (selectedStartDay < todayIsraelStart) {
-      alert('במשימה חוזרת ניתן לבחור תאריך התחלה מהיום והלאה בלבד');
-      return;
+    // Validate recurring start date is today or future (Israel timezone) — only for new tasks
+    if (!isEditMode) {
+      const selectedStart = parseISODate(formData.start_date);
+      if (!selectedStart) {
+        alert('נא לבחור תאריך התחלה תקין');
+        return;
+      }
+      const selectedStartDay = new Date(selectedStart);
+      selectedStartDay.setHours(0, 0, 0, 0);
+      if (selectedStartDay < todayIsraelStart) {
+        alert('במשימה חוזרת ניתן לבחור תאריך התחלה מהיום והלאה בלבד');
+        return;
+      }
     }
 
     // Validate time format
