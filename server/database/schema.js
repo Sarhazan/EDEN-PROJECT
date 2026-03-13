@@ -739,6 +739,10 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_tasks_status_start_date_start_time', 'tasks', 'status, start_date, start_time');
   createIndexIfNotExists('idx_tasks_one_time_due_date', 'tasks', 'is_recurring, due_date, status');
 
+  // Recurring series operations — used by update_scope='all' sibling queries
+  // Covers: employee_id + start_time + frequency (sibling match) + start_date range filter
+  createIndexIfNotExists('idx_tasks_recurring_series', 'tasks', 'employee_id, start_time, frequency, start_date');
+
   // Join/filter helpers
   createIndexIfNotExists('idx_systems_location_id', 'systems', 'location_id');
   createIndexIfNotExists('idx_employees_manager_id', 'employees', 'manager_id');
