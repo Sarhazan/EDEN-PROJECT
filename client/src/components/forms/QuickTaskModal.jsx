@@ -127,6 +127,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
   const [quickDueEnabled, setQuickDueEnabled] = useState(false);
   const [quickDueDate, setQuickDueDate] = useState(null);
   const [managerEmployeeId, setManagerEmployeeId] = useState('');
+  const [showRecurringUpdateDialog, setShowRecurringUpdateDialog] = useState(false);
+  const [pendingUpdateData, setPendingUpdateData] = useState(null);
 
   const todayStr = localDateStr();
   const todayIsraelStart = getIsraelStartOfToday();
@@ -464,6 +466,47 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
     }
   };
 
+  const executeRecurringSave = async (taskData, updateScope) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      if (isEditMode) {
+        await updateTask(initialValues.id, { ...taskData, update_scope: updateScope });
+        toast.success(
+          updateScope === 'all' ? 'כל המשימות החוזרות עודכנו בהצלחה' : 'המשימה עודכנה בהצלחה',
+          { position: 'bottom-center', autoClose: 2000, hideProgressBar: true, rtl: true }
+        );
+      } else {
+        const createdTask = await addTask(taskData);
+        showTaskCreatedToast(createdTask);
+      }
+      onClose();
+      setTitle('');
+      setSelectedDate(new Date());
+      setQuickDueEnabled(false);
+      setQuickDueDate(null);
+      setTaskMode('one-time');
+      setFormData({
+        description: '',
+        frequency: 'weekly',
+        base_frequency: 'weekly',
+        interval: 1,
+        weekly_days: [],
+        start_date: localDateStr(),
+        start_time: '',
+        system_id: '',
+        employee_id: '',
+        building_id: '',
+        priority: 'normal',
+        estimated_duration_minutes: 30
+      });
+    } catch {
+      alert('שגיאה בשמירת המשימה');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleRecurringSave = async () => {
     const dbFreq = getDbFrequency(formData.base_frequency, formData.interval);
 
@@ -493,74 +536,76 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       return;
     }
 
-    if (isSaving) return;
-    setIsSaving(true);
+    const taskData = {
+      title: title.trim(),
+      description: formData.description.trim() || null,
+      start_date: formData.start_date,
+      start_time: formData.start_time,
+      frequency: dbFreq,
+      is_recurring: dbFreq !== 'one-time',
+      weekly_days: formData.weekly_days,
+      system_id: formData.system_id || null,
+      employee_id: formData.employee_id || null,
+      building_id: formData.building_id || null,
+      priority: formData.priority,
+      estimated_duration_minutes: formData.estimated_duration_minutes,
+      status: isEditMode && initialValues?.status ? initialValues.status : 'draft'
+    };
 
-    try {
-      const taskData = {
-        title: title.trim(),
-        description: formData.description.trim() || null,
-        start_date: formData.start_date,
-        start_time: formData.start_time,
-        frequency: dbFreq,
-        is_recurring: dbFreq !== 'one-time',
-        weekly_days: formData.weekly_days,
-        system_id: formData.system_id || null,
-        employee_id: formData.employee_id || null,
-        building_id: formData.building_id || null,
-        priority: formData.priority,
-        estimated_duration_minutes: formData.estimated_duration_minutes,
-        status: isEditMode && initialValues?.status ? initialValues.status : 'draft'
-      };
-
-      if (isEditMode) {
-        await updateTask(initialValues.id, taskData);
-        toast.success('המשימה עודכנה בהצלחה', {
-          position: 'bottom-center',
-          autoClose: 2000,
-          hideProgressBar: true,
-          rtl: true
-        });
-      } else {
-        const createdTask = await addTask(taskData);
-        showTaskCreatedToast(createdTask);
-      }
-      onClose();
-      // Reset form
-      setTitle('');
-      setSelectedDate(new Date());
-      setQuickDueEnabled(false);
-      setQuickDueDate(null);
-      setTaskMode('one-time');
-      setFormData({
-        description: '',
-        frequency: 'weekly',
-        base_frequency: 'weekly',
-        interval: 1,
-        weekly_days: [],
-        start_date: localDateStr(),
-        start_time: '',
-        system_id: '',
-        employee_id: '',
-        building_id: '',
-        priority: 'normal',
-        estimated_duration_minutes: 30
-      });
-    } catch {
-      toast.error('שגיאה ביצירת משימה', {
-        position: 'bottom-center',
-        autoClose: 2000,
-        hideProgressBar: true,
-        rtl: true
-      });
-    } finally {
-      setIsSaving(false);
+    // In edit mode for a recurring task → show scope dialog
+    if (isEditMode && initialValues?.is_recurring) {
+      setPendingUpdateData(taskData);
+      setShowRecurringUpdateDialog(true);
+      return;
     }
+
+    // New recurring task (not edit mode)
+    await executeRecurringSave(taskData, 'single');
   };
 
   if (!isOpen) return null;
 
   return (
+    <>
+    {/* Recurring update scope dialog */}
+    {showRecurringUpdateDialog && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+          <h3 className="text-lg font-bold text-gray-900 font-alef">עדכון משימה חוזרת</h3>
+          <p className="text-sm text-gray-600">איזו משימות ברצונך לעדכן?</p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => {
+                setShowRecurringUpdateDialog(false);
+                executeRecurringSave(pendingUpdateData, 'single');
+              }}
+              className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
+            >
+              משימה זו בלבד
+            </button>
+            <button
+              onClick={() => {
+                setShowRecurringUpdateDialog(false);
+                executeRecurringSave(pendingUpdateData, 'all');
+              }}
+              className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
+            >
+              כל המשימות החוזרות
+            </button>
+            <button
+              onClick={() => {
+                setShowRecurringUpdateDialog(false);
+                setPendingUpdateData(null);
+              }}
+              className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+            >
+              ביטול
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
       {/* Backdrop */}
       <div
@@ -950,6 +995,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
         </div>
       </div>
     </div>
+    </>
   );
 }
 

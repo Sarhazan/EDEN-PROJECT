@@ -471,7 +471,7 @@ router.post('/', (req, res) => {
 // Update task
 router.put('/:id', (req, res) => {
   try {
-    const { title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id } = req.body;
+    const { title, description, system_id, employee_id, frequency, start_date, start_time, due_date, priority, status, is_recurring, weekly_days, estimated_duration_minutes, location_id, building_id, update_scope } = req.body;
     const normalizedStartTime = typeof start_time === 'string' ? start_time.trim() : '';
 
     const weeklyDaysJson = weekly_days && weekly_days.length > 0 ? JSON.stringify(weekly_days) : null;
@@ -503,6 +503,42 @@ router.put('/:id', (req, res) => {
     const wasRecurring = currentTask?.is_recurring === 1;
     const nowRecurring = !!is_recurring;
     const { dateStr: todayStr } = getIsraelDateParts(new Date());
+
+    // ── update_scope='all': update all future sibling recurring instances ─────
+    if (update_scope === 'all' && wasRecurring && nowRecurring) {
+      db.prepare(`
+        UPDATE tasks
+        SET title = ?, description = ?, system_id = ?, employee_id = ?,
+            frequency = ?, start_time = ?, priority = ?,
+            weekly_days = ?, estimated_duration_minutes = ?,
+            location_id = ?, building_id = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id != ?
+          AND is_recurring = 1
+          AND status IN ('draft', 'sent', 'received')
+          AND start_date >= ?
+          AND COALESCE(employee_id, -1) = COALESCE(?, -1)
+          AND COALESCE(system_id, -1) = COALESCE(?, -1)
+          AND start_time = ?
+      `).run(
+        title,
+        description || null,
+        system_id || null,
+        employee_id || null,
+        frequency,
+        normalizedStartTime || '',
+        priority,
+        weeklyDaysJson,
+        estimated_duration_minutes || 30,
+        location_id || null,
+        building_id || null,
+        req.params.id,
+        currentTask.start_date,
+        currentTask.employee_id,
+        currentTask.system_id,
+        currentTask.start_time
+      );
+    }
 
     // ── recurring → one-time: delete future sibling instances ────────────────
     if (wasRecurring && !nowRecurring) {
