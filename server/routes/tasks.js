@@ -478,30 +478,36 @@ router.put('/:id', (req, res) => {
 
     // Get current task to check if status is changing to 'sent' or if recurrence changed
     const currentTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    if (!currentTask) return res.status(404).json({ error: 'משימה לא נמצאה' });
 
-    // If status is changing to 'sent' and sent_at is not already set, set it now
-    let result;
-    if (status === 'sent' && currentTask && !currentTask.sent_at) {
-      const timestamp = getCurrentTimestampIsrael();
-      result = db.prepare(`
-        UPDATE tasks
-        SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, due_date = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, building_id = ?, sent_at = ?, updated_at = ?
-        WHERE id = ?
-      `).run(title, description, system_id || null, employee_id || null, frequency, start_date, normalizedStartTime || '', due_date || null, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null, timestamp, timestamp, req.params.id);
-    } else {
-      result = db.prepare(`
-        UPDATE tasks
-        SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, due_date = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, building_id = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).run(title, description, system_id || null, employee_id || null, frequency, start_date, normalizedStartTime || '', due_date || null, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null, req.params.id);
-    }
-
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'משימה לא נמצאה' });
-    }
-
-    const wasRecurring = currentTask?.is_recurring === 1;
+    const wasRecurring = currentTask.is_recurring === 1;
     const nowRecurring = !!is_recurring;
+
+    // Detect frequency change BEFORE running the regular UPDATE — critical for delete+recreate logic
+    const frequencyChanged = wasRecurring && nowRecurring && currentTask.frequency !== frequency;
+
+    // Skip the regular UPDATE when doing a full frequency change (delete+recreate handles persistence)
+    let result = { changes: 1 }; // default: assume success for frequency-change path
+    if (!(update_scope === 'all' && frequencyChanged)) {
+      // If status is changing to 'sent' and sent_at is not already set, set it now
+      if (status === 'sent' && !currentTask.sent_at) {
+        const timestamp = getCurrentTimestampIsrael();
+        result = db.prepare(`
+          UPDATE tasks
+          SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, due_date = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, building_id = ?, sent_at = ?, updated_at = ?
+          WHERE id = ?
+        `).run(title, description, system_id || null, employee_id || null, frequency, start_date, normalizedStartTime || '', due_date || null, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null, timestamp, timestamp, req.params.id);
+      } else {
+        result = db.prepare(`
+          UPDATE tasks
+          SET title = ?, description = ?, system_id = ?, employee_id = ?, frequency = ?, start_date = ?, start_time = ?, due_date = ?, priority = ?, status = ?, is_recurring = ?, weekly_days = ?, estimated_duration_minutes = ?, location_id = ?, building_id = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(title, description, system_id || null, employee_id || null, frequency, start_date, normalizedStartTime || '', due_date || null, priority, status, is_recurring ? 1 : 0, weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null, req.params.id);
+      }
+      if (result.changes === 0) {
+        return res.status(404).json({ error: 'משימה לא נמצאה' });
+      }
+    }
     const { dateStr: todayStr } = getIsraelDateParts(new Date());
 
     // Compute day delta for recurring scope updates (used by drag across days)
@@ -517,9 +523,6 @@ router.put('/:id', (req, res) => {
       ? Math.round((newStartMs - currentStartMs) / 86400000)
       : 0;
     const dayShiftModifier = dayDelta === 0 ? null : `${dayDelta >= 0 ? '+' : ''}${dayDelta} day`;
-
-    // Detect frequency change between two recurring types
-    const frequencyChanged = wasRecurring && nowRecurring && currentTask.frequency !== frequency;
 
     // ── update_scope='all': update all future sibling recurring instances ─────
     // (only when frequency did NOT change — if it changed, see block below)
@@ -567,11 +570,10 @@ router.put('/:id', (req, res) => {
     // ── recurring frequency changed (scope=all): replace future instances ────
     // Delete old series instances (future, not completed) + create new ones
     if (update_scope === 'all' && frequencyChanged) {
-      // 1. Delete future undone instances of OLD series
+      // 1. Delete ALL future undone instances of OLD series (including current task)
       db.prepare(`
         DELETE FROM tasks
-        WHERE id != ?
-          AND is_recurring = 1
+        WHERE is_recurring = 1
           AND status IN ('draft', 'sent', 'received')
           AND start_date >= ?
           AND COALESCE(employee_id, -1) = COALESCE(?, -1)
@@ -579,13 +581,13 @@ router.put('/:id', (req, res) => {
           AND frequency = ?
           AND start_time = ?
       `).run(
-        req.params.id,
         todayStr,
         currentTask.employee_id,
         currentTask.system_id,
         currentTask.frequency,
         currentTask.start_time
       );
+
 
       // 2. Create new instances with NEW frequency from start_date
       const startDateObj = new Date(start_date);
@@ -618,6 +620,12 @@ router.put('/:id', (req, res) => {
           insertInstance.run(title, description, system_id || null, employee_id || null, frequency, dateStr, normalizedStartTime, null, priority || 'normal', resolveCreateStatusForDate(dateStr, 'draft'), weeklyDaysJson, estimated_duration_minutes || 30, location_id || null, building_id || null);
         }
       }
+    }
+
+    // ── frequency changed: early return after delete+recreate ────────────────
+    if (update_scope === 'all' && frequencyChanged) {
+      if (io) io.emit('tasks:bulk_updated', { source: 'frequency_change' });
+      return res.json({ success: true, message: 'סדרת המשימות עודכנה בהצלחה' });
     }
 
     // ── recurring → one-time: delete future sibling instances ────────────────
