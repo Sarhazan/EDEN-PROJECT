@@ -91,7 +91,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const [view, setView] = useState('week');
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [isSendingDay, setIsSendingDay] = useState(false);
-  const [dragging, setDragging] = useState(null);   // drag-to-move state
+  const [dragging, setDragging] = useState(null);   // drag-to-move state  { ..., hasConflict: bool }
   const [resizeState, setResizeState] = useState(null); // drag-to-resize state
   const [showRecurringDragDialog, setShowRecurringDragDialog] = useState(false);
   const [pendingDragData, setPendingDragData] = useState(null); // { task, newDate, newTime, dayTasks }
@@ -281,6 +281,20 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     };
   }, [dragging?.hasMoved]);
 
+  // ── Overlap detector for drag ────────────────────────────────────────────────
+  const checkDragConflict = useCallback((taskId, newDateStr, newTimeStr, dur) => {
+    const dropStart = timeToMinutes(newTimeStr);
+    const dropEnd   = dropStart + dur;
+    return employeeTasksRef.current.some(t => {
+      if (t.id === taskId) return false;
+      if (toIsoDate(new Date(t.start_date + 'T00:00:00')) !== newDateStr) return false;
+      if (!t.start_time) return false;
+      const tStart = timeToMinutes(t.start_time);
+      const tEnd   = tStart + durationForTask(t);
+      return dropStart < tEnd && dropEnd > tStart;
+    });
+  }, []);
+
   // ── Drag save executor (shared by direct drop + recurring scope dialog) ─────
   const executeDragSave = useCallback(async ({ task, newDate, newTime, dayTasks }, updateScope) => {
     try {
@@ -397,20 +411,26 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         : (weekDaysRef.current || []);
       const currentDay = days[dayIndex] || state.currentDay;
       
+      // Check overlap for current drop position
+      const dropTimeStr  = `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
+      const dropDateStr  = toIsoDate(currentDay);
+      const taskDur      = durationForTask(state.task);
+      const hasConflict  = checkDragConflict(state.task.id, dropDateStr, dropTimeStr, taskDur);
+
       // Update ghost DOM directly — 60fps, no React render
       if (ghostRef.current) {
         ghostRef.current.style.display = 'block';
         ghostRef.current.style.left = (e.clientX - (state.clickOffsetX || 0)) + 'px';
         ghostRef.current.style.top = (e.clientY - (state.clickOffsetY || 0)) + 'px';
         ghostRef.current.style.width = (state.taskWidth || 120) + 'px';
-        ghostRef.current.style.height = Math.max(36, (durationForTask(state.task) / 60) * measuredHourHeightRef.current) + 'px';
-        ghostRef.current.style.backgroundColor = STATUS_BG[state.task?.status] || '#bfdbfe';
-        ghostRef.current.style.borderLeft = `3px solid ${STATUS_BORDER[state.task?.status] || '#2563eb'}`;
-        // Update title and time
+        ghostRef.current.style.height = Math.max(36, (taskDur / 60) * measuredHourHeightRef.current) + 'px';
+        // Red when conflict, normal color otherwise
+        ghostRef.current.style.backgroundColor = hasConflict ? '#fee2e2' : (STATUS_BG[state.task?.status] || '#bfdbfe');
+        ghostRef.current.style.borderLeft = `3px solid ${hasConflict ? '#dc2626' : (STATUS_BORDER[state.task?.status] || '#2563eb')}`;
         const titleEl = ghostRef.current.querySelector('#ghost-title');
-        const timeEl = ghostRef.current.querySelector('#ghost-time');
-        if (titleEl) { titleEl.style.color = STATUS_TEXT[state.task?.status] || '#1e3a8a'; titleEl.textContent = state.task?.title || 'משימה'; }
-        if (timeEl) { timeEl.style.color = STATUS_TEXT[state.task?.status] || '#1e3a8a'; timeEl.textContent = String(hour).padStart(2,'0') + ':' + String(minute).padStart(2,'0'); }
+        const timeEl  = ghostRef.current.querySelector('#ghost-time');
+        if (titleEl) { titleEl.style.color = hasConflict ? '#7f1d1d' : (STATUS_TEXT[state.task?.status] || '#1e3a8a'); titleEl.textContent = state.task?.title || 'משימה'; }
+        if (timeEl)  { timeEl.style.color  = hasConflict ? '#7f1d1d' : (STATUS_TEXT[state.task?.status] || '#1e3a8a'); timeEl.textContent = dropTimeStr; }
       }
 
       // Only trigger React re-render when the target TIME SLOT changes (not every pixel)
@@ -421,7 +441,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         state.currentMinute !== minute ||
         !isSameDay(state.currentDay, currentDay);
 
-      const updated = { ...state, hasMoved: true, currentHour: hour, currentMinute: minute, currentDay };
+      const updated = { ...state, hasMoved: true, currentHour: hour, currentMinute: minute, currentDay, hasConflict };
       draggingRef.current = updated;
       if (slotChanged) setDragging(updated);
     };
@@ -463,41 +483,17 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         return;
       }
 
-      // SHIFTING ALGORITHM: Overlap resolution
+      // Overlap check — block if conflict, no shifting
       const dur = durationForTask(task);
-      
-      let dayTasks = employeeTasksRef.current
-        .filter(t => t.id !== task.id && t.start_date === newDate)
-        .map(t => ({ ...t, startMin: timeToMinutes(t.start_time), dur: durationForTask(t), isDropped: false }));
-
-      dayTasks.push({ ...task, startMin: timeToMinutes(newTime), dur, isDropped: true });
-
-      let hasOverlap = true;
-      let maxIterations = 20;
-      while (hasOverlap && maxIterations > 0) {
-        hasOverlap = false;
-        maxIterations--;
-        
-        dayTasks.sort((a, b) => {
-          if (a.startMin === b.startMin) return a.isDropped ? -1 : 1;
-          return a.startMin - b.startMin;
+      const conflict = checkDragConflict(task.id, newDate, newTime, dur);
+      if (conflict) {
+        toast.error('יש חפיפה במשימות — לא ניתן להזיז לשעה זו', {
+          position: 'bottom-center', autoClose: 3000, rtl: true,
         });
-
-        for (let i = 0; i < dayTasks.length - 1; i++) {
-          let current = dayTasks[i];
-          let next = dayTasks[i+1];
-          let currentEnd = current.startMin + current.dur;
-
-          if (next.startMin < currentEnd) {
-             hasOverlap = true;
-             if (next.isDropped) {
-                current.startMin = next.startMin + next.dur;
-             } else {
-                next.startMin = currentEnd;
-             }
-          }
-        }
+        return;
       }
+
+      const dayTasks = [{ ...task, startMin: timeToMinutes(newTime), dur, isDropped: true }];
 
       // If recurring task – show scope dialog before saving
       if (task.is_recurring) {
@@ -1018,7 +1014,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                         return (
                           <div
                             key={`${day.toISOString()}-${hour}`}
-                            className={`border-r first:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? 'bg-blue-50/60' : ''}`}
+                            className={`border-r first:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? (dragging?.hasConflict ? 'bg-red-50/60' : 'bg-blue-50/60') : ''}`}
                             onClick={() => {
                               if (!dragging) openCreateForm(day, hour);
                             }}
@@ -1032,7 +1028,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                                     position: 'absolute',
                                     top: `${((dragging?.currentMinute || 0) / 60) * measuredHourHeight}px`,
                                     left: 0, right: 0,
-                                    borderTop: '2px dashed #60a5fa',
+                                    borderTop: `2px dashed ${dragging?.hasConflict ? '#dc2626' : '#60a5fa'}`,
                                     pointerEvents: 'none',
                                     zIndex: 9,
                                   }}
