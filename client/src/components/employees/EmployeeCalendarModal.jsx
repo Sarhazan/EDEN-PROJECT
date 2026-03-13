@@ -1064,38 +1064,76 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       </Modal>
 
       {/* Recurring drag scope dialog */}
-      {showRecurringDragDialog && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowRecurringDragDialog(false); setPendingDragData(null); }} />
-          <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
-            <h3 className="text-lg font-bold text-gray-900 font-alef">עדכון משימה חוזרת</h3>
-            <p className="text-sm text-gray-600">איזו משימות ברצונך לעדכן?</p>
-            <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => { setShowRecurringDragDialog(false); executeDragSave(pendingDragData, 'single'); setPendingDragData(null); }}
-                className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
-              >
-                משימה זו בלבד
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowRecurringDragDialog(false); executeDragSave(pendingDragData, 'all'); setPendingDragData(null); }}
-                className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
-              >
-                כל המשימות החוזרות
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowRecurringDragDialog(false); setPendingDragData(null); }}
-                className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
-              >
-                ביטול
-              </button>
+      {showRecurringDragDialog && pendingDragData && (() => {
+        const { task, newDate, newTime } = pendingDragData;
+        const fmtDate = (iso) => {
+          if (!iso) return '—';
+          const [y, m, d] = iso.split('-');
+          return `${d}.${m}`;
+        };
+        const dayNames = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+        const dayName = (iso) => {
+          if (!iso) return '';
+          const [y, m, d] = iso.split('-').map(Number);
+          return 'יום ' + dayNames[new Date(y, m - 1, d).getDay()];
+        };
+        const dateChanged = task.start_date !== newDate;
+        const timeChanged = (task.start_time || '00:00') !== newTime;
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowRecurringDragDialog(false); setPendingDragData(null); }} />
+            <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+              <h3 className="text-lg font-bold text-gray-900 font-alef">עדכון משימה חוזרת</h3>
+
+              {/* Change summary card */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
+                <p className="font-semibold text-gray-800 text-sm truncate">📋 {task.title}</p>
+                {dateChanged && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>📅</span>
+                    <span className="text-gray-400">{dayName(task.start_date)} {fmtDate(task.start_date)}</span>
+                    <span className="text-gray-400">→</span>
+                    <span className="font-medium text-gray-800">{dayName(newDate)} {fmtDate(newDate)}</span>
+                  </div>
+                )}
+                {timeChanged && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>🕐</span>
+                    <span className="text-gray-400">{task.start_time || '00:00'}</span>
+                    <span className="text-gray-400">→</span>
+                    <span className="font-medium text-gray-800">{newTime}</span>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-sm text-gray-600">אילו משימות ברצונך לעדכן?</p>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringDragDialog(false); executeDragSave(pendingDragData, 'single'); setPendingDragData(null); }}
+                  className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
+                >
+                  משימה זו בלבד
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringDragDialog(false); executeDragSave(pendingDragData, 'all'); setPendingDragData(null); }}
+                  className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
+                >
+                  כל המשימות החוזרות
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringDragDialog(false); setPendingDragData(null); }}
+                  className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+                >
+                  ביטול
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Ghost — always in DOM, hidden when not dragging */}
       <div
