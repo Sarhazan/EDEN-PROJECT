@@ -75,6 +75,16 @@ const TIME_OPTIONS = Array.from({ length: 24 * 4 }).map((_, i) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 });
 
+/** Current time rounded UP to nearest 15-min slot, in HH:MM format */
+function currentTimeRounded() {
+  const now = new Date();
+  const totalMin = now.getHours() * 60 + now.getMinutes();
+  const rounded = Math.ceil(totalMin / 15) * 15;
+  const h = Math.floor(rounded / 60) % 24;
+  const m = rounded % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 const calculateEndTime = (startStr, durationMinutes = 30) => {
   if (!startStr) return '';
   const [h, m] = startStr.split(':').map(Number);
@@ -192,8 +202,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       interval: forceOneTime && !isEditMode ? 1 : interval,
       weekly_days: initialValues?.weekly_days || [],
       start_date: initialValues?.start_date || localDateStr(safeDate),
-      start_time: initialValues?.start_time || '',
-      end_time: calculateEndTime(initialValues?.start_time || '', initialValues?.estimated_duration_minutes || 30),
+      start_time: initialValues?.start_time || currentTimeRounded(),
+      end_time: calculateEndTime(initialValues?.start_time || currentTimeRounded(), initialValues?.estimated_duration_minutes || 30),
       system_id: initialValues?.system_id || '',
       employee_id: initialValues?.employee_id || managerEmployeeId || prev.employee_id || '',
       building_id: initialValues?.building_id || '',
