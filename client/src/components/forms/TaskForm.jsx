@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -255,11 +257,11 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
     const dbFreq = getDbFrequency(formData.base_frequency, formData.interval);
 
     if (!formData.title) {
-      alert('נא למלא כותרת');
+      toast.error('נא למלא כותרת', TOAST_DEFAULTS);
       return;
     }
     if (dbFreq !== 'daily' && !formData.start_date) {
-      alert('נא לבחור תאריך');
+      toast.error('נא לבחור תאריך', TOAST_DEFAULTS);
       return;
     }
     if (dbFreq !== 'daily' && dbFreq !== 'one-time' && formData.start_date) {
@@ -267,7 +269,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       const selectedDate = new Date(y, m - 1, d);
       const today = new Date(); today.setHours(0, 0, 0, 0);
       if (selectedDate < today) {
-        alert('תאריך "החל מ" חייב להיות היום או בעתיד');
+        toast.error('תאריך "החל מ" חייב להיות היום או בעתיד', TOAST_DEFAULTS);
         return;
       }
     }
@@ -299,7 +301,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       }
       onClose();
     } catch (error) {
-      alert('שגיאה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה בשמירת המשימה');
     }
   };
 
@@ -308,7 +310,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       await updateTask(task.id, { ...data, update_scope: updateScope });
       onClose();
     } catch (error) {
-      alert('שגיאה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה בעדכון המשימה');
     }
   };
 
@@ -318,7 +320,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       await deleteTask(task.id);
       onClose();
     } catch (error) {
-      alert('שגיאה במחיקה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה במחיקה');
     }
   };
 
@@ -328,7 +330,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       await deleteTaskSeries(task.id);
       onClose();
     } catch (error) {
-      alert('שגיאה במחיקת הסדרה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה במחיקת הסדרה');
     }
   };
 

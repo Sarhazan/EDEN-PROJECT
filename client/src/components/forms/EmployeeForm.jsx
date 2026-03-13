@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-toastify';
+import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
 import axios from 'axios';
 import { API_URL } from '../../config';
@@ -204,7 +206,7 @@ export default function EmployeeForm({ employee, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name) {
-      alert('נא למלא את שם העובד');
+      toast.error('נא למלא את שם העובד', TOAST_DEFAULTS);
       return;
     }
     try {
@@ -215,7 +217,7 @@ export default function EmployeeForm({ employee, onClose }) {
       }
       onClose();
     } catch (error) {
-      alert('שגיאה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה בשמירת העובד');
     }
   };
 

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
 
 const frequencyOptions = [
@@ -66,7 +68,7 @@ export default function SupplierForm({ supplier, onClose }) {
     e.preventDefault();
 
     if (!formData.name) {
-      alert('נא למלא את שם הספק');
+      toast.error('נא למלא את שם הספק', TOAST_DEFAULTS);
       return;
     }
 
@@ -74,7 +76,7 @@ export default function SupplierForm({ supplier, onClose }) {
     if (formData.next_payment_date) {
       const datePattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
       if (!datePattern.test(formData.next_payment_date)) {
-        alert('נא להזין תאריך בפורמט DD/MM/YYYY');
+        toast.error('נא להזין תאריך בפורמט DD/MM/YYYY', TOAST_DEFAULTS);
         return;
       }
     }
@@ -92,7 +94,7 @@ export default function SupplierForm({ supplier, onClose }) {
       }
       onClose();
     } catch (error) {
-      alert('שגיאה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה בשמירת הספק');
     }
   };
 

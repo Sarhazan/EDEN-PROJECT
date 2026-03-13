@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
 
 export default function TenantForm({ tenant, onClose }) {
@@ -29,7 +31,7 @@ export default function TenantForm({ tenant, onClose }) {
     e.preventDefault();
 
     if (!name.trim() || !buildingId || !apartmentNumber.trim() || !floor.trim()) {
-      alert('נא למלא שם, מבנה, מספר דירה וקומה');
+      toast.error('נא למלא שם, מבנה, מספר דירה וקומה', TOAST_DEFAULTS);
       return;
     }
 
@@ -51,7 +53,7 @@ export default function TenantForm({ tenant, onClose }) {
       }
       onClose();
     } catch (error) {
-      alert('שגיאה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה בשמירת הדייר');
     }
   };
 

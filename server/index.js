@@ -244,14 +244,9 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'משהו השתבש',
-    message: err.message
-  });
-});
+// Global error handler — must be last middleware
+const { errorHandler } = require('./middleware/errorHandler');
+app.use(errorHandler);
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);

@@ -6,6 +6,7 @@ import { useApp } from '../../context/AppContext';
 import { FaTimes } from 'react-icons/fa';
 import DateChip from './DateChip';
 import { toast } from 'react-toastify';
+import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import axios from 'axios';
 import { API_URL } from '../../config';
 
@@ -369,12 +370,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
     const selectedDay = new Date(selectedDate);
     selectedDay.setHours(0, 0, 0, 0);
     if (selectedDay < todayIsraelStart) {
-      toast.error('לא ניתן ליצור משימה בתאריך שעבר', {
-        position: 'bottom-center',
-        autoClose: 2000,
-        hideProgressBar: true,
-        rtl: true
-      });
+      toast.error('לא ניתן ליצור משימה בתאריך שעבר', TOAST_DEFAULTS);
       return;
     }
 
@@ -385,12 +381,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       const [h, m] = effectiveTime.split(':').map(Number);
       const nowInIsrael = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
       if (h < nowInIsrael.getHours() || (h === nowInIsrael.getHours() && m < nowInIsrael.getMinutes())) {
-        toast.error('לא ניתן ליצור משימה בשעה שכבר עברה', {
-          position: 'bottom-center',
-          autoClose: 2000,
-          hideProgressBar: true,
-          rtl: true
-        });
+        toast.error('לא ניתן ליצור משימה בשעה שכבר עברה', TOAST_DEFAULTS);
         return;
       }
     }
@@ -411,12 +402,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
 
       const parsed = extractTimeFromTitle(title);
       if (!parsed.title) {
-        toast.error('נא להזין כותרת משימה תקינה', {
-          position: 'bottom-center',
-          autoClose: 2000,
-          hideProgressBar: true,
-          rtl: true
-        });
+        toast.error('נא להזין כותרת משימה תקינה', TOAST_DEFAULTS);
         return;
       }
 
@@ -437,12 +423,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
 
       if (isEditMode) {
         await updateTask(initialValues.id, taskData);
-        toast.success('המשימה עודכנה בהצלחה', {
-          position: 'bottom-center',
-          autoClose: 2000,
-          hideProgressBar: true,
-          rtl: true
-        });
+        toast.success('המשימה עודכנה בהצלחה', TOAST_DEFAULTS);
       } else {
         const createdTask = await addTask(taskData);
         showTaskCreatedToast(createdTask);
@@ -454,13 +435,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       setQuickDueEnabled(false);
       setQuickDueDate(null);
       setTaskMode('one-time');
-    } catch {
-      toast.error('שגיאה ביצירת משימה', {
-        position: 'bottom-center',
-        autoClose: 2000,
-        hideProgressBar: true,
-        rtl: true
-      });
+    } catch (err) {
+      toastApiError(toast, err, 'שגיאה ביצירת משימה');
     } finally {
       setIsSaving(false);
     }
@@ -474,7 +450,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
         await updateTask(initialValues.id, { ...taskData, update_scope: updateScope });
         toast.success(
           updateScope === 'all' ? 'כל המשימות החוזרות עודכנו בהצלחה' : 'המשימה עודכנה בהצלחה',
-          { position: 'bottom-center', autoClose: 2000, hideProgressBar: true, rtl: true }
+          TOAST_DEFAULTS
         );
       } else {
         const createdTask = await addTask(taskData);
@@ -500,8 +476,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
         priority: 'normal',
         estimated_duration_minutes: 30
       });
-    } catch {
-      alert('שגיאה בשמירת המשימה');
+    } catch (err) {
+      toastApiError(toast, err, 'שגיאה בשמירת המשימה');
     } finally {
       setIsSaving(false);
     }
@@ -512,7 +488,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
 
     // Validate
     if (!title.trim()) {
-      alert('נא למלא את כל השדות החובה');
+      toast.error('נא למלא את כל השדות החובה', TOAST_DEFAULTS);
       return;
     }
 
@@ -520,13 +496,13 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
     if (!isEditMode) {
       const selectedStart = parseISODate(formData.start_date);
       if (!selectedStart) {
-        alert('נא לבחור תאריך התחלה תקין');
+        toast.error('נא לבחור תאריך התחלה תקין', TOAST_DEFAULTS);
         return;
       }
       const selectedStartDay = new Date(selectedStart);
       selectedStartDay.setHours(0, 0, 0, 0);
       if (selectedStartDay < todayIsraelStart) {
-        alert('במשימה חוזרת ניתן לבחור תאריך התחלה מהיום והלאה בלבד');
+        toast.error('במשימה חוזרת ניתן לבחור תאריך התחלה מהיום והלאה בלבד', TOAST_DEFAULTS);
         return;
       }
     }
@@ -534,7 +510,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
     // Validate time format
     const timePattern = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
     if (!timePattern.test(formData.start_time)) {
-      alert('נא להזין שעה בפורמט HH:MM (לדוגמא: 14:30)');
+      toast.error('נא להזין שעה בפורמט HH:MM (לדוגמא: 14:30)', TOAST_DEFAULTS);
       return;
     }
 

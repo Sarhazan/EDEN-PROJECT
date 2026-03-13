@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
 
 export default function SystemForm({ system, onClose }) {
@@ -34,7 +36,7 @@ export default function SystemForm({ system, onClose }) {
     e.preventDefault();
 
     if (!formData.name) {
-      alert('נא למלא את שם המערכת');
+      toast.error('נא למלא את שם המערכת', TOAST_DEFAULTS);
       return;
     }
 
@@ -46,7 +48,7 @@ export default function SystemForm({ system, onClose }) {
       }
       onClose();
     } catch (error) {
-      alert('שגיאה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה בשמירת המערכת');
     }
   };
 

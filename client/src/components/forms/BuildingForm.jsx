@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
 
 export default function BuildingForm({ building, onClose }) {
@@ -17,7 +19,7 @@ export default function BuildingForm({ building, onClose }) {
     e.preventDefault();
 
     if (!name.trim()) {
-      alert('נא למלא את שם המבנה');
+      toast.error('נא למלא את שם המבנה', TOAST_DEFAULTS);
       return;
     }
 
@@ -29,7 +31,7 @@ export default function BuildingForm({ building, onClose }) {
       }
       onClose();
     } catch (error) {
-      alert('שגיאה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה בשמירת המבנה');
     }
   };
 

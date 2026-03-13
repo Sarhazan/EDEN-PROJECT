@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { toast } from 'react-toastify';
+import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
 import { FaUpload, FaSpinner, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
@@ -20,13 +22,13 @@ export default function LocationForm({ location, onClose }) {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('רק קבצי תמונה מותרים');
+      toast.error('רק קבצי תמונה מותרים', TOAST_DEFAULTS);
       return;
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('גודל הקובץ לא יכול לעלות על 5MB');
+      toast.error('גודל הקובץ לא יכול לעלות על 5MB', TOAST_DEFAULTS);
       return;
     }
 
@@ -44,7 +46,7 @@ export default function LocationForm({ location, onClose }) {
 
       setFormData(prev => ({ ...prev, image: `${API_URL}${response.data.imageUrl}` }));
     } catch (error) {
-      alert('שגיאה בהעלאת התמונה: ' + (error.response?.data?.error || error.message));
+      toastApiError(toast, error, 'שגיאה בהעלאת התמונה');
     } finally {
       setUploadingImage(false);
     }
@@ -88,7 +90,7 @@ export default function LocationForm({ location, onClose }) {
       }
       onClose();
     } catch (error) {
-      alert('שגיאה: ' + error.message);
+      toastApiError(toast, error, 'שגיאה בשמירת המיקום');
     }
   };
 
