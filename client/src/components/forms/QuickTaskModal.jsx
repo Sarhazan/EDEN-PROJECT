@@ -35,21 +35,31 @@ const getIsraelStartOfToday = () => {
   return new Date(year, month - 1, day);
 };
 
-const frequencyOptions = [
-  { value: 'one-time', label: 'חד-פעמי' },
-  { value: 'weekly', label: 'שבועי' },
-  { value: 'biweekly', label: 'שבועיים' },
-  { value: 'monthly', label: 'חודשי' },
-  { value: 'semi-annual', label: 'חצי שנתי' },
-  { value: 'annual', label: 'שנתי' },
-  { value: 'daily', label: 'מותאם אישית' }
-];
-
 const priorityOptions = [
   { value: 'urgent', label: 'דחוף' },
   { value: 'normal', label: 'רגיל' },
   { value: 'optional', label: 'עדיפות נמוכה' }
 ];
+
+const parseFrequency = (freq) => {
+  if (freq === 'biweekly') return { base: 'weekly', interval: 2 };
+  if (freq === 'semi-annual') return { base: 'monthly', interval: 6 };
+  if (freq === 'weekly') return { base: 'weekly', interval: 1 };
+  if (freq === 'monthly') return { base: 'monthly', interval: 1 };
+  if (freq === 'annual') return { base: 'annual', interval: 1 };
+  if (freq === 'daily') return { base: 'custom', interval: 1 };
+  return { base: 'weekly', interval: 1 };
+};
+
+const getDbFrequency = (base, interval) => {
+  if (base === 'weekly' && interval === 2) return 'biweekly';
+  if (base === 'weekly') return 'weekly';
+  if (base === 'monthly' && interval === 6) return 'semi-annual';
+  if (base === 'monthly') return 'monthly';
+  if (base === 'annual') return 'annual';
+  if (base === 'custom') return 'daily';
+  return 'weekly';
+};
 
 const parseISODate = (value) => {
   if (!value) return null;
@@ -124,6 +134,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
   const [formData, setFormData] = useState({
     description: '',
     frequency: 'weekly',
+    base_frequency: 'weekly',
+    interval: 1,
     weekly_days: [],
     start_date: todayStr,
     start_time: '',
@@ -154,6 +166,7 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
     const safeDate = defaultDate || new Date();
 
     const initialFreq = initialValues?.frequency || 'one-time';
+    const { base, interval } = parseFrequency(initialFreq);
 
     // When creating from employee calendar (or other flows) and we explicitly want a
     // one-time task, force the UI into one-time mode for NEW tasks.
@@ -172,6 +185,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       ...prev,
       description: initialValues?.description || '',
       frequency: forceOneTime && !isEditMode ? 'one-time' : (initialValues?.frequency || 'weekly'),
+      base_frequency: forceOneTime && !isEditMode ? 'weekly' : base,
+      interval: forceOneTime && !isEditMode ? 1 : interval,
       weekly_days: initialValues?.weekly_days || [],
       start_date: initialValues?.start_date || localDateStr(safeDate),
       start_time: initialValues?.start_time || '',
@@ -256,6 +271,21 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       ...prev,
       [name]: processedValue
     }));
+  };
+
+  const handleBaseFreqChange = (e) => {
+    const base = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      base_frequency: base,
+      interval: 1,
+      weekly_days: base === 'custom' ? prev.weekly_days : []
+    }));
+  };
+
+  const handleIntervalChange = (e) => {
+    const val = parseInt(e.target.value, 10) || 1;
+    setFormData((prev) => ({ ...prev, interval: val }));
   };
 
   const handleDayToggle = (day) => {
@@ -435,6 +465,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
   };
 
   const handleRecurringSave = async () => {
+    const dbFreq = getDbFrequency(formData.base_frequency, formData.interval);
+
     // Validate
     if (!title.trim()) {
       alert('נא למלא את כל השדות החובה');
@@ -470,8 +502,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
         description: formData.description.trim() || null,
         start_date: formData.start_date,
         start_time: formData.start_time,
-        frequency: formData.frequency,
-        is_recurring: formData.frequency !== 'one-time',
+        frequency: dbFreq,
+        is_recurring: dbFreq !== 'one-time',
         weekly_days: formData.weekly_days,
         system_id: formData.system_id || null,
         employee_id: formData.employee_id || null,
@@ -503,6 +535,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       setFormData({
         description: '',
         frequency: 'weekly',
+        base_frequency: 'weekly',
+        interval: 1,
         weekly_days: [],
         start_date: localDateStr(),
         start_time: '',
@@ -693,18 +727,16 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
                 {/* Frequency + Start Date */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium mb-1">תדירות</label>
+                    <label className="block text-sm font-medium mb-1">סוג חזרה</label>
                     <select
-                      name="frequency"
-                      value={formData.frequency}
-                      onChange={handleChange}
+                      value={formData.base_frequency}
+                      onChange={handleBaseFreqChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     >
-                      {frequencyOptions.filter(o => o.value !== 'one-time').map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
+                      <option value="weekly">שבועית</option>
+                      <option value="monthly">חודשית</option>
+                      <option value="annual">שנתית</option>
+                      <option value="custom">מותאם אישית (ימים)</option>
                     </select>
                   </div>
                   <div>
@@ -733,16 +765,33 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
                   </div>
                 </div>
 
+                {(formData.base_frequency === 'weekly' || formData.base_frequency === 'monthly' || formData.base_frequency === 'annual') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      {formData.base_frequency === 'weekly' ? 'כל כמה שבועות' : formData.base_frequency === 'monthly' ? 'כל כמה חודשים' : 'כל כמה שנים'}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={formData.base_frequency === 'weekly' ? 2 : formData.base_frequency === 'monthly' ? 6 : 1}
+                      value={formData.interval}
+                      onChange={handleIntervalChange}
+                      disabled={formData.base_frequency === 'annual'}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 h-[44px] disabled:bg-gray-100 disabled:text-gray-400"
+                    />
+                  </div>
+                )}
+
                 <div className="text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
-                  תיווצר משימה {frequencyOptions.find((f) => f.value === formData.frequency)?.label || ''} החל מ־
+                  תיווצר משימה חוזרת ({formData.base_frequency === 'weekly' ? 'שבועית' : formData.base_frequency === 'monthly' ? 'חודשית' : formData.base_frequency === 'annual' ? 'שנתית' : 'מותאם אישית'}) החל מ־
                   {parseISODate(formData.start_date)
                     ? `${String(parseISODate(formData.start_date).getDate()).padStart(2, '0')}/${String(parseISODate(formData.start_date).getMonth() + 1).padStart(2, '0')}/${parseISODate(formData.start_date).getFullYear()}`
                     : '--/--/----'}
                   {formData.start_time ? ` בשעה ${formData.start_time}` : ''}
                 </div>
 
-                {/* Weekly Days Selection - Only for Daily frequency */}
-                {formData.frequency === 'daily' && (
+                {/* Weekly Days Selection - Only for Custom frequency */}
+                {formData.base_frequency === 'custom' && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <label className="block text-xs font-medium mb-2">בחר ימים בשבוע:</label>
                     <div className="flex gap-1.5 justify-center">
