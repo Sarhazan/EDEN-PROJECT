@@ -120,6 +120,8 @@ export default function AllTasksPage() {
   const oneTimeTasks = useMemo(() => {
     return baseTasks
       .filter((t) => Number(t.is_recurring) !== 1)
+      // One-time list should include only unfinished work; completed items belong in History.
+      .filter((t) => t.status !== 'completed')
       .sort((a, b) => {
         const dateA = new Date(`${a.start_date}T${a.start_time || '00:00'}`);
         const dateB = new Date(`${b.start_date}T${b.start_time || '00:00'}`);
