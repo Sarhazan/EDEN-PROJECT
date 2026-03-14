@@ -299,9 +299,13 @@ router.post('/:token/complete', upload.array('images', 5), async (req, res) => {
 
     // Update task status to pending_approval (waiting for manager approval)
     db.prepare(`
-      UPDATE tasks SET status = 'pending_approval', completed_at = ?, updated_at = CURRENT_TIMESTAMP
+      UPDATE tasks
+      SET status = 'pending_approval',
+          completed_at = ?,
+          approval_requested_at = COALESCE(approval_requested_at, ?),
+          updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(completedAt, taskId);
+    `).run(completedAt, completedAt, taskId);
 
     // Fetch updated task with JOINs for real-time broadcast
     const updatedTask = db.prepare(`
@@ -362,13 +366,24 @@ router.put('/:token/task/:taskId', (req, res) => {
     }
 
     // Update task status
-    const stmt = db.prepare(`
-      UPDATE tasks
-      SET status = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `);
-
-    stmt.run(status, taskId);
+    if (status === 'pending_approval') {
+      const ts = getCurrentTimestampIsrael();
+      db.prepare(`
+        UPDATE tasks
+        SET status = ?,
+            completed_at = COALESCE(completed_at, ?),
+            approval_requested_at = COALESCE(approval_requested_at, ?),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(status, ts, ts, taskId);
+    } else {
+      const stmt = db.prepare(`
+        UPDATE tasks
+        SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `);
+      stmt.run(status, taskId);
+    }
 
     // Get updated task with related data for broadcasting
     const updatedTask = db.prepare(`

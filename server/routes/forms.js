@@ -9,15 +9,18 @@ const router = express.Router();
 const uploadsRoot = path.join(__dirname, '..', '..', 'uploads', 'forms');
 const logoDir = path.join(uploadsRoot, 'logos');
 const contractsDir = path.join(uploadsRoot, 'contracts');
+const pdfTemplatesDir = path.join(uploadsRoot, 'pdf_templates');
 
-[uploadsRoot, logoDir, contractsDir].forEach((dir) => {
+[uploadsRoot, logoDir, contractsDir, pdfTemplatesDir].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const mode = req.query.mode || req.body.mode;
-    cb(null, mode === 'logo' ? logoDir : contractsDir);
+    if (mode === 'logo') return cb(null, logoDir);
+    if (mode === 'pdf_template') return cb(null, pdfTemplatesDir);
+    cb(null, contractsDir);
   },
   filename: (req, file, cb) => {
     const safeBase = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -197,11 +200,103 @@ router.delete('/hq/contracts/:id', (req, res) => {
   }
 });
 
+// ─── Custom PDF Templates ──────────────────────────────────────────────────
+
+// HQ: list custom PDF templates
+router.get('/hq/custom-templates', (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT id, name, file_path, has_signature, created_at
+      FROM custom_form_templates
+      ORDER BY created_at DESC
+    `).all();
+    res.json({ items: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// HQ: upload custom PDF template
+router.post('/hq/custom-templates', upload.single('file'), (req, res) => {
+  try {
+    const name = (req.body.name || '').trim();
+    const hasSignature = req.body.has_signature === '1' || req.body.has_signature === 'true' ? 1 : 0;
+
+    if (!name) return res.status(400).json({ error: 'שם הטופס הוא שדה חובה' });
+    if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ PDF' });
+
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    if (ext !== '.pdf') {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'יש לבחור קובץ PDF בלבד' });
+    }
+
+    const relativePath = `/uploads/forms/pdf_templates/${req.file.filename}`;
+
+    const result = db.prepare(`
+      INSERT INTO custom_form_templates (name, file_path, has_signature)
+      VALUES (?, ?, ?)
+    `).run(name, relativePath, hasSignature);
+
+    res.status(201).json({
+      success: true,
+      item: {
+        id: result.lastInsertRowid,
+        name,
+        file_path: relativePath,
+        has_signature: hasSignature
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// HQ: delete custom PDF template
+router.delete('/hq/custom-templates/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const row = db.prepare('SELECT * FROM custom_form_templates WHERE id = ?').get(id);
+    if (!row) return res.status(404).json({ error: 'תבנית לא נמצאה' });
+
+    db.prepare('DELETE FROM custom_form_templates WHERE id = ?').run(id);
+
+    if (row.file_path) {
+      const absolute = path.join(__dirname, '..', '..', row.file_path.replace(/^\//, ''));
+      if (fs.existsSync(absolute)) fs.unlinkSync(absolute);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── Site Templates (built-in + custom) ────────────────────────────────────
+
 // Site manager: interactive form templates
 router.get('/site/templates', (req, res) => {
-  res.json({
-    templates: Object.values(TEMPLATE_DEFS).map(({ key, label }) => ({ key, label }))
-  });
+  try {
+    const custom = db.prepare(`
+      SELECT id, name, has_signature FROM custom_form_templates ORDER BY created_at DESC
+    `).all();
+
+    const customTemplates = custom.map((t) => ({
+      key: `custom_pdf_${t.id}`,
+      label: t.name,
+      is_custom_pdf: true,
+      has_signature: t.has_signature === 1
+    }));
+
+    res.json({
+      templates: [
+        ...Object.values(TEMPLATE_DEFS).map(({ key, label }) => ({ key, label, is_custom_pdf: false })),
+        ...customTemplates
+      ]
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Site manager: recipients lookup (for structured sending)
@@ -256,7 +351,17 @@ router.post('/site/send', async (req, res) => {
     } = req.body;
 
     if (!templateKey) return res.status(400).json({ error: 'סוג טופס הוא שדה חובה' });
-    if (!TEMPLATE_DEFS[templateKey]) return res.status(400).json({ error: 'סוג טופס לא מוכר' });
+
+    // Resolve custom PDF template
+    let customTemplate = null;
+    const isCustomPdf = templateKey.startsWith('custom_pdf_');
+    if (isCustomPdf) {
+      const customId = Number(templateKey.replace('custom_pdf_', ''));
+      customTemplate = db.prepare('SELECT * FROM custom_form_templates WHERE id = ?').get(customId);
+      if (!customTemplate) return res.status(400).json({ error: 'תבנית PDF לא נמצאה' });
+    } else if (!TEMPLATE_DEFS[templateKey]) {
+      return res.status(400).json({ error: 'סוג טופס לא מוכר' });
+    }
     if (!recipientType || !['supplier', 'tenant'].includes(recipientType)) return res.status(400).json({ error: 'סוג נמען לא תקין' });
 
     const parsedRecipientId = recipientId ? Number(recipientId) : null;
@@ -325,13 +430,16 @@ router.post('/site/send', async (req, res) => {
     const resolvedDeliveryMode = requestedMode === 'live' ? 'live' : 'manual';
     const deliveryStatus = resolvedDeliveryMode === 'live' ? 'sending' : 'queued';
 
+    const hasSignatureVal = customTemplate ? (customTemplate.has_signature ? 1 : 0) : 0;
+
     const result = db.prepare(`
       INSERT INTO form_dispatches (
         template_key, recipient_type, recipient_name, recipient_contact,
         building_id, tenant_id, supplier_id, payload_json, status,
-        delivery_channel, delivery_mode, delivery_status
+        delivery_channel, delivery_mode, delivery_status,
+        custom_template_id, has_signature
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?)
     `).run(
       templateKey,
       recipientType,
@@ -343,7 +451,9 @@ router.post('/site/send', async (req, res) => {
       payload,
       deliveryChannel,
       resolvedDeliveryMode,
-      deliveryStatus
+      deliveryStatus,
+      customTemplate ? customTemplate.id : null,
+      hasSignatureVal
     );
 
     const id = result.lastInsertRowid;
@@ -456,16 +566,31 @@ router.get('/site/dispatches/:id', (req, res) => {
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
-             fd.payload_json, b.name AS building_name
+             fd.payload_json, fd.custom_template_id, fd.has_signature, fd.signed_at,
+             b.name AS building_name,
+             cft.name AS custom_template_name, cft.file_path AS custom_template_file
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
+      LEFT JOIN custom_form_templates cft ON cft.id = fd.custom_template_id
       WHERE fd.id = ?
     `).get(id);
 
     if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
 
-    const template = TEMPLATE_DEFS[dispatch.template_key];
-    if (!template) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
+    // Resolve template definition
+    let template;
+    if (dispatch.custom_template_id && dispatch.custom_template_file) {
+      template = {
+        key: dispatch.template_key,
+        label: dispatch.custom_template_name || 'טופס PDF',
+        is_custom_pdf: true,
+        pdf_url: dispatch.custom_template_file,
+        has_signature: dispatch.has_signature === 1
+      };
+    } else {
+      template = TEMPLATE_DEFS[dispatch.template_key];
+      if (!template) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
+    }
 
     if (dispatch.status === 'sent') {
       db.prepare(`
@@ -488,6 +613,8 @@ router.get('/site/dispatches/:id', (req, res) => {
         ...dispatch,
         payload: dispatch.payload_json ? JSON.parse(dispatch.payload_json) : {},
         template,
+        has_signature: dispatch.has_signature === 1,
+        signed_at: dispatch.signed_at || null,
         submission: existingSubmission
           ? {
               ...existingSubmission,
@@ -515,23 +642,36 @@ router.post('/site/dispatches/:id/submit', (req, res) => {
 
     if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
 
-    if (dispatch.status === 'submitted') {
-      return res.status(409).json({ error: 'טופס כבר נשלח' });
+    if (dispatch.status === 'submitted' || dispatch.status === 'signed') {
+      return res.status(409).json({ error: 'טופס כבר הוגש' });
     }
 
-    const template = TEMPLATE_DEFS[dispatch.template_key];
-    if (!template) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
+    const { answers = {}, submittedByName = '', submittedByContact = '', signature_dataurl = null } = req.body || {};
 
-    const { answers = {}, submittedByName = '', submittedByContact = '' } = req.body || {};
+    // For built-in templates: validate required fields
+    if (!dispatch.custom_template_id) {
+      const template = TEMPLATE_DEFS[dispatch.template_key];
+      if (!template) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
 
-    for (const field of template.fields) {
-      if (field.required) {
-        const value = answers[field.key];
-        const isEmpty = value === undefined || value === null || value === '' || value === false;
-        if (isEmpty) {
-          return res.status(400).json({ error: `השדה "${field.label}" הוא חובה` });
+      for (const field of template.fields) {
+        if (field.required) {
+          const value = answers[field.key];
+          const isEmpty = value === undefined || value === null || value === '' || value === false;
+          if (isEmpty) {
+            return res.status(400).json({ error: `השדה "${field.label}" הוא חובה` });
+          }
         }
       }
+    }
+
+    // For signature forms: validate signature provided
+    if (dispatch.has_signature && !signature_dataurl) {
+      return res.status(400).json({ error: 'נדרשת חתימה להגשת הטופס' });
+    }
+
+    const submissionAnswers = { ...answers };
+    if (signature_dataurl) {
+      submissionAnswers._signature = signature_dataurl;
     }
 
     db.prepare(`
@@ -544,20 +684,24 @@ router.post('/site/dispatches/:id/submit', (req, res) => {
     `).run(
       id,
       dispatch.template_key,
-      JSON.stringify(answers),
+      JSON.stringify(submissionAnswers),
       String(submittedByName || '').trim() || null,
       String(submittedByContact || '').trim() || null
     );
 
+    const finalStatus = (dispatch.has_signature && signature_dataurl) ? 'signed' : 'submitted';
+    const signedAt = finalStatus === 'signed' ? 'CURRENT_TIMESTAMP' : 'NULL';
+
     db.prepare(`
       UPDATE form_dispatches
-      SET status = 'submitted',
+      SET status = ?,
           submitted_at = CURRENT_TIMESTAMP,
+          signed_at = CASE WHEN ? = 'signed' THEN CURRENT_TIMESTAMP ELSE signed_at END,
           opened_at = COALESCE(opened_at, CURRENT_TIMESTAMP)
       WHERE id = ?
-    `).run(id);
+    `).run(finalStatus, finalStatus, id);
 
-    res.json({ success: true, status: 'submitted' });
+    res.json({ success: true, status: finalStatus });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -1,10 +1,25 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { API_URL } from '../config';
 import Spinner from '../components/ui/Spinner';
+
+const STATUS_LABELS = {
+  sent: 'נשלח',
+  opened: 'התקבל',
+  submitted: 'הוגש',
+  signed: 'נחתם'
+};
+
+const STATUS_COLORS = {
+  sent: 'bg-blue-100 text-blue-700',
+  opened: 'bg-yellow-100 text-yellow-700',
+  submitted: 'bg-green-100 text-green-700',
+  signed: 'bg-purple-100 text-purple-700'
+};
 
 export default function HQFormsPage() {
   const [items, setItems] = useState([]);
   const [dispatches, setDispatches] = useState([]);
+  const [customTemplates, setCustomTemplates] = useState([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState('');
   const [contractTitle, setContractTitle] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -13,6 +28,23 @@ export default function HQFormsPage() {
   const [deliveryLogs, setDeliveryLogs] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Upload form modal state
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadName, setUploadName] = useState('');
+  const [uploadHasSignature, setUploadHasSignature] = useState(null); // null=not asked, true/false=answered
+  const [uploadDragOver, setUploadDragOver] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const loadCustomTemplates = async () => {
+    const res = await fetch(`${API_URL}/forms/hq/custom-templates`);
+    if (!res.ok) throw new Error('שגיאה בטעינת טפסי PDF');
+    const data = await res.json();
+    setCustomTemplates(data.items || []);
+  };
 
   const loadAssets = async () => {
     const res = await fetch(`${API_URL}/forms/hq/buildings-assets`);
@@ -35,7 +67,7 @@ export default function HQFormsPage() {
     try {
       setLoading(true);
       setError('');
-      await Promise.all([loadAssets(), loadDispatches()]);
+      await Promise.all([loadAssets(), loadDispatches(), loadCustomTemplates()]);
     } catch (e) {
       setError(e.message || 'שגיאה');
     } finally {
@@ -46,6 +78,74 @@ export default function HQFormsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    setUploadDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setUploadError('יש לבחור קובץ PDF בלבד');
+      return;
+    }
+    setUploadFile(file);
+    setUploadError('');
+    if (!uploadName) setUploadName(file.name.replace(/\.pdf$/i, ''));
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setUploadError('יש לבחור קובץ PDF בלבד');
+      return;
+    }
+    setUploadFile(file);
+    setUploadError('');
+    if (!uploadName) setUploadName(file.name.replace(/\.pdf$/i, ''));
+  };
+
+  const submitUpload = async () => {
+    if (!uploadFile) return setUploadError('נא לבחור קובץ PDF');
+    if (!uploadName.trim()) return setUploadError('נא לתת שם לטופס');
+    if (uploadHasSignature === null) return setUploadError('נא לענות על שאלת החתימה');
+
+    setUploading(true);
+    setUploadError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', uploadFile);
+      fd.append('name', uploadName.trim());
+      fd.append('has_signature', uploadHasSignature ? '1' : '0');
+      fd.append('mode', 'pdf_template');
+
+      const res = await fetch(`${API_URL}/forms/hq/custom-templates`, { method: 'POST', body: fd });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'שגיאה בהעלאה');
+
+      setShowUploadModal(false);
+      setUploadFile(null);
+      setUploadName('');
+      setUploadHasSignature(null);
+      await loadCustomTemplates();
+    } catch (e) {
+      setUploadError(e.message || 'שגיאה בהעלאה');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const deleteCustomTemplate = async (id) => {
+    if (!window.confirm('למחוק את הטופס?')) return;
+    try {
+      const res = await fetch(`${API_URL}/forms/hq/custom-templates/${id}`, { method: 'DELETE' });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'שגיאה במחיקה');
+      await loadCustomTemplates();
+    } catch (e) {
+      setError(e.message || 'שגיאה במחיקה');
+    }
+  };
 
   const uploadLogo = async (file) => {
     try {
@@ -153,12 +253,146 @@ export default function HQFormsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">טפסים - מנהל אזור</h1>
-        <p className="text-gray-600 mt-1">ניהול נכסי טפסים + מעקב סטטוסי שליחה ומילוי</p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">טפסים - מנהל אזור</h1>
+          <p className="text-gray-600 mt-1">ניהול נכסי טפסים + מעקב סטטוסי שליחה ומילוי</p>
+        </div>
+        <button
+          onClick={() => { setShowUploadModal(true); setUploadError(''); setUploadFile(null); setUploadName(''); setUploadHasSignature(null); }}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium whitespace-nowrap"
+        >
+          <span>📄</span> טען טופס
+        </button>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
+
+      {/* Upload Form Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5" dir="rtl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">טען טופס PDF</h2>
+              <button onClick={() => setShowUploadModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+            </div>
+
+            {/* Drop zone */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setUploadDragOver(true); }}
+              onDragLeave={() => setUploadDragOver(false)}
+              onDrop={handleFileDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+                uploadDragOver ? 'border-indigo-500 bg-indigo-50' : uploadFile ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-indigo-400 bg-gray-50'
+              }`}
+            >
+              <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileSelect} />
+              {uploadFile ? (
+                <div className="space-y-1">
+                  <div className="text-3xl">📄</div>
+                  <div className="font-semibold text-green-700">{uploadFile.name}</div>
+                  <div className="text-xs text-gray-500">{(uploadFile.size / 1024).toFixed(0)} KB • לחץ להחלפה</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="text-4xl text-gray-400">⬆️</div>
+                  <div className="font-medium text-gray-600">גרור קובץ PDF לכאן</div>
+                  <div className="text-sm text-gray-400">או לחץ לבחירה מהמחשב</div>
+                </div>
+              )}
+            </div>
+
+            {/* Form name */}
+            <label className="block text-sm">
+              <span className="font-medium text-gray-700">שם הטופס <span className="text-red-500">*</span></span>
+              <input
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                value={uploadName}
+                onChange={(e) => setUploadName(e.target.value)}
+                placeholder="לדוג׳: נוהל שימוש בחדר דיירים"
+              />
+            </label>
+
+            {/* Signature question — appears after file is selected */}
+            {uploadFile && (
+              <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 space-y-3">
+                <p className="font-medium text-amber-800">האם להוסיף שדה חתימה לטופס?</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setUploadHasSignature(true)}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      uploadHasSignature === true ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400'
+                    }`}
+                  >
+                    ✅ כן, עם חתימה
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadHasSignature(false)}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      uploadHasSignature === false ? 'bg-gray-600 text-white border-gray-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    ➡️ לא, ללא חתימה
+                  </button>
+                </div>
+                {uploadHasSignature === true && (
+                  <p className="text-xs text-indigo-700">הטופס ישלח עם שדה חתימה — הנמען יצטרך לחתום לפני שהטופס יסתמן כ"נחתם"</p>
+                )}
+              </div>
+            )}
+
+            {uploadError && <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{uploadError}</div>}
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={submitUpload}
+                disabled={uploading || !uploadFile || !uploadName.trim() || uploadHasSignature === null}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white py-2.5 rounded-lg font-medium transition-colors"
+              >
+                {uploading ? 'מעלה...' : 'שמור טופס'}
+              </button>
+              <button onClick={() => setShowUploadModal(false)} className="px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom PDF Templates Section */}
+      <section className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">טפסי PDF שהועלו</h2>
+          <span className="text-sm text-gray-400">{customTemplates.length} טפסים</span>
+        </div>
+        {customTemplates.length === 0 ? (
+          <div className="text-gray-500 text-sm py-2">אין טפסי PDF עדיין — לחץ "טען טופס" להוספה</div>
+        ) : (
+          <div className="space-y-2">
+            {customTemplates.map((t) => (
+              <div key={t.id} className="flex items-center justify-between border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">📄</span>
+                  <div>
+                    <div className="font-medium">{t.name}</div>
+                    <div className="text-xs text-gray-500 flex items-center gap-2">
+                      {t.has_signature ? <span className="text-purple-600">✍️ עם חתימה</span> : <span>ללא חתימה</span>}
+                      <span>• {new Date(t.created_at).toLocaleDateString('he-IL')}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a href={t.file_path} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline">צפה</a>
+                  <button onClick={() => deleteCustomTemplate(t.id)} className="text-xs text-red-500 hover:text-red-700">מחק</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="bg-white rounded-xl border border-gray-100 p-4 space-y-4">
         <h2 className="font-semibold">מיתוג וחוזים לפי מתחם</h2>
@@ -226,8 +460,9 @@ export default function HQFormsPage() {
           >
             <option value="all">כל הסטטוסים</option>
             <option value="sent">נשלח</option>
-            <option value="opened">נפתח</option>
-            <option value="submitted">נשלח חזרה</option>
+            <option value="opened">התקבל</option>
+            <option value="submitted">הוגש</option>
+            <option value="signed">נחתם</option>
           </select>
         </div>
 
@@ -241,11 +476,17 @@ export default function HQFormsPage() {
                 onClick={() => openDispatch(d.id)}
                 className="w-full text-right border border-gray-200 rounded-lg p-3 hover:bg-gray-50"
               >
-                <div className="font-medium">#{d.id} • {d.template_key} • {d.recipient_name}</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">#{d.id} • {d.template_key.startsWith('custom_pdf_') ? '📄 ' : ''}{d.recipient_name}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[d.status] || 'bg-gray-100 text-gray-600'}`}>
+                    {STATUS_LABELS[d.status] || d.status}
+                  </span>
+                </div>
                 <div className="text-sm text-gray-600">
-                  {d.status} | משלוח: {d.delivery_status || '-'} | {d.building_name || '-'} | נוצר: {d.created_at}
-                  {d.opened_at ? ` | נפתח: ${d.opened_at}` : ''}
-                  {d.submitted_at ? ` | הוגש: ${d.submitted_at}` : ''}
+                  {d.building_name || '-'} | נוצר: {new Date(d.created_at).toLocaleDateString('he-IL')}
+                  {d.opened_at ? ` | התקבל` : ''}
+                  {d.submitted_at ? ` | הוגש` : ''}
+                  {d.signed_at ? ` | נחתם ✍️` : ''}
                 </div>
               </button>
             ))}

@@ -593,6 +593,16 @@ function initializeDatabase() {
   `);
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS custom_form_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      has_signature INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS form_dispatches (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       template_key TEXT NOT NULL,
@@ -720,6 +730,30 @@ function initializeDatabase() {
 
   try {
     db.exec(`ALTER TABLE form_dispatches ADD COLUMN delivery_error TEXT`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN custom_template_id INTEGER REFERENCES custom_form_templates(id)`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN has_signature INTEGER DEFAULT 0`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN signed_at TIMESTAMP`);
   } catch (e) {
     if (!e.message.includes('duplicate column')) {
       throw e;

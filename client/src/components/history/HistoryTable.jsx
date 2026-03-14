@@ -33,13 +33,13 @@ export default function HistoryTable({ tasks, loading }) {
       { key: 'received', label: 'התקבלה', ts: task.acknowledged_at, done: !!task.acknowledged_at },
     ];
 
-    const hasApprovalFlow = !!task.approval_requested_at;
+    const hasApprovalFlow = !!task.approval_requested_at || !!task.approved_at;
     if (hasApprovalFlow) {
       steps.push({
         key: 'approval_requested',
         label: 'בוצעה',
-        ts: task.approval_requested_at,
-        done: !!task.approval_requested_at,
+        ts: task.approval_requested_at || task.completed_at,
+        done: !!(task.approval_requested_at || task.completed_at),
       });
       // "אושרה" only when manager actually approved (approved_at exists)
       steps.push({
