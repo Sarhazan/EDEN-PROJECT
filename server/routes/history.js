@@ -282,25 +282,22 @@ router.get('/', (req, res) => {
     const conditions = ['t.status = ?'];
     const params = ['completed'];
 
-    // Date range: if no startDate and no search → default to last 7 days
-    // If search is active with no dates → no date restriction (search all history)
-    if (startDate) {
-      conditions.push('t.completed_at >= ?');
-      params.push(startDate);
-    } else if (!search) {
-      conditions.push("t.completed_at >= datetime('now', '-7 days')");
-    }
-
-    if (endDate) {
-      conditions.push('t.completed_at <= ?');
-      // Append time to make the date inclusive (end of day)
-      params.push(`${endDate} 23:59:59`);
-    }
-
-    // Free text search on task title
+    // When search is active → ignore ALL date filters, search entire history
+    // When no search → apply date filters (default to last 7 days if no range given)
     if (search) {
       conditions.push('t.title LIKE ?');
       params.push(`%${search}%`);
+    } else {
+      if (startDate) {
+        conditions.push('t.completed_at >= ?');
+        params.push(startDate);
+      } else {
+        conditions.push("t.completed_at >= datetime('now', '-7 days')");
+      }
+      if (endDate) {
+        conditions.push('t.completed_at <= ?');
+        params.push(`${endDate} 23:59:59`);
+      }
     }
 
     if (employeeId) {

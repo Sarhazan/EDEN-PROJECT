@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../forms/datepicker-custom.css';
@@ -18,6 +18,7 @@ export default function HistoryFilters({ filters, employees, systems, locations,
     systemId: filters.systemId || '',
     locationId: filters.locationId || '',
   });
+  const searchDebounceRef = useRef(null);
 
   // Sync local state when filters prop changes (e.g. after clearFilters)
   useEffect(() => {
@@ -39,6 +40,15 @@ export default function HistoryFilters({ filters, employees, systems, locations,
     return `${year}-${month}-${day}`;
   };
 
+  // Search updates live (debounced 300ms), independent of date filters
+  const handleSearchChange = (value) => {
+    setTempSearch(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      onFilterChange('search', value.trim());
+    }, 300);
+  };
+
   const handleApplyFilters = () => {
     onApplyFilters({
       start: startDate ? formatDateToISO(startDate) : '',
@@ -50,16 +60,10 @@ export default function HistoryFilters({ filters, employees, systems, locations,
     });
   };
 
-  // Apply search on Enter key
-  const handleSearchKeyDown = (e) => {
-    if (e.key === 'Enter') handleApplyFilters();
-  };
-
   const handleClearAll = () => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     onClear(); // resets to today in the hook; useEffect will sync local state
   };
-
-  const hasDateRange = !!(startDate || endDate);
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-6">
@@ -69,15 +73,12 @@ export default function HistoryFilters({ filters, employees, systems, locations,
       <div className="mb-4">
         <label className="block text-sm font-medium mb-2">
           חיפוש משימה
-          {!hasDateRange && (
-            <span className="text-xs text-gray-400 mr-2">(מחפש בכל ההיסטוריה)</span>
-          )}
+          <span className="text-xs text-gray-400 mr-2">(מחפש בכל ההיסטוריה — ללא תלות בתאריכים)</span>
         </label>
         <input
           type="text"
           value={tempSearch}
-          onChange={(e) => setTempSearch(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="חיפוש לפי שם משימה..."
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
         />
