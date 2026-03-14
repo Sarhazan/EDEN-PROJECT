@@ -6,6 +6,9 @@ import { LS_KEYS } from '../config';
 export default function AllTasksPage() {
   const { tasks, setIsTaskModalOpen, setEditingTask, deleteTaskSeries } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
+  const [recurringOpen, setRecurringOpen] = useState(true);
+  const [oneTimeOpen, setOneTimeOpen] = useState(false);
+  const [frequencyOpen, setFrequencyOpen] = useState({});
 
   // Star filter state from localStorage
   const [starFilter, setStarFilter] = useState(() => {
@@ -103,6 +106,17 @@ export default function AllTasksPage() {
     return groups;
   }, [recurringNearestTasks]);
 
+  useEffect(() => {
+    const freqKeys = [...FREQ_ORDER, ...Object.keys(recurringByFreq).filter((f) => !FREQ_ORDER.includes(f))];
+    setFrequencyOpen((prev) => {
+      const next = { ...prev };
+      freqKeys.forEach((key) => {
+        if (typeof next[key] === 'undefined') next[key] = false;
+      });
+      return next;
+    });
+  }, [recurringByFreq]);
+
   const oneTimeTasks = useMemo(() => {
     return baseTasks
       .filter((t) => Number(t.is_recurring) !== 1)
@@ -171,62 +185,89 @@ export default function AllTasksPage() {
 
       {/* Recurring tasks container — grouped by frequency */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <h2 className="text-xl font-bold mb-4">משימות קבועות ({recurringNearestTasks.length})</h2>
-        {recurringNearestTasks.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">אין משימות קבועות להצגה</div>
-        ) : (
-          <div className="space-y-5">
-            {[...FREQ_ORDER, ...Object.keys(recurringByFreq).filter(f => !FREQ_ORDER.includes(f))].map((freq) => {
-              const group = recurringByFreq[freq];
-              if (!group || group.length === 0) return null;
-              return (
-                <div key={freq}>
-                  {/* Frequency header */}
-                  <div className="flex items-center gap-2 mb-1 px-1">
-                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">
-                      {FREQ_LABELS[freq] || freq}
-                    </span>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{group.length}</span>
-                    <div className="flex-1 h-px bg-gray-100" />
-                  </div>
-                  <div className="rounded-lg overflow-hidden border border-gray-100">
-                    {group.map((task) => (
-                      <div key={task.id} className="relative group">
-                        <TaskCard task={task} onEdit={handleEdit} />
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (!window.confirm(`למחוק את כל המופעים של "${task.title}"?\n\nכל הסדרה תימחק לצמיתות.`)) return;
-                            try { await deleteTaskSeries(task.id); }
-                            catch (err) { alert('שגיאה: ' + err.message); }
-                          }}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 border border-red-200 text-red-600 text-xs px-2 py-1 rounded-lg hover:bg-red-100"
-                          title="מחק משימה קבועה כולה"
-                        >
-                          🗑️ מחק קבועה
-                        </button>
+        <button
+          onClick={() => setRecurringOpen((prev) => !prev)}
+          className="w-full flex items-center justify-between text-right mb-2 px-1 py-1 rounded-md hover:bg-gray-50"
+        >
+          <h2 className="text-xl font-bold">משימות קבועות ({recurringNearestTasks.length})</h2>
+          <span className="text-sm text-gray-500">{recurringOpen ? '▾' : '▸'}</span>
+        </button>
+
+        {recurringOpen && (
+          recurringNearestTasks.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">אין משימות קבועות להצגה</div>
+          ) : (
+            <div className="space-y-5">
+              {[...FREQ_ORDER, ...Object.keys(recurringByFreq).filter(f => !FREQ_ORDER.includes(f))].map((freq) => {
+                const group = recurringByFreq[freq];
+                if (!group || group.length === 0) return null;
+                const isFreqOpen = frequencyOpen[freq] ?? true;
+
+                return (
+                  <div key={freq}>
+                    {/* Frequency header */}
+                    <button
+                      onClick={() => setFrequencyOpen((prev) => ({ ...prev, [freq]: !isFreqOpen }))}
+                      className="w-full flex items-center gap-2 mb-1 px-1 py-1 rounded-md hover:bg-gray-50"
+                    >
+                      <span className="text-xs text-gray-500">{isFreqOpen ? '▾' : '▸'}</span>
+                      <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">
+                        {FREQ_LABELS[freq] || freq}
+                      </span>
+                      <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{group.length}</span>
+                      <div className="flex-1 h-px bg-gray-100" />
+                    </button>
+
+                    {isFreqOpen && (
+                      <div className="rounded-lg overflow-hidden border border-gray-100">
+                        {group.map((task) => (
+                          <div key={task.id} className="relative group">
+                            <TaskCard task={task} onEdit={handleEdit} />
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!window.confirm(`למחוק את כל המופעים של "${task.title}"?\n\nכל הסדרה תימחק לצמיתות.`)) return;
+                                try { await deleteTaskSeries(task.id); }
+                                catch (err) { alert('שגיאה: ' + err.message); }
+                              }}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 border border-red-200 text-red-600 text-xs px-2 py-1 rounded-lg hover:bg-red-100"
+                              title="מחק משימה קבועה כולה"
+                            >
+                              🗑️ מחק קבועה
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )
         )}
       </div>
 
       {/* One-time tasks container */}
       <div className="bg-white rounded-lg shadow-md p-4">
-        <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
-        <div className="space-y-0 rounded-lg overflow-hidden border border-gray-100">
-          {oneTimeTasks.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">אין משימות חד פעמיות להצגה</div>
-          ) : (
-            oneTimeTasks.map((task) => (
-              <TaskCard key={task.id} task={task} onEdit={handleEdit} />
-            ))
-          )}
-        </div>
+        <button
+          onClick={() => setOneTimeOpen((prev) => !prev)}
+          className="w-full flex items-center justify-between text-right mb-2 px-1 py-1 rounded-md hover:bg-gray-50"
+        >
+          <h2 className="text-xl font-bold">משימות חד פעמיות ({oneTimeTasks.length})</h2>
+          <span className="text-sm text-gray-500">{oneTimeOpen ? '▾' : '▸'}</span>
+        </button>
+
+        {oneTimeOpen && (
+          <div className="space-y-0 rounded-lg overflow-hidden border border-gray-100">
+            {oneTimeTasks.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">אין משימות חד פעמיות להצגה</div>
+            ) : (
+              oneTimeTasks.map((task) => (
+                <TaskCard key={task.id} task={task} onEdit={handleEdit} />
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

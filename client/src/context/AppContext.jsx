@@ -167,7 +167,16 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(task)
     });
-    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ש╫ª╫ש╫¿╫¬ ╫₧╫⌐╫ש╫₧╫פ');
+
+    if (!response.ok) {
+      let data = null;
+      try { data = await response.json(); } catch (_) {}
+      const err = new Error(data?.error || 'שגיאה ביצירת משימה');
+      err.status = response.status;
+      err.data = data;
+      throw err;
+    }
+
     const createdTask = await response.json();
     await fetchTasks();
     return createdTask;
@@ -179,7 +188,16 @@ export function AppProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(task)
     });
-    if (!response.ok) throw new Error('╫⌐╫ע╫ש╫נ╫פ ╫ס╫ó╫ף╫¢╫ץ╫ƒ ╫₧╫⌐╫ש╫₧╫פ');
+
+    if (!response.ok) {
+      let data = null;
+      try { data = await response.json(); } catch (_) {}
+      const err = new Error(data?.error || 'שגיאה בעדכון משימה');
+      err.status = response.status;
+      err.data = data;
+      throw err;
+    }
+
     await fetchTasks();
   };
 

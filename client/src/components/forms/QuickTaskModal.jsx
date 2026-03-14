@@ -63,6 +63,16 @@ const getDbFrequency = (base, interval) => {
   return 'weekly';
 };
 
+const formatFrequencyLabel = (freq) => ({
+  'one-time': 'חד-פעמית',
+  daily: 'יומית',
+  weekly: 'שבועית',
+  biweekly: 'דו-שבועית',
+  monthly: 'חודשית',
+  'semi-annual': 'חצי-שנתית',
+  annual: 'שנתית'
+}[freq] || freq || '-');
+
 const parseISODate = (value) => {
   if (!value) return null;
   const [year, month, day] = value.split('-').map(Number);
@@ -141,6 +151,9 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
   const [managerEmployeeId, setManagerEmployeeId] = useState('');
   const [showRecurringUpdateDialog, setShowRecurringUpdateDialog] = useState(false);
   const [pendingUpdateData, setPendingUpdateData] = useState(null);
+  const [pendingFrequencyChange, setPendingFrequencyChange] = useState(null);
+  const [showOverlapDialog, setShowOverlapDialog] = useState(false);
+  const [overlapConflict, setOverlapConflict] = useState(null);
 
   const todayStr = localDateStr();
   const todayIsraelStart = getIsraelStartOfToday();
@@ -237,6 +250,32 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, onClose]);
+
+  // Enter key should trigger update while editing
+  useEffect(() => {
+    const handleEnterUpdate = (e) => {
+      if (e.key !== 'Enter' || !isOpen || !isEditMode) return;
+      const tag = (e.target?.tagName || '').toLowerCase();
+      if (tag === 'textarea') return;
+
+      if (showRecurringUpdateDialog && pendingUpdateData) {
+        e.preventDefault();
+        setShowRecurringUpdateDialog(false);
+        executeRecurringSave(pendingUpdateData, pendingFrequencyChange ? 'all' : 'single');
+        setPendingFrequencyChange(null);
+        return;
+      }
+
+      e.preventDefault();
+      if (taskMode === 'one-time') handleQuickSave();
+      else handleRecurringSave();
+    };
+
+    document.addEventListener('keydown', handleEnterUpdate);
+    return () => {
+      document.removeEventListener('keydown', handleEnterUpdate);
+    };
+  }, [isOpen, isEditMode, showRecurringUpdateDialog, pendingUpdateData, pendingFrequencyChange, taskMode]);
 
   const handleTimeChange = (field, value) => {
     setFormData(prev => {
@@ -488,10 +527,20 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
         estimated_duration_minutes: 30
       });
     } catch (err) {
-      toastApiError(toast, err, 'שגיאה בשמירת המשימה');
+      if (err?.status === 409 && err?.data?.code === 'TASK_OVERLAP' && err?.data?.conflict) {
+        setOverlapConflict(err.data.conflict);
+        setShowOverlapDialog(true);
+      } else {
+        toastApiError(toast, err, 'שגיאה בשמירת המשימה');
+      }
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const openConflictingTaskForEdit = () => {
+    setShowOverlapDialog(false);
+    setOverlapConflict(null);
   };
 
   const handleRecurringSave = async () => {
@@ -541,9 +590,20 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       status: isEditMode && initialValues?.status ? initialValues.status : 'draft'
     };
 
-    // In edit mode for a recurring task → show scope dialog
+    // In edit mode for a recurring task → show scope/frequency dialog
     if (isEditMode && initialValues?.is_recurring) {
+      const oldFrequency = initialValues?.frequency || 'one-time';
+      const frequencyChanged = oldFrequency !== dbFreq;
       setPendingUpdateData(taskData);
+      setPendingFrequencyChange(
+        frequencyChanged
+          ? {
+              title: initialValues?.title || title.trim(),
+              oldFrequency,
+              newFrequency: dbFreq
+            }
+          : null
+      );
       setShowRecurringUpdateDialog(true);
       return;
     }
@@ -562,39 +622,126 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
         <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
           <h3 className="text-lg font-bold text-gray-900 font-alef">עדכון משימה חוזרת</h3>
-          <p className="text-sm text-gray-600">איזו משימות ברצונך לעדכן?</p>
+          {pendingFrequencyChange ? (
+            <>
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
+                <p className="font-semibold text-gray-800 text-sm truncate">📋 {pendingFrequencyChange.title}</p>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>🔁</span>
+                  <span className="text-gray-400">{formatFrequencyLabel(pendingFrequencyChange.oldFrequency)}</span>
+                  <span className="text-gray-400">←</span>
+                  <span className="font-medium text-gray-800">{formatFrequencyLabel(pendingFrequencyChange.newFrequency)}</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    setShowRecurringUpdateDialog(false);
+                    executeRecurringSave(pendingUpdateData, 'all');
+                    setPendingFrequencyChange(null);
+                  }}
+                  className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
+                >
+                  עדכן
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRecurringUpdateDialog(false);
+                    setPendingUpdateData(null);
+                    setPendingFrequencyChange(null);
+                  }}
+                  className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+                >
+                  ביטול
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-600">איזו משימות ברצונך לעדכן?</p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    setShowRecurringUpdateDialog(false);
+                    executeRecurringSave(pendingUpdateData, 'single');
+                  }}
+                  className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
+                >
+                  משימה זו בלבד
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRecurringUpdateDialog(false);
+                    executeRecurringSave(pendingUpdateData, 'all');
+                  }}
+                  className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
+                >
+                  כל המשימות החוזרות
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRecurringUpdateDialog(false);
+                    setPendingUpdateData(null);
+                    setPendingFrequencyChange(null);
+                  }}
+                  className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+                >
+                  ביטול
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Overlap dialog */}
+    {showOverlapDialog && overlapConflict && (
+      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+          <h3 className="text-lg font-bold text-gray-900 font-alef">חפיפה בין משימות</h3>
+
+          <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-4 text-sm">
+            <div>
+              <p className="font-semibold text-gray-900 truncate">{overlapConflict?.existing?.title || 'משימה קיימת'}</p>
+              <p className="text-gray-700 mt-1">
+                {overlapConflict?.existing?.start_time || '--:--'} עד {calculateEndTime(overlapConflict?.existing?.start_time || '', overlapConflict?.existing?.estimated_duration_minutes || 30) || '--:--'}
+              </p>
+              <p className="text-gray-500 text-xs mt-1">{formatFrequencyLabel(overlapConflict?.existing?.frequency)}</p>
+            </div>
+
+            <div className="border-t border-red-100 pt-3">
+              <p className="font-semibold text-gray-900 truncate">{overlapConflict?.incoming?.title || 'משימה חדשה'}</p>
+              <p className="text-gray-700 mt-1">
+                {overlapConflict?.incoming?.start_time || '--:--'} עד {calculateEndTime(overlapConflict?.incoming?.start_time || '', overlapConflict?.incoming?.estimated_duration_minutes || 30) || '--:--'}
+              </p>
+              <p className="text-gray-500 text-xs mt-1">{formatFrequencyLabel(overlapConflict?.incoming?.frequency)}</p>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => {
-                setShowRecurringUpdateDialog(false);
-                executeRecurringSave(pendingUpdateData, 'single');
-              }}
+              onClick={openConflictingTaskForEdit}
               className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
             >
-              משימה זו בלבד
+              ערוך משימה
             </button>
             <button
               onClick={() => {
-                setShowRecurringUpdateDialog(false);
-                executeRecurringSave(pendingUpdateData, 'all');
-              }}
-              className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
-            >
-              כל המשימות החוזרות
-            </button>
-            <button
-              onClick={() => {
-                setShowRecurringUpdateDialog(false);
-                setPendingUpdateData(null);
+                setShowOverlapDialog(false);
+                setOverlapConflict(null);
+                onClose();
               }}
               className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
             >
-              ביטול
+              בטל
             </button>
           </div>
         </div>
       </div>
     )}
+
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
       {/* Backdrop */}
       <div

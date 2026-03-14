@@ -20,6 +20,141 @@ const {
   resolveCreateStatusForDate
 } = taskService;
 
+const toMinutes = (timeStr) => {
+  if (!timeStr || typeof timeStr !== 'string') return null;
+  const [h, m] = timeStr.split(':').map(Number);
+  if (!Number.isInteger(h) || !Number.isInteger(m)) return null;
+  return h * 60 + m;
+};
+
+const listRecurringDates = ({ frequency, start_date, weekly_days }) => {
+  const today = new Date();
+  const dates = [];
+
+  if (frequency === 'daily' && Array.isArray(weekly_days) && weekly_days.length > 0) {
+    const startDateObj = start_date ? new Date(start_date) : today;
+    const startAnchor = startDateObj > today ? startDateObj : today;
+    for (let i = 0; i <= 30; i++) {
+      const checkDate = addDays(startAnchor, i);
+      if (weekly_days.includes(checkDate.getDay())) {
+        dates.push(format(checkDate, 'yyyy-MM-dd'));
+      }
+    }
+    return dates;
+  }
+
+  if (frequency === 'daily') {
+    const startDateObj = start_date ? new Date(start_date) : today;
+    const startAnchor = startDateObj > today ? startDateObj : today;
+    for (let i = 0; i <= 30; i++) {
+      dates.push(format(addDays(startAnchor, i), 'yyyy-MM-dd'));
+    }
+    return dates;
+  }
+
+  const startDateObj = new Date(start_date);
+  const maxInstances = {
+    weekly: 12,
+    biweekly: 6,
+    monthly: 6,
+    'semi-annual': 4,
+    annual: 3
+  }[frequency] || 1;
+
+  for (let i = 0; i < maxInstances; i++) {
+    let instanceDate;
+    switch (frequency) {
+      case 'weekly':
+        instanceDate = addWeeks(startDateObj, i);
+        break;
+      case 'biweekly':
+        instanceDate = addWeeks(startDateObj, i * 2);
+        break;
+      case 'monthly':
+        instanceDate = addMonths(startDateObj, i);
+        break;
+      case 'semi-annual':
+        instanceDate = addMonths(startDateObj, i * 6);
+        break;
+      case 'annual':
+        instanceDate = addMonths(startDateObj, i * 12);
+        break;
+      default:
+        instanceDate = startDateObj;
+    }
+    dates.push(format(instanceDate, 'yyyy-MM-dd'));
+  }
+
+  return dates;
+};
+
+const findOverlapForEmployee = ({ employeeId, dateStr, startTime, durationMinutes, excludeTaskId = null }) => {
+  if (!employeeId || !dateStr || !startTime) return null;
+
+  const startMin = toMinutes(startTime);
+  if (startMin === null) return null;
+  const endMin = startMin + (Number(durationMinutes) || 30);
+
+  const excludeClause = excludeTaskId ? 'AND id != ?' : '';
+  const params = excludeTaskId
+    ? [employeeId, dateStr, excludeTaskId]
+    : [employeeId, dateStr];
+
+  const candidates = db.prepare(`
+    SELECT id, title, start_date, start_time, estimated_duration_minutes, status
+    FROM tasks
+    WHERE employee_id = ?
+      AND start_date = ?
+      AND COALESCE(start_time, '') != ''
+      AND status IN ('draft', 'sent', 'received', 'pending_approval')
+      ${excludeClause}
+  `).all(...params);
+
+  for (const task of candidates) {
+    const taskStart = toMinutes(task.start_time);
+    if (taskStart === null) continue;
+    const taskEnd = taskStart + (Number(task.estimated_duration_minutes) || 30);
+    if (startMin < taskEnd && endMin > taskStart) {
+      return task;
+    }
+  }
+
+  return null;
+};
+
+const getRecurringConflicts = ({ title, employee_id, frequency, start_date, start_time, estimated_duration_minutes, weekly_days, is_recurring }) => {
+  if (!is_recurring || !employee_id || !start_time) return [];
+
+  const recurrenceDates = listRecurringDates({ frequency, start_date, weekly_days });
+  const conflicts = [];
+
+  for (const dateStr of recurrenceDates) {
+    const existing = findOverlapForEmployee({
+      employeeId: employee_id,
+      dateStr,
+      startTime: start_time,
+      durationMinutes: estimated_duration_minutes || 30,
+    });
+
+    if (existing) {
+      conflicts.push({
+        existing,
+        incoming: {
+          title,
+          start_date: dateStr,
+          start_time,
+          estimated_duration_minutes: estimated_duration_minutes || 30,
+          frequency,
+          is_recurring: true,
+          employee_id,
+        }
+      });
+    }
+  }
+
+  return conflicts;
+};
+
 // Get all tasks
 router.get('/', (req, res) => {
   try {
@@ -263,6 +398,41 @@ router.get('/:id', (req, res) => {
 
     const enrichedTask = enrichTaskWithTiming(task);
     res.json(enrichedTask);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Recurring overlap preview (visual resolver support)
+router.post('/overlap-check', (req, res) => {
+  try {
+    const {
+      title,
+      employee_id,
+      frequency,
+      start_date,
+      start_time,
+      estimated_duration_minutes,
+      weekly_days,
+      is_recurring
+    } = req.body || {};
+
+    const conflicts = getRecurringConflicts({
+      title,
+      employee_id,
+      frequency,
+      start_date,
+      start_time,
+      estimated_duration_minutes,
+      weekly_days,
+      is_recurring
+    });
+
+    res.json({
+      hasConflicts: conflicts.length > 0,
+      conflictCount: conflicts.length,
+      conflicts: conflicts.slice(0, 8)
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

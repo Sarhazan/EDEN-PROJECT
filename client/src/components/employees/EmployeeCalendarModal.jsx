@@ -283,19 +283,8 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     };
   }, [dragging?.hasMoved]);
 
-  // ── Overlap detector for drag ────────────────────────────────────────────────
-  const checkDragConflict = useCallback((taskId, newDateStr, newTimeStr, dur) => {
-    const dropStart = timeToMinutes(newTimeStr);
-    const dropEnd   = dropStart + dur;
-    return employeeTasksRef.current.some(t => {
-      if (t.id === taskId) return false;
-      if (t.start_date !== newDateStr) return false;   // direct string compare
-      if (!t.start_time) return false;
-      const tStart = timeToMinutes(t.start_time);
-      const tEnd   = tStart + durationForTask(t);
-      return dropStart < tEnd && dropEnd > tStart;
-    });
-  }, []);
+  // ── Overlap detector for drag (overlap allowed - kept for layout compatibility) ────────────────────────────────
+  const checkDragConflict = useCallback(() => false, []);
 
   // ── Drag save executor (shared by direct drop + recurring scope dialog) ─────
   const executeResizeSave = useCallback(async ({ task, newDuration }, updateScope) => {
@@ -498,16 +487,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         return;
       }
 
-      // Overlap check - block if conflict, no shifting
       const dur = durationForTask(task);
-      const conflict = checkDragConflict(task.id, newDate, newTime, dur);
-      if (conflict) {
-        toast.error('יש חפיפה במשימות - לא ניתן להזיז לשעה זו', {
-          position: 'bottom-center', autoClose: 3000, rtl: true,
-        });
-        return;
-      }
-
       const dayTasks = [{ ...task, startMin: timeToMinutes(newTime), dur, isDropped: true }];
 
       // If recurring task - show scope dialog before saving
@@ -572,14 +552,6 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
         );
         if (endDt < nowIsrael) {
           toast.error('לא ניתן לשנות משך - הזמן כבר עבר', {
-            position: 'bottom-center', autoClose: 2000, rtl: true,
-          });
-          setResizeState(null);
-          return;
-        }
-
-        if (hasDayOverlapRef(s.resizingTaskId, s.startDate, s.startTime, s.resizeCurrentDuration)) {
-          toast.error('לא ניתן לשנות משך זמן בגלל חפיפה עם משימה אחרת', {
             position: 'bottom-center', autoClose: 2000, rtl: true,
           });
           setResizeState(null);
@@ -697,8 +669,122 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
     else setAnchorDate(addDays(anchorDate, dir));
   };
 
+  const getVisualTaskKey = (task) => {
+    const idPart = String(task?.id ?? '');
+    const fingerprint = [
+      task?.employee_id ?? '',
+      task?.start_date ?? '',
+      task?.start_time ?? '',
+      durationForTask(task),
+      task?.title ?? '',
+      task?.frequency ?? '',
+      task?.is_recurring ? 1 : 0,
+    ].join('|');
+    return { idPart, fingerprint };
+  };
+
+  const buildOverlapLayoutByDay = (tasksInDay) => {
+    const byId = new Map();
+    if (!tasksInDay?.length) return byId;
+
+    // Guard against duplicates from fetch/socket race AND duplicated recurring instances with identical visual fingerprint
+    const seenId = new Set();
+    const seenFingerprint = new Set();
+    const uniqueTasks = [];
+    for (const task of tasksInDay) {
+      const { idPart, fingerprint } = getVisualTaskKey(task);
+      if (!idPart) continue;
+      if (seenId.has(idPart)) continue;
+      if (seenFingerprint.has(fingerprint)) continue;
+      seenId.add(idPart);
+      seenFingerprint.add(fingerprint);
+      uniqueTasks.push(task);
+    }
+
+    const items = uniqueTasks
+      .map((task) => {
+        const start = timeToMinutes(task.start_time || '00:00');
+        const end = start + durationForTask(task);
+        return { task, idKey: String(task.id), start, end };
+      })
+      .sort((a, b) => a.start - b.start || a.end - b.end);
+
+    // Build connected overlap clusters first (so independent time ranges stay full-width)
+    const clusters = [];
+    let current = [];
+    let clusterEnd = -1;
+
+    for (const item of items) {
+      if (!current.length || item.start < clusterEnd) {
+        current.push(item);
+        clusterEnd = Math.max(clusterEnd, item.end);
+      } else {
+        clusters.push(current);
+        current = [item];
+        clusterEnd = item.end;
+      }
+    }
+    if (current.length) clusters.push(current);
+
+    for (const cluster of clusters) {
+      const active = []; // { end, col, id }
+      const temp = new Map();
+      let clusterCols = 1;
+
+      for (const item of cluster) {
+        for (let k = active.length - 1; k >= 0; k--) {
+          if (active[k].end <= item.start) active.splice(k, 1);
+        }
+
+        const usedCols = new Set(active.map((x) => x.col));
+        let col = 0;
+        while (usedCols.has(col)) col += 1;
+
+        active.push({ end: item.end, col, id: item.idKey });
+        clusterCols = Math.max(clusterCols, col + 1);
+
+        // overlap must be with ANOTHER task id (never with itself)
+        const isOverlap = active.some((a) => a.id !== item.idKey);
+        temp.set(item.idKey, { col, overlap: isOverlap });
+
+        if (isOverlap) {
+          for (const a of active) {
+            const prev = temp.get(a.id) || { col: a.col, overlap: false };
+            temp.set(a.id, { ...prev, overlap: true });
+          }
+        }
+      }
+
+      for (const item of cluster) {
+        const lane = temp.get(item.idKey) || { col: 0, overlap: false };
+        byId.set(item.idKey, { ...lane, cols: clusterCols });
+      }
+    }
+
+    return byId;
+  };
+
+  const layoutOverlappingTasks = (tasksInCell, layoutById) => {
+    if (!tasksInCell?.length) return [];
+
+    const seenId = new Set();
+    const seenFingerprint = new Set();
+    const uniqueInCell = [];
+    for (const task of tasksInCell) {
+      const { idPart, fingerprint } = getVisualTaskKey(task);
+      if (!idPart) continue;
+      if (seenId.has(idPart)) continue;
+      if (seenFingerprint.has(fingerprint)) continue;
+      seenId.add(idPart);
+      seenFingerprint.add(fingerprint);
+      uniqueInCell.push(task);
+    }
+
+    return uniqueInCell.map((task) => ({ task, ...(layoutById?.get(String(task.id)) || { col: 0, overlap: false, cols: 1 }) }));
+  };
+
   // ── FEATURE 3: Task block renderer (week/day view) ────────────────────────────
-  const renderTaskBlock = (task) => {
+  const renderTaskBlock = (task, lane = { col: 0, cols: 1, overlap: false }) => {
     const isDraggingThis = dragging?.taskId === task.id && dragging.hasMoved;
     const isResizingThis = resizeState?.resizingTaskId === task.id;
 
@@ -711,9 +797,16 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
     // Completed-late: orange override (time_delta_minutes > 0 means completed after deadline)
     const isCompletedLate = task.status === 'completed' && task.start_time && task.time_delta_minutes > 0;
-    const borderColor = isCompletedLate ? '#ea580c' : (STATUS_BORDER[task.status] || '#3b82f6');
-    const bgColor    = isCompletedLate ? '#fed7aa' : (STATUS_BG[task.status]     || '#bfdbfe');
-    const textColor  = isCompletedLate ? '#7c2d12' : (STATUS_TEXT[task.status]   || '#1e3a8a');
+    const isOverlap = !!lane.overlap;
+    const borderColor = isOverlap
+      ? '#dc2626'
+      : (isCompletedLate ? '#ea580c' : (STATUS_BORDER[task.status] || '#3b82f6'));
+    const bgColor = isOverlap
+      ? '#fee2e2'
+      : (isCompletedLate ? '#fed7aa' : (STATUS_BG[task.status] || '#bfdbfe'));
+    const textColor = isOverlap
+      ? '#7f1d1d'
+      : (isCompletedLate ? '#7c2d12' : (STATUS_TEXT[task.status] || '#1e3a8a'));
 
     // Minute offset within the hour cell
     const minutePart = Number((task.start_time || '00:00').split(':')[1] || 0);
@@ -723,20 +816,22 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
       <div
         key={task.id}
         className={`
-          absolute left-0 w-full rounded-md shadow-sm select-none overflow-hidden
+          absolute rounded-md shadow-sm select-none overflow-hidden
           transition-transform duration-75
           ${isDraggingThis ? 'opacity-20 scale-95 blur-[1px] transition-all duration-150' : 'hover:scale-[1.01] hover:shadow-md'}
           ${!dragging ? 'cursor-grab active:cursor-grabbing' : ''}
         `}
         style={{
           top: `${topOffset}px`,
+          left: `calc(${(lane.col * 100) / (lane.cols || 1)}% + 1px)`,
+          width: `calc(${100 / (lane.cols || 1)}% - 2px)`,
           height: `${height}px`,
           minHeight: '20px',
           backgroundColor: bgColor,
           color: textColor,
           borderLeft: `3px solid ${borderColor}`,
           outline: isDraggingThis ? `2px dashed ${borderColor}66` : 'none',
-          zIndex: isDraggingThis ? 5 : 10,
+          zIndex: isDraggingThis ? 50 : 10 + lane.col,
         }}
         onMouseEnter={(e) => {
           if (!dragging && !resizeState) setTooltip({ task, x: e.clientX, y: e.clientY });
@@ -881,7 +976,13 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                     className={`min-h-[110px] p-1 border cursor-pointer hover:bg-blue-50 transition-colors ${
                       isSameMonth(date, anchorDate) ? 'bg-white' : 'bg-gray-50'
                     }`}
-                    onClick={() => openCreateForm(date)}
+                    onClick={() => {
+                      if (suppressNextClickRef.current) {
+                        suppressNextClickRef.current = false;
+                        return;
+                      }
+                      openCreateForm(date);
+                    }}
                   >
                     <div className="text-[11px] mb-1 font-medium">{format(date, 'dd')}</div>
                     <div className="space-y-1">
@@ -1027,7 +1128,9 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
 
                       {/* Day cells */}
                       {(view === 'day' ? [anchorDate] : weekDays).map((day) => {
-                        const cellTasks = tasksForDate(day).filter(
+                        const dayTasks = tasksForDate(day);
+                        const overlapLayoutById = buildOverlapLayoutByDay(dayTasks);
+                        const cellTasks = dayTasks.filter(
                           (t) => Number((t.start_time || '00:00').split(':')[0]) === hour
                         );
 
@@ -1042,6 +1145,10 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                             key={`${day.toISOString()}-${hour}`}
                             className={`border-r first:border-r-0 relative hover:bg-blue-50/30 transition-colors ${isTargetCell ? (dragging?.hasConflict ? 'bg-red-50/60' : 'bg-blue-50/60') : ''}`}
                             onClick={() => {
+                              if (suppressNextClickRef.current) {
+                                suppressNextClickRef.current = false;
+                                return;
+                              }
                               if (!dragging) openCreateForm(day, hour);
                             }}
                           >
@@ -1076,7 +1183,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                                 />
                               </>
                             )}
-                            {cellTasks.map((task) => renderTaskBlock(task))}
+                            {layoutOverlappingTasks(cellTasks, overlapLayoutById).map(({ task, col, cols, overlap }) => renderTaskBlock(task, { col, cols, overlap }))}
                           </div>
                         );
                       })}
@@ -1118,7 +1225,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <span>📅</span>
                     <span className="text-gray-400">{dayName(task.start_date)} {fmtDate(task.start_date)}</span>
-                    <span className="text-gray-400">→</span>
+                    <span className="text-gray-400">←</span>
                     <span className="font-medium text-gray-800">{dayName(newDate)} {fmtDate(newDate)}</span>
                   </div>
                 )}
@@ -1126,7 +1233,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <span>🕐</span>
                     <span className="text-gray-400">{task.start_time || '00:00'}</span>
-                    <span className="text-gray-400">→</span>
+                    <span className="text-gray-400">←</span>
                     <span className="font-medium text-gray-800">{newTime}</span>
                   </div>
                 )}
@@ -1182,7 +1289,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>⏱️</span>
                   <span className="text-gray-400">{fmtDur(oldDuration)}</span>
-                  <span className="text-gray-400">→</span>
+                  <span className="text-gray-400">←</span>
                   <span className="font-medium text-gray-800">{fmtDur(newDuration)}</span>
                 </div>
               </div>

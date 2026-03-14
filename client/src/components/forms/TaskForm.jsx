@@ -54,6 +54,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRecurringUpdateDialog, setShowRecurringUpdateDialog] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState(null);
+  const [pendingFrequencyChange, setPendingFrequencyChange] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -97,6 +98,16 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
     if (base === 'custom') return 'daily';
     return 'one-time';
   };
+
+  const formatFrequencyLabel = (freq) => ({
+    'one-time': 'חד-פעמית',
+    daily: 'יומית',
+    weekly: 'שבועית',
+    biweekly: 'דו-שבועית',
+    monthly: 'חודשית',
+    'semi-annual': 'חצי-שנתית',
+    annual: 'שנתית'
+  }[freq] || freq || '-');
 
   const convertISOToDisplay = (isoDate) => {
     if (!isoDate) return '';
@@ -292,9 +303,20 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       }
 
       if (isEditing) {
-        // If recurring task in edit mode → show scope dialog
+        // If recurring task in edit mode → show scope/frequency dialog
         if (task.is_recurring) {
+          const oldFrequency = task.frequency || 'one-time';
+          const frequencyChanged = oldFrequency !== dbFreq;
           setPendingSubmitData(dataToSubmit);
+          setPendingFrequencyChange(
+            frequencyChanged
+              ? {
+                  title: dataToSubmit.title,
+                  oldFrequency,
+                  newFrequency: dbFreq
+                }
+              : null
+          );
           setShowRecurringUpdateDialog(true);
           setIsSubmitting(false);
           return;
@@ -340,6 +362,19 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
     }
   };
 
+  useEffect(() => {
+    const handleEnterDialog = (e) => {
+      if (e.key !== 'Enter' || !showRecurringUpdateDialog || !pendingSubmitData) return;
+      e.preventDefault();
+      setShowRecurringUpdateDialog(false);
+      executeUpdate(pendingSubmitData, pendingFrequencyChange ? 'all' : 'single');
+      setPendingFrequencyChange(null);
+    };
+
+    document.addEventListener('keydown', handleEnterDialog);
+    return () => document.removeEventListener('keydown', handleEnterDialog);
+  }, [showRecurringUpdateDialog, pendingSubmitData, pendingFrequencyChange]);
+
   return (
     <>
     {/* Recurring update scope dialog */}
@@ -348,30 +383,62 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
         <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
           <h3 className="text-lg font-bold text-gray-900 font-alef">עדכון משימה חוזרת</h3>
-          <p className="text-sm text-gray-600">איזו משימות ברצונך לעדכן?</p>
-          <div className="flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={() => { setShowRecurringUpdateDialog(false); executeUpdate(pendingSubmitData, 'single'); }}
-              className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
-            >
-              משימה זו בלבד
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowRecurringUpdateDialog(false); executeUpdate(pendingSubmitData, 'all'); }}
-              className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
-            >
-              כל המשימות החוזרות
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowRecurringUpdateDialog(false); setPendingSubmitData(null); }}
-              className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
-            >
-              ביטול
-            </button>
-          </div>
+          {pendingFrequencyChange ? (
+            <>
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
+                <p className="font-semibold text-gray-800 text-sm truncate">📋 {pendingFrequencyChange.title}</p>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>🔁</span>
+                  <span className="text-gray-400">{formatFrequencyLabel(pendingFrequencyChange.oldFrequency)}</span>
+                  <span className="text-gray-400">←</span>
+                  <span className="font-medium text-gray-800">{formatFrequencyLabel(pendingFrequencyChange.newFrequency)}</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringUpdateDialog(false); executeUpdate(pendingSubmitData, 'all'); setPendingFrequencyChange(null); }}
+                  className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
+                >
+                  עדכן
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringUpdateDialog(false); setPendingSubmitData(null); setPendingFrequencyChange(null); }}
+                  className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+                >
+                  ביטול
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-600">איזו משימות ברצונך לעדכן?</p>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringUpdateDialog(false); executeUpdate(pendingSubmitData, 'single'); }}
+                  className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
+                >
+                  משימה זו בלבד
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringUpdateDialog(false); executeUpdate(pendingSubmitData, 'all'); }}
+                  className="w-full bg-indigo-600 text-white rounded-xl py-3 font-medium hover:bg-indigo-700 active:scale-95 transition-all"
+                >
+                  כל המשימות החוזרות
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowRecurringUpdateDialog(false); setPendingSubmitData(null); setPendingFrequencyChange(null); }}
+                  className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+                >
+                  ביטול
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     )}
