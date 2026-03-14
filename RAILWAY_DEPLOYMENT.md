@@ -1,5 +1,14 @@
 # 🚂 Railway Deployment Guide - Eden Maintenance
 
+## 🔒 Current Team Deployment Policy (2026-03-14)
+
+- One shared codebase for all environments (LOCAL / TEST / PRODUCTION).
+- `master` is the integration branch.
+- TEST tracks `master` for validation.
+- PRODUCTION promotion is **manual by decision**, only after TEST is confirmed stable.
+- Keep production data intact during deployments (no destructive DB ops).
+
+
 ## ✅ Prerequisites Completed:
 - [x] Railway account created
 - [x] Upgraded to Hobby Plan ($5/month)

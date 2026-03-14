@@ -1,5 +1,22 @@
 # Deployment Guide - Eden Maintenance System
 
+## 🔒 Current Release Policy (Authoritative)
+
+> Updated with Sahara on 2026-03-14. This is the working process.
+
+- Single codebase for all environments: **LOCAL / WEB TEST / PRODUCTION** (same repo, same code).
+- Development flow:
+  1. Work locally
+  2. Commit + push to `master`
+  3. **TEST** updates from `master`
+- Promotion flow:
+  - **PRODUCTION is promoted only after explicit approval** ("TEST מוכן" / "אפשר לפרודקשן").
+  - Do not promote production automatically from every test push.
+- Data safety:
+  - Production deployment must **not** reset or modify existing production tasks/data.
+  - No destructive DB actions on production without explicit approval.
+
+
 ## Quick Deploy to Render.com
 
 ### Prerequisites
