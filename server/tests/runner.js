@@ -87,7 +87,6 @@ async function testCreateTask() {
     frequency: 'one-time',
     is_recurring: false,
     employee_id: TEST_EMP,
-    system_id: TEST_SYS,
     status: 'draft',
     estimated_duration_minutes: 30,
   });
