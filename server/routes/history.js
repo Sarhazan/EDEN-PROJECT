@@ -273,6 +273,7 @@ router.get('/', (req, res) => {
       employeeId,
       systemId,
       locationId,
+      search,
       limit = 50,
       offset = 0
     } = req.query;
@@ -281,11 +282,12 @@ router.get('/', (req, res) => {
     const conditions = ['t.status = ?'];
     const params = ['completed'];
 
-    // Default to last 7 days if no date range specified
+    // Date range: if no startDate and no search → default to last 7 days
+    // If search is active with no dates → no date restriction (search all history)
     if (startDate) {
       conditions.push('t.completed_at >= ?');
       params.push(startDate);
-    } else {
+    } else if (!search) {
       conditions.push("t.completed_at >= datetime('now', '-7 days')");
     }
 
@@ -293,6 +295,12 @@ router.get('/', (req, res) => {
       conditions.push('t.completed_at <= ?');
       // Append time to make the date inclusive (end of day)
       params.push(`${endDate} 23:59:59`);
+    }
+
+    // Free text search on task title
+    if (search) {
+      conditions.push('t.title LIKE ?');
+      params.push(`%${search}%`);
     }
 
     if (employeeId) {

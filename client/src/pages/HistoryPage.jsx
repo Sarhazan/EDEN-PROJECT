@@ -70,6 +70,7 @@ export default function HistoryPage() {
         if (filters.employeeId) queryParams.set('employeeId', filters.employeeId);
         if (filters.systemId) queryParams.set('systemId', filters.systemId);
         if (filters.locationId) queryParams.set('locationId', filters.locationId);
+        if (filters.search) queryParams.set('search', filters.search);
 
         const response = await fetch(`${API_URL}/history?${queryParams.toString()}`);
         const data = await response.json();
