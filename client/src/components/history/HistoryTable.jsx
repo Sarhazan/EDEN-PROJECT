@@ -17,28 +17,41 @@ export default function HistoryTable({ tasks, loading }) {
     }
   };
 
+  const formatTaskTimeRange = (task) => {
+    if (!task?.start_time) return 'ללא שעה';
+    const [h, m] = String(task.start_time).split(':').map(Number);
+    const dur = Number(task?.estimated_duration_minutes) > 0 ? Number(task.estimated_duration_minutes) : 60;
+    const endTotal = ((h || 0) * 60 + (m || 0) + dur) % (24 * 60);
+    const eh = Math.floor(endTotal / 60);
+    const em = endTotal % 60;
+    return `${String(h || 0).padStart(2, '0')}:${String(m || 0).padStart(2, '0')} - ${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+  };
+
   const buildStatusTimeline = (task) => {
     const steps = [
       { key: 'sent', label: 'נשלחה', ts: task.sent_at, done: !!task.sent_at },
       { key: 'received', label: 'התקבלה', ts: task.acknowledged_at, done: !!task.acknowledged_at },
     ];
 
-    const hasApprovalFlow = !!task.approval_requested_at || !!task.approved_at;
+    const hasApprovalFlow = !!task.approval_requested_at;
     if (hasApprovalFlow) {
       steps.push({
         key: 'approval_requested',
-        label: 'נשלחה לאישור',
+        label: 'בוצעה',
         ts: task.approval_requested_at,
         done: !!task.approval_requested_at,
       });
+      // "אושרה" only when manager actually approved (approved_at exists)
       steps.push({
         key: 'approved',
         label: 'אושרה',
         ts: task.approved_at,
         done: !!task.approved_at,
       });
+      return steps.filter((s) => s.done);
     }
 
+    // Non-approval flow: completion from My Day / one-time should show "בוצעה"
     steps.push({ key: 'completed', label: 'בוצעה', ts: task.completed_at, done: !!task.completed_at });
     return steps.filter((s) => s.done || s.key === 'completed');
   };
@@ -55,8 +68,8 @@ export default function HistoryTable({ tasks, loading }) {
     <>
       <div className="bg-white rounded-lg shadow divide-y">
         {tasks.map((task) => (
-          <div key={task.id} className="p-4 hover:bg-gray-50 transition-colors">
-            <div className="flex justify-between items-start">
+          <div key={task.id} className="p-4 hover:bg-gray-50 transition-colors min-h-[165px]">
+            <div className="grid grid-cols-[1fr_320px] gap-4 items-start">
               <div className="flex-1">
                 <h3 className="font-semibold text-lg mb-1">{task.title}</h3>
                 <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-2">
@@ -69,6 +82,9 @@ export default function HistoryTable({ tasks, loading }) {
                       <span>מיקום: {task.location_name}</span>
                     </>
                   )}
+                </div>
+                <div className="text-xs text-gray-500 mb-2">
+                  זמן משימה: <span className="font-medium">{formatTaskTimeRange(task)}</span>
                 </div>
                 {task.description && (
                   <p className="text-sm text-gray-600 mb-2">{task.description}</p>
@@ -106,20 +122,23 @@ export default function HistoryTable({ tasks, loading }) {
                 )}
               </div>
 
-              <div className="text-left mr-4 min-w-[300px]">
-                <div className="text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-lg p-2 space-y-1.5">
-                  {buildStatusTimeline(task).map((step) => (
-                    <div key={`${task.id}-${step.key}`} className="flex items-center gap-2">
-                      <span className={`inline-flex items-center justify-center w-4 h-4 rounded border text-[10px] font-bold ${step.done ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-white border-gray-300 text-gray-400'}`}>
-                        {step.done ? '✓' : ''}
-                      </span>
-                      <span className="font-medium">{step.label}</span>
-                      <span className="text-gray-400">•</span>
-                      <span className="text-gray-500">{formatTs(step.ts)}</span>
-                    </div>
-                  ))}
+              <div className="text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-lg p-2 h-[140px] overflow-hidden">
+                <div className="relative pl-1 pr-1">
+                  <div className="absolute right-[8px] top-2 bottom-2 w-px bg-gray-200" />
+                  <div className="space-y-1.5">
+                    {buildStatusTimeline(task).map((step) => (
+                      <div key={`${task.id}-${step.key}`} className="relative flex items-center gap-2 pr-0.5">
+                        <span className={`relative z-10 inline-flex items-center justify-center w-4 h-4 rounded border text-[10px] font-bold ${step.done ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-white border-gray-300 text-gray-400'}`}>
+                          {step.done ? '✓' : ''}
+                        </span>
+                        <span className="font-medium">{step.label}</span>
+                        <span className="text-gray-400">•</span>
+                        <span className="text-gray-500">{formatTs(step.ts)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="mt-1 text-[11px] text-gray-500">
+                <div className="mt-2 text-[11px] text-gray-500 border-t border-gray-100 pt-1">
                   בוצע ע״י: <span className="font-medium">{task.employee_name || '—'}</span>
                   {task.manager_name ? <> • אושר ע״י מנהל: <span className="font-medium">{task.manager_name}</span></> : null}
                 </div>

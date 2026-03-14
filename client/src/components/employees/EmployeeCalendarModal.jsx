@@ -204,6 +204,32 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const tasksForDate = (date) =>
     employeeTasks.filter((t) => isSameDay(parseISO(t.start_date), date));
 
+  const getTaskOverlaps = (task) => {
+    if (!task?.start_date || !task?.start_time) return [];
+    const start = timeToMinutes(task.start_time);
+    const end = start + durationForTask(task);
+
+    return employeeTasks
+      .filter((t) => Number(t.id) !== Number(task.id) && t.start_date === task.start_date)
+      .filter((t) => {
+        const oStart = timeToMinutes(t.start_time || '00:00');
+        const oEnd = oStart + durationForTask(t);
+        return start < oEnd && oStart < end;
+      })
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        start_time: t.start_time,
+        estimated_duration_minutes: t.estimated_duration_minutes,
+        status: t.status,
+      }));
+  };
+
+  const openEditTask = (task) => {
+    const overlapConflicts = getTaskOverlaps(task);
+    setEditingTask({ ...task, overlapConflicts });
+  };
+
   const handleSendDay = async () => {
     const dateStr = format(anchorDate, 'yyyy-MM-dd');
     const dayTasks = tasksForDate(anchorDate).filter(
@@ -853,7 +879,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
             return;
           }
           if (dragging?.hasMoved || resizeState?.resizingTaskId) return;
-          setEditingTask(task);
+          openEditTask(task);
         }}
       >
         {/* Task content */}
@@ -989,7 +1015,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                       {dayTasks.slice(0, 3).map((task) => (
                         <button
                           key={task.id}
-                          onClick={(e) => { e.stopPropagation(); setEditingTask(task); }}
+                          onClick={(e) => { e.stopPropagation(); openEditTask(task); }}
                           className={`w-full text-right text-[10px] text-white px-1 py-0.5 rounded truncate transition-opacity hover:opacity-80 ${STATUS_COLORS[task.status] || 'bg-slate-500'}`}
                           title={titleWithTime(task)}
                         >
@@ -1066,7 +1092,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                                   color: STATUS_TEXT[task.status] || '#1e3a8a',
                                   border: `1px solid ${STATUS_BORDER[task.status] || '#2563eb'}`,
                                 }}
-                                onClick={() => setEditingTask(task)}
+                                onClick={() => openEditTask(task)}
                                 title={task.title}
                               >
                                 {task.title || 'ללא כותרת'}
@@ -1102,7 +1128,7 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
                               color: STATUS_TEXT[task.status] || '#1e3a8a',
                               border: `1px solid ${STATUS_BORDER[task.status] || '#2563eb'}`,
                             }}
-                            onClick={() => setEditingTask(task)}
+                            onClick={() => openEditTask(task)}
                           >
                             {task.title || 'ללא כותרת'}
                           </div>

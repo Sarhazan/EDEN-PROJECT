@@ -53,6 +53,7 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
   const isEditing = !!task;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRecurringUpdateDialog, setShowRecurringUpdateDialog] = useState(false);
+  const [showRecurringDeleteDialog, setShowRecurringDeleteDialog] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState(null);
   const [pendingFrequencyChange, setPendingFrequencyChange] = useState(null);
 
@@ -342,24 +343,22 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm(`למחוק מופע זה בלבד של "${formData.title}"? הפעולה לא ניתנת לביטול.`)) return;
+  const executeDelete = async (scope = 'single') => {
     try {
-      await deleteTask(task.id);
+      if (scope === 'all') {
+        await deleteTaskSeries(task.id);
+      } else {
+        await deleteTask(task.id);
+      }
       onClose();
     } catch (error) {
-      toastApiError(toast, error, 'שגיאה במחיקה');
+      toastApiError(toast, error, scope === 'all' ? 'שגיאה במחיקת הסדרה' : 'שגיאה במחיקה');
     }
   };
 
-  const handleDeleteSeries = async () => {
-    if (!window.confirm(`למחוק את כל המופעים של "${formData.title}"?\n\nכל המשימות הקבועות בסדרה זו יימחקו לצמיתות.`)) return;
-    try {
-      await deleteTaskSeries(task.id);
-      onClose();
-    } catch (error) {
-      toastApiError(toast, error, 'שגיאה במחיקת הסדרה');
-    }
+  const handleDelete = async () => {
+    if (!window.confirm(`למחוק את "${formData.title}"? הפעולה לא ניתנת לביטול.`)) return;
+    await executeDelete('single');
   };
 
   useEffect(() => {
@@ -442,7 +441,58 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
         </div>
       </div>
     )}
+
+    {/* Recurring delete scope dialog */}
+    {showRecurringDeleteDialog && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" dir="rtl">
+          <h3 className="text-lg font-bold text-gray-900 font-alef">מחיקת משימה חוזרת</h3>
+          <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
+            <p className="font-semibold text-gray-800 text-sm truncate">📋 {formData.title || task?.title}</p>
+            <div className="text-xs text-gray-500">בחר מה למחוק:</div>
+          </div>
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => { setShowRecurringDeleteDialog(false); executeDelete('single'); }}
+              className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 active:scale-95 transition-all"
+            >
+              משימה זו בלבד
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowRecurringDeleteDialog(false); executeDelete('all'); }}
+              className="w-full bg-red-600 text-white rounded-xl py-3 font-medium hover:bg-red-700 active:scale-95 transition-all"
+            >
+              כל המשימות החוזרות
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowRecurringDeleteDialog(false)}
+              className="w-full border border-gray-300 text-gray-700 rounded-xl py-3 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+            >
+              ביטול
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <form onSubmit={handleSubmit} className="space-y-4 font-alef text-right" dir="rtl">
+      {isEditing && Array.isArray(task?.overlapConflicts) && task.overlapConflicts.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+          <div className="text-sm font-semibold text-red-700 mb-1">⚠️ נמצאה חפיפה למשימה הזו</div>
+          <p className="text-xs text-red-600 mb-2">המשימה מוצגת באדום כי היא חופפת למשימות הבאות:</p>
+          <div className="space-y-1">
+            {task.overlapConflicts.map((c) => (
+              <div key={c.id} className="text-xs text-red-700 bg-white/70 border border-red-100 rounded px-2 py-1">
+                • {c.title || 'ללא כותרת'} ({c.start_time || 'ללא שעה'}-{calculateEndTime(c.start_time || '00:00', Number(c.estimated_duration_minutes) > 0 ? Number(c.estimated_duration_minutes) : 60)})
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 1. Title */}
       <div>
         <label className="block text-sm font-medium mb-1">כותרת המשימה <span className="text-red-500">*</span></label>
@@ -726,22 +776,13 @@ export default function TaskForm({ task, initialValues = null, onClose }) {
       {isEditing && (
         <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200">
           {task.is_recurring ? (
-            <>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="w-full bg-orange-50 border border-orange-200 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 min-h-[44px] transition-all duration-150 active:scale-95 text-sm font-medium"
-              >
-                🗑️ מחק מופע זה בלבד
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteSeries}
-                className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 min-h-[44px] transition-all duration-150 active:scale-95 text-sm font-medium"
-              >
-                🗑️ מחק המשימה הקבועה כולה
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => setShowRecurringDeleteDialog(true)}
+              className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 min-h-[44px] transition-all duration-150 active:scale-95 text-sm font-medium"
+            >
+              🗑️ מחק משימה
+            </button>
           ) : (
             <button
               type="button"

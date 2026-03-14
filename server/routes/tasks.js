@@ -940,11 +940,21 @@ router.put('/:id/status', (req, res) => {
       const actualEnd = new Date(timestamp);
       const timeDeltaMinutes = differenceInMinutes(actualEnd, estimatedEnd);
 
+      // If task came from pending_approval, this completion is manager approval
+      const approvedAt = task.status === 'pending_approval' ? timestamp : null;
+
       db.prepare(`
         UPDATE tasks
-        SET status = ?, completed_at = COALESCE(completed_at, ?), approved_at = COALESCE(approved_at, ?), time_delta_minutes = ?, updated_at = ?
+        SET status = ?,
+            completed_at = COALESCE(completed_at, ?),
+            approved_at = CASE
+              WHEN ? IS NOT NULL THEN COALESCE(approved_at, ?)
+              ELSE approved_at
+            END,
+            time_delta_minutes = ?,
+            updated_at = ?
         WHERE id = ?
-      `).run(status, timestamp, timestamp, timeDeltaMinutes, timestamp, req.params.id);
+      `).run(status, timestamp, approvedAt, approvedAt, timeDeltaMinutes, timestamp, req.params.id);
     } else {
       db.prepare(`
         UPDATE tasks

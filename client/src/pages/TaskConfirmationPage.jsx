@@ -55,7 +55,7 @@ const UI_TEXT = {
     approving: 'Confirming...',
     queueLabel: 'Showing {{visible}} tasks | {{queued}} in queue',
     completedCounter: '{{count}} tasks completed/sent for approval',
-    allDoneTitle: 'Great job! ≡ƒמי',
+    allDoneTitle: 'Great job! 🎉',
     allDoneSub: 'You finished all tasks',
     completeSectionTitle: 'Complete Task',
     imagesLabel: 'Take photos (optional, up to {{max}})',
