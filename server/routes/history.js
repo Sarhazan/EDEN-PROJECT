@@ -317,10 +317,12 @@ router.get('/', (req, res) => {
       SELECT t.*,
              s.name as system_name,
              e.name as employee_name,
-             l.name as location_name
+             l.name as location_name,
+             mgr.name as manager_name
       FROM tasks t
       LEFT JOIN systems s ON t.system_id = s.id
       LEFT JOIN employees e ON t.employee_id = e.id
+      LEFT JOIN employees mgr ON e.manager_id = mgr.id
       LEFT JOIN locations l ON s.location_id = l.id
       WHERE ${whereClause}
       ORDER BY t.completed_at DESC

@@ -259,14 +259,16 @@ router.post('/:id/approve', (req, res) => {
 
     // Update task status to completed with time_delta_minutes
     // If completed_at is not already set (old tasks), set it to now
+    const approvalTs = getCurrentTimestampIsrael();
     db.prepare(`
       UPDATE tasks
       SET status = 'completed',
           completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+          approved_at = COALESCE(approved_at, ?),
           time_delta_minutes = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(timeDeltaMinutes, id);
+    `).run(approvalTs, timeDeltaMinutes, id);
 
     // If task is recurring, create next instance
     if (task.is_recurring) {
@@ -906,6 +908,30 @@ router.put('/:id/status', (req, res) => {
         SET status = ?, sent_at = ?, updated_at = ?
         WHERE id = ?
       `).run(status, timestamp, timestamp, req.params.id);
+    } else if (status === 'received') {
+      const timestamp = getCurrentTimestampIsrael();
+      db.prepare(`
+        UPDATE tasks
+        SET status = ?, acknowledged_at = COALESCE(acknowledged_at, ?), updated_at = ?
+        WHERE id = ?
+      `).run(status, timestamp, timestamp, req.params.id);
+    } else if (status === 'pending_approval') {
+      const timestamp = getCurrentTimestampIsrael();
+
+      // Worker marked done and sent to manager approval
+      const estimatedEnd = calculateEstimatedEnd(task);
+      const actualEnd = new Date(timestamp);
+      const timeDeltaMinutes = differenceInMinutes(actualEnd, estimatedEnd);
+
+      db.prepare(`
+        UPDATE tasks
+        SET status = ?,
+            approval_requested_at = COALESCE(approval_requested_at, ?),
+            completed_at = COALESCE(completed_at, ?),
+            time_delta_minutes = ?,
+            updated_at = ?
+        WHERE id = ?
+      `).run(status, timestamp, timestamp, timeDeltaMinutes, timestamp, req.params.id);
     } else if (status === 'completed') {
       const timestamp = getCurrentTimestampIsrael();
 
@@ -916,9 +942,9 @@ router.put('/:id/status', (req, res) => {
 
       db.prepare(`
         UPDATE tasks
-        SET status = ?, completed_at = COALESCE(completed_at, ?), time_delta_minutes = ?, updated_at = ?
+        SET status = ?, completed_at = COALESCE(completed_at, ?), approved_at = COALESCE(approved_at, ?), time_delta_minutes = ?, updated_at = ?
         WHERE id = ?
-      `).run(status, timestamp, timeDeltaMinutes, timestamp, req.params.id);
+      `).run(status, timestamp, timestamp, timeDeltaMinutes, timestamp, req.params.id);
     } else {
       db.prepare(`
         UPDATE tasks

@@ -112,6 +112,19 @@ function initializeDatabase() {
     // Column already exists, ignore error
   }
 
+  // Add approval flow timestamps if they don't exist (migration)
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN approval_requested_at TIMESTAMP`);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN approved_at TIMESTAMP`);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
   // Add language column to employees table (migration for Phase 5)
   try {
     db.exec(`ALTER TABLE employees ADD COLUMN language TEXT DEFAULT 'he' CHECK(language IN ('he', 'en', 'ru', 'ar'))`);
