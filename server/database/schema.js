@@ -612,6 +612,7 @@ function initializeDatabase() {
       template_key TEXT PRIMARY KEY,
       display_name TEXT,
       template_text TEXT,
+      is_deleted INTEGER NOT NULL DEFAULT 0,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -808,6 +809,14 @@ function initializeDatabase() {
 
   try {
     db.exec(`ALTER TABLE form_dispatches ADD COLUMN signed_at TIMESTAMP`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE form_template_metadata ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0`);
   } catch (e) {
     if (!e.message.includes('duplicate column')) {
       throw e;

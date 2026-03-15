@@ -180,6 +180,11 @@ export default function FormFillPage() {
   const isCustomPdf = item.template?.is_custom_pdf;
   const hasSignature = item.has_signature;
   const isDone = item.status === 'submitted' || item.status === 'signed';
+  const signedCustomIntro = isCustomPdf && hasSignature ? [
+    `שלום ${item.recipient_name}`,
+    `טופס ${item.template?.label || 'טופס'} נשלח אלייך לחתימה`,
+    'נא פתח את הקובץ, קרא, וחתום'
+  ] : null;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8" dir="rtl">
@@ -187,7 +192,13 @@ export default function FormFillPage() {
         {/* Header card */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-2">
           <h1 className="text-2xl font-bold">{item.template?.label || 'טופס'}</h1>
-          <p className="text-gray-600">נמען: {item.recipient_name}</p>
+          {signedCustomIntro ? (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 space-y-1 text-indigo-900">
+              {signedCustomIntro.map((line) => <p key={line} className="font-medium">{line}</p>)}
+            </div>
+          ) : (
+            <p className="text-gray-600">נמען: {item.recipient_name}</p>
+          )}
           {item.building_name && <p className="text-gray-600">מבנה: {item.building_name}</p>}
           {item.payload?.title && <p className="text-gray-800 font-medium">{item.payload.title}</p>}
           {item.payload?.message && <p className="text-gray-700 whitespace-pre-wrap">{item.payload.message}</p>}
@@ -208,10 +219,18 @@ export default function FormFillPage() {
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700">מסמך לעיון</span>
-              <a href={item.template.pdf_url} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline">
+              <a href={item.template.pdf_url} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline font-semibold">
                 פתח בחלון חדש ↗
               </a>
             </div>
+            <a
+              href={item.template.pdf_url}
+              target="_blank"
+              rel="noreferrer"
+              className="block mx-4 mt-3 mb-2 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-medium"
+            >
+              פתח את קובץ ה‑PDF לקריאה וחתימה
+            </a>
             <iframe
               src={item.template.pdf_url}
               title="טופס PDF"

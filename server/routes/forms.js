@@ -53,9 +53,20 @@ function buildDispatchMessage(dispatch, payload) {
   const formUrl = `/forms/fill/${dispatch.id}`;
   const contentText = payload?.templateText || payload?.message;
 
+  const isSignedCustomPdf = Boolean(payload?.isSignedCustomPdf);
+  const introLines = isSignedCustomPdf
+    ? [
+        `שלום ${dispatch.recipient_name}`,
+        `טופס ${resolvedTemplateLabel} נשלח אלייך לחתימה`,
+        'נא פתח את הקובץ, קרא, וחתום'
+      ]
+    : [
+        `שלום ${dispatch.recipient_name},`,
+        `נשלח אליך ${resolvedTemplateLabel}.`
+      ];
+
   return [
-    `שלום ${dispatch.recipient_name},`,
-    `נשלח אליך ${resolvedTemplateLabel}.`,
+    ...introLines,
     payload?.title ? `נושא: ${payload.title}` : null,
     contentText ? `תוכן: ${contentText}` : null,
     payload?.amount ? `סכום: ${payload.amount}` : null,
@@ -115,7 +126,7 @@ const TEMPLATE_DEFS = {
 
 function getTemplateMetadataMap() {
   const rows = db.prepare(`
-    SELECT template_key, display_name, template_text
+    SELECT template_key, display_name, template_text, is_deleted
     FROM form_template_metadata
   `).all();
 
@@ -355,34 +366,40 @@ router.get('/site/templates', (req, res) => {
       ORDER BY created_at DESC
     `).all();
 
-    const builtInTemplates = Object.values(TEMPLATE_DEFS).map(({ key, label, defaultText }) => {
-      const meta = metadataMap[key] || {};
-      return {
-        key,
-        label: meta.display_name?.trim() || label,
-        template_text: meta.template_text ?? defaultText ?? '',
-        is_custom_pdf: false
-      };
-    });
+    const builtInTemplates = Object.values(TEMPLATE_DEFS)
+      .map(({ key, label, defaultText }) => {
+        const meta = metadataMap[key] || {};
+        return {
+          key,
+          label: meta.display_name?.trim() || label,
+          template_text: meta.template_text ?? defaultText ?? '',
+          is_custom_pdf: false,
+          is_deleted: meta.is_deleted === 1
+        };
+      })
+      .filter((t) => !t.is_deleted);
 
-    const customTemplates = custom.map((t) => {
-      const key = `custom_pdf_${t.id}`;
-      const meta = metadataMap[key] || {};
-      return {
-        key,
-        label: meta.display_name?.trim() || t.name,
-        template_text: meta.template_text ?? '',
-        is_custom_pdf: true,
-        has_signature: t.has_signature === 1,
-        signature_placement: t.has_signature === 1 ? {
-          page: t.signature_page,
-          x: t.signature_x,
-          y: t.signature_y,
-          width: t.signature_width,
-          height: t.signature_height
-        } : null
-      };
-    });
+    const customTemplates = custom
+      .map((t) => {
+        const key = `custom_pdf_${t.id}`;
+        const meta = metadataMap[key] || {};
+        return {
+          key,
+          label: meta.display_name?.trim() || t.name,
+          template_text: meta.template_text ?? '',
+          is_custom_pdf: true,
+          has_signature: t.has_signature === 1,
+          signature_placement: t.has_signature === 1 ? {
+            page: t.signature_page,
+            x: t.signature_x,
+            y: t.signature_y,
+            width: t.signature_width,
+            height: t.signature_height
+          } : null,
+          is_deleted: meta.is_deleted === 1
+        };
+      })
+      .filter((t) => !t.is_deleted);
 
     res.json({ templates: [...builtInTemplates, ...customTemplates] });
   } catch (error) {
@@ -428,11 +445,12 @@ router.put('/site/templates/:templateKey/metadata', (req, res) => {
     }
 
     db.prepare(`
-      INSERT INTO form_template_metadata (template_key, display_name, template_text, updated_at)
-      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO form_template_metadata (template_key, display_name, template_text, is_deleted, updated_at)
+      VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP)
       ON CONFLICT(template_key) DO UPDATE SET
         display_name = excluded.display_name,
         template_text = excluded.template_text,
+        is_deleted = 0,
         updated_at = CURRENT_TIMESTAMP
     `).run(templateKey, displayName || null, templateText);
 
@@ -444,6 +462,61 @@ router.put('/site/templates/:templateKey/metadata', (req, res) => {
         template_text: templateText
       }
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Site manager: delete template from Template Center (safe)
+router.delete('/site/templates/:templateKey', (req, res) => {
+  try {
+    const templateKey = String(req.params.templateKey || '').trim();
+    if (!templateKey) return res.status(400).json({ error: 'templateKey הוא שדה חובה' });
+
+    const isBuiltIn = Boolean(TEMPLATE_DEFS[templateKey]);
+    const isCustom = /^custom_pdf_\d+$/.test(templateKey);
+
+    if (!isBuiltIn && !isCustom) {
+      return res.status(404).json({ error: 'תבנית לא נמצאה' });
+    }
+
+    const deps = db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM form_dispatches
+      WHERE template_key = ?
+    `).get(templateKey);
+
+    if ((deps?.total || 0) > 0) {
+      return res.status(409).json({
+        error: 'לא ניתן למחוק תבנית שכבר נשלחה לנמענים. כדי לשמור על היסטוריה, המחיקה נחסמה.',
+        code: 'TEMPLATE_HAS_DEPENDENCIES',
+        dependencyCount: deps.total
+      });
+    }
+
+    if (isCustom) {
+      const customId = Number(templateKey.replace('custom_pdf_', ''));
+      const row = db.prepare('SELECT * FROM custom_form_templates WHERE id = ?').get(customId);
+      if (!row) return res.status(404).json({ error: 'תבנית מותאמת לא נמצאה' });
+
+      db.prepare('DELETE FROM custom_form_templates WHERE id = ?').run(customId);
+      db.prepare('DELETE FROM form_template_metadata WHERE template_key = ?').run(templateKey);
+
+      if (row.file_path) {
+        const absolute = path.join(__dirname, '..', '..', row.file_path.replace(/^\//, ''));
+        if (fs.existsSync(absolute)) fs.unlinkSync(absolute);
+      }
+    } else {
+      db.prepare(`
+        INSERT INTO form_template_metadata (template_key, is_deleted, updated_at)
+        VALUES (?, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT(template_key) DO UPDATE SET
+          is_deleted = 1,
+          updated_at = CURRENT_TIMESTAMP
+      `).run(templateKey);
+    }
+
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -579,7 +652,8 @@ router.post('/site/send', async (req, res) => {
       message: message || '',
       templateLabel: templatePresentation.label,
       templateText: (message || templatePresentation.template_text || '').trim(),
-      amount: amount || null
+      amount: amount || null,
+      isSignedCustomPdf: Boolean(isCustomPdf && customTemplate?.has_signature)
     };
     const payload = JSON.stringify(payloadObj);
 
@@ -884,7 +958,7 @@ router.post('/site/dispatches/:id/submit', (req, res) => {
     if (!id) return res.status(400).json({ error: 'id לא תקין' });
 
     const dispatch = db.prepare(`
-      SELECT id, template_key, status
+      SELECT id, template_key, status, custom_template_id, has_signature
       FROM form_dispatches
       WHERE id = ?
     `).get(id);

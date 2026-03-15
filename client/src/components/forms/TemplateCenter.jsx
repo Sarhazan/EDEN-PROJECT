@@ -27,6 +27,9 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editForm, setEditForm] = useState({ displayName: '', templateText: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState(null);
+  const [deletingTemplate, setDeletingTemplate] = useState(false);
 
   const [form, setForm] = useState({
     recipientType: 'tenant',
@@ -163,6 +166,36 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     }
   };
 
+  const openDeleteTemplate = (template) => {
+    setTemplateToDelete(template);
+    setDeleteOpen(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const confirmDeleteTemplate = async () => {
+    if (!templateToDelete) return;
+    setDeletingTemplate(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${API_URL}/forms/site/templates/${encodeURIComponent(templateToDelete.key)}`, {
+        method: 'DELETE'
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'שגיאה במחיקת תבנית');
+
+      setDeleteOpen(false);
+      setTemplateToDelete(null);
+      setSuccess('התבנית נמחקה בהצלחה');
+      await load();
+    } catch (e) {
+      setError(e.message || 'שגיאה במחיקת תבנית');
+    } finally {
+      setDeletingTemplate(false);
+    }
+  };
+
   const send = async (e) => {
     e.preventDefault();
     if (!selectedTemplate) return;
@@ -272,9 +305,10 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               תוכן תבנית
               <textarea readOnly rows={3} value={template.template_text || ''} className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50 text-sm" />
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button onClick={() => openEditTemplate(template)} className="w-full border border-gray-300 hover:bg-gray-50 py-2 rounded-lg">עריכה</button>
               <button onClick={() => openSend(template)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">שלח תבנית</button>
+              <button onClick={() => openDeleteTemplate(template)} className="w-full border border-red-300 text-red-700 hover:bg-red-50 py-2 rounded-lg">מחק</button>
             </div>
           </div>
         ))}
@@ -385,6 +419,26 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               <button disabled={savingEdit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">{savingEdit ? 'שומר...' : 'שמור'}</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {deleteOpen && templateToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4" dir="rtl">
+            <h3 className="text-xl font-bold">מחיקת תבנית</h3>
+            <p className="text-sm text-gray-700">
+              האם למחוק את התבנית <span className="font-semibold">{templateToDelete.label}</span>?
+            </p>
+            <p className="text-xs text-gray-500">
+              לתבניות שכבר נשלחו קיימת חסימה אוטומטית כדי לא לפגוע בהיסטוריה.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <button type="button" onClick={() => { setDeleteOpen(false); setTemplateToDelete(null); }} className="px-4 py-2 border rounded-lg">ביטול</button>
+              <button type="button" disabled={deletingTemplate} onClick={confirmDeleteTemplate} className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white rounded-lg">
+                {deletingTemplate ? 'מוחק...' : 'כן, מחק'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
