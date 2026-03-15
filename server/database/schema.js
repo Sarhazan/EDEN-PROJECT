@@ -603,6 +603,15 @@ function initializeDatabase() {
   `);
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS form_template_metadata (
+      template_key TEXT PRIMARY KEY,
+      display_name TEXT,
+      template_text TEXT,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS form_dispatches (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       template_key TEXT NOT NULL,
@@ -813,6 +822,7 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_form_dispatches_delivery_status_created_at', 'form_dispatches', 'delivery_status, created_at DESC');
   createIndexIfNotExists('idx_form_submissions_dispatch_id', 'form_submissions', 'dispatch_id');
   createIndexIfNotExists('idx_form_delivery_logs_dispatch_id_created_at', 'form_delivery_logs', 'dispatch_id, created_at DESC');
+  createIndexIfNotExists('idx_form_template_metadata_updated_at', 'form_template_metadata', 'updated_at DESC');
 
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');

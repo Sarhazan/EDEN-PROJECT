@@ -23,6 +23,11 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
 
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [sendOpen, setSendOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [editForm, setEditForm] = useState({ displayName: '', templateText: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const [form, setForm] = useState({
     recipientType: 'tenant',
     buildingId: '',
@@ -67,16 +72,16 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   useEffect(() => { load(); }, []);
 
   useEffect(() => {
-    if (form.recipientType === 'tenant' && !form.buildingId && buildings.length > 0) {
-      setForm((p) => ({ ...p, buildingId: String(buildings[0].id) }));
-      return;
-    }
-
     const fetchRecipients = async () => {
       try {
+        if (form.recipientType === 'tenant' && !form.buildingId) {
+          setRecipients([]);
+          return;
+        }
+
         const params = new URLSearchParams({ type: form.recipientType });
-        if (form.recipientType === 'tenant' && form.buildingId) params.set('buildingId', form.buildingId);
-        if (form.recipientType === 'tenant' && !form.buildingId) return setRecipients([]);
+        if (form.recipientType === 'tenant') params.set('buildingId', form.buildingId);
+
         const res = await fetch(`${API_URL}/forms/site/recipients?${params.toString()}`);
         const payload = await res.json();
         if (!res.ok) throw new Error(payload.error || 'שגיאה בטעינת נמענים');
@@ -88,7 +93,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     };
 
     fetchRecipients();
-  }, [form.recipientType, form.buildingId, buildings]);
+  }, [form.recipientType, form.buildingId]);
 
   const selectedRecipient = useMemo(() => recipients.find((r) => String(r.id) === String(form.recipientId)) || null, [recipients, form.recipientId]);
   useEffect(() => {
@@ -102,10 +107,58 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
 
   const openSend = (template) => {
     setSelectedTemplate(template);
-    setForm((p) => ({ ...p, recipientId: '', recipientName: '', recipientContact: '', title: '', message: '', amount: '' }));
+    setForm((p) => ({
+      ...p,
+      recipientId: '',
+      recipientName: '',
+      recipientContact: '',
+      title: '',
+      message: template.template_text || '',
+      amount: ''
+    }));
     setSendOpen(true);
     setError('');
     setSuccess('');
+  };
+
+  const openEditTemplate = (template) => {
+    setEditingTemplate(template);
+    setEditForm({
+      displayName: template.label || '',
+      templateText: template.template_text || ''
+    });
+    setEditOpen(true);
+    setError('');
+  };
+
+  const saveTemplateEdit = async (e) => {
+    e.preventDefault();
+    if (!editingTemplate) return;
+
+    setSavingEdit(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${API_URL}/forms/site/templates/${encodeURIComponent(editingTemplate.key)}/metadata`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName: editForm.displayName,
+          templateText: editForm.templateText
+        })
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'שגיאה בשמירת תבנית');
+
+      setEditOpen(false);
+      setEditingTemplate(null);
+      setSuccess('התבנית נשמרה בהצלחה');
+      await load();
+    } catch (e2) {
+      setError(e2.message || 'שגיאה בשמירת תבנית');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const send = async (e) => {
@@ -115,9 +168,9 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     setSuccess('');
 
     try {
-      const payload = { ...form, templateKey: selectedTemplate.key };
+      const payload = { ...form, templateKey: selectedTemplate.key, templateText: form.message };
       if (!payload.recipientName?.trim()) throw new Error('נא לבחור/להזין נמען');
-      if (payload.recipientType === 'tenant' && !payload.buildingId) throw new Error('נא לבחור מבנה');
+      if (payload.recipientType === 'tenant' && !payload.buildingId) throw new Error('נא לבחור מבנה לפני בחירת דייר');
 
       const res = await fetch(`${API_URL}/forms/site/send`, {
         method: 'POST',
@@ -180,7 +233,14 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <div key={template.key} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
             <div className="font-semibold text-lg">{template.label}</div>
             <div className="text-xs text-gray-500">{template.is_custom_pdf ? 'תבנית PDF מותאמת' : 'תבנית מערכת'}</div>
-            <button onClick={() => openSend(template)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">שלח תבנית</button>
+            <label className="text-xs text-gray-600 block">
+              תוכן תבנית
+              <textarea readOnly rows={3} value={template.template_text || ''} className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50 text-sm" />
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => openEditTemplate(template)} className="w-full border border-gray-300 hover:bg-gray-50 py-2 rounded-lg">עריכה</button>
+              <button onClick={() => openSend(template)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">שלח תבנית</button>
+            </div>
           </div>
         ))}
       </section>
@@ -217,22 +277,28 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
 
             <div className="grid md:grid-cols-2 gap-3">
               <label className="text-sm">קהל יעד
-                <select className="mt-1 w-full border rounded-lg px-3 py-2" value={form.recipientType} onChange={(e) => setForm((p) => ({ ...p, recipientType: e.target.value, recipientId: '', recipientName: '', recipientContact: '' }))}>
+                <select className="mt-1 w-full border rounded-lg px-3 py-2" value={form.recipientType} onChange={(e) => setForm((p) => ({ ...p, recipientType: e.target.value, recipientId: '', recipientName: '', recipientContact: '', buildingId: e.target.value === 'tenant' ? p.buildingId : '' }))}>
                   <option value="tenant">דייר</option>
-                  <option value="group">קבוצה</option>
                   <option value="supplier">ספק</option>
                 </select>
               </label>
 
-              <label className="text-sm">מבנה/קבוצה
-                <select className="mt-1 w-full border rounded-lg px-3 py-2" value={form.buildingId} onChange={(e) => setForm((p) => ({ ...p, buildingId: e.target.value, recipientId: '', recipientName: '', recipientContact: '' }))}>
-                  <option value="">בחר מבנה</option>
-                  {buildings.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </label>
+              {form.recipientType === 'tenant' ? (
+                <label className="text-sm">מבנה
+                  <select className="mt-1 w-full border rounded-lg px-3 py-2" value={form.buildingId} onChange={(e) => setForm((p) => ({ ...p, buildingId: e.target.value, recipientId: '', recipientName: '', recipientContact: '' }))}>
+                    <option value="">בחר מבנה</option>
+                    {buildings.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </label>
+              ) : <div />}
 
-              <label className="text-sm">בחירת נמען
-                <select className="mt-1 w-full border rounded-lg px-3 py-2" value={form.recipientId} onChange={(e) => setForm((p) => ({ ...p, recipientId: e.target.value }))}>
+              <label className="text-sm">{form.recipientType === 'tenant' ? 'בחירת דייר' : 'בחירת ספק'}
+                <select
+                  className="mt-1 w-full border rounded-lg px-3 py-2"
+                  value={form.recipientId}
+                  disabled={form.recipientType === 'tenant' && !form.buildingId}
+                  onChange={(e) => setForm((p) => ({ ...p, recipientId: e.target.value }))}
+                >
                   <option value="">בחר</option>
                   {recipients.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
@@ -251,13 +317,37 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               </label>
             </div>
 
-            <label className="text-sm block">הודעה
-              <textarea className="mt-1 w-full border rounded-lg px-3 py-2" rows={3} value={form.message} onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))} />
+            <label className="text-sm block">תוכן הודעה לתבנית זו
+              <textarea className="mt-1 w-full border rounded-lg px-3 py-2" rows={4} value={form.message} onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))} />
             </label>
 
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setSendOpen(false)} className="px-4 py-2 border rounded-lg">ביטול</button>
               <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg">שלח</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {editOpen && editingTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form onSubmit={saveTemplateEdit} className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 space-y-4" dir="rtl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold">עריכת תבנית</h3>
+              <button type="button" onClick={() => setEditOpen(false)} className="text-2xl text-gray-500">×</button>
+            </div>
+
+            <label className="text-sm block">שם תצוגה
+              <input className="mt-1 w-full border rounded-lg px-3 py-2" value={editForm.displayName} onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))} />
+            </label>
+
+            <label className="text-sm block">תוכן תבנית
+              <textarea className="mt-1 w-full border rounded-lg px-3 py-2" rows={5} value={editForm.templateText} onChange={(e) => setEditForm((p) => ({ ...p, templateText: e.target.value }))} />
+            </label>
+
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setEditOpen(false)} className="px-4 py-2 border rounded-lg">ביטול</button>
+              <button disabled={savingEdit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">{savingEdit ? 'שומר...' : 'שמור'}</button>
             </div>
           </form>
         </div>

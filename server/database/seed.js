@@ -73,14 +73,18 @@ function seedDatabase() {
   `);
   insertBuilding.run('מגדל הרצל 27');
   insertBuilding.run('בית הים 4');
+  insertBuilding.run('מגדל הגפן 12');
 
   // Insert tenants
   const insertTenant = db.prepare(`
     INSERT INTO tenants (name, phone, email, apartment_number, floor, building_id, notes)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
-  insertTenant.run('דייר בדיקה 1', '0501111111', 'tenant1@example.com', '12', '3', 1, 'דייר דמה לבדיקה');
-  insertTenant.run('דייר בדיקה 2', '0502222222', 'tenant2@example.com', '21', '7', 2, 'דייר דמה לבדיקה');
+  insertTenant.run('נועה כהן', '0501111111', 'noa.cohen@example.com', '12', '3', 1, 'מעדיפה הודעות וואטסאפ בשעות הערב');
+  insertTenant.run('יואב לוי', '0502222222', 'yoav.levi@example.com', '21', '7', 2, 'מבקש תיאום מראש לפני כניסה לדירה');
+  insertTenant.run('רוני מזרחי', '0523004455', 'roni.mizrahi@example.com', '5', '1', 3, 'חדש בבניין, קוד אינטרקום 4505');
+  insertTenant.run('ליאת פרץ', '0546677881', 'liat.peretz@example.com', '18', '4', 3, 'עובדת משמרות - עדיף ליצור קשר אחרי 16:00');
+  insertTenant.run('אמיר חדד', '0538899002', 'amir.hadad@example.com', '23', '6', 1, 'רגיש לרעש בבוקר מוקדם');
 
   // Insert tasks
   const insertTask = db.prepare(`

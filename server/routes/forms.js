@@ -48,14 +48,16 @@ function getLiveAllowlist() {
 }
 
 function buildDispatchMessage(dispatch, payload) {
-  const templateLabel = TEMPLATE_DEFS[dispatch.template_key]?.label || dispatch.template_key;
+  const fallbackLabel = TEMPLATE_DEFS[dispatch.template_key]?.label || payload?.templateLabel || dispatch.template_key;
+  const resolvedTemplateLabel = payload?.templateLabel || resolveTemplatePresentation(dispatch.template_key, fallbackLabel).label;
   const formUrl = `/forms/fill/${dispatch.id}`;
+  const contentText = payload?.templateText || payload?.message;
 
   return [
     `שלום ${dispatch.recipient_name},`,
-    `נשלח אליך ${templateLabel}.`,
+    `נשלח אליך ${resolvedTemplateLabel}.`,
     payload?.title ? `נושא: ${payload.title}` : null,
-    payload?.message ? `הודעה: ${payload.message}` : null,
+    contentText ? `תוכן: ${contentText}` : null,
     payload?.amount ? `סכום: ${payload.amount}` : null,
     `קישור לטופס: ${formUrl}`
   ].filter(Boolean).join('\n');
@@ -72,6 +74,7 @@ const TEMPLATE_DEFS = {
   regulation_signature: {
     key: 'regulation_signature',
     label: 'טופס חתימה על תקנון',
+    defaultText: 'נא לעבור על התקנון המצורף ולאשר חתימה בסיום.',
     fields: [
       { key: 'full_name', label: 'שם מלא', type: 'text', required: true },
       { key: 'id_number', label: 'תעודת זהות', type: 'text', required: true },
@@ -81,6 +84,7 @@ const TEMPLATE_DEFS = {
   credit_card: {
     key: 'credit_card',
     label: 'טופס למילוי כרטיס אשראי',
+    defaultText: 'נא למלא את פרטי הכרטיס בצורה מלאה ומדויקת.',
     fields: [
       { key: 'full_name', label: 'שם בעל/ת הכרטיס', type: 'text', required: true },
       { key: 'id_number', label: 'תעודת זהות', type: 'text', required: true },
@@ -91,6 +95,7 @@ const TEMPLATE_DEFS = {
   debt_payment: {
     key: 'debt_payment',
     label: 'טופס לתשלום חוב',
+    defaultText: 'נא להסדיר את התשלום בהקדם ולצרף אסמכתא במידת הצורך.',
     fields: [
       { key: 'full_name', label: 'שם מלא', type: 'text', required: true },
       { key: 'amount', label: 'סכום לתשלום', type: 'number', required: true },
@@ -100,12 +105,38 @@ const TEMPLATE_DEFS = {
   notice: {
     key: 'notice',
     label: 'טופס הודעה',
+    defaultText: 'נא לקרוא את ההודעה ולאשר קבלה.',
     fields: [
       { key: 'full_name', label: 'שם מלא', type: 'text', required: true },
       { key: 'notice_text', label: 'תוכן ההודעה', type: 'textarea', required: true }
     ]
   }
 };
+
+function getTemplateMetadataMap() {
+  const rows = db.prepare(`
+    SELECT template_key, display_name, template_text
+    FROM form_template_metadata
+  `).all();
+
+  return rows.reduce((acc, row) => {
+    acc[row.template_key] = row;
+    return acc;
+  }, {});
+}
+
+function resolveTemplatePresentation(templateKey, fallbackLabel, fallbackText = '') {
+  const meta = db.prepare(`
+    SELECT display_name, template_text
+    FROM form_template_metadata
+    WHERE template_key = ?
+  `).get(templateKey);
+
+  return {
+    label: meta?.display_name?.trim() || fallbackLabel,
+    template_text: meta?.template_text ?? fallbackText
+  };
+}
 
 // HQ: view forms assets by building
 router.get('/hq/buildings-assets', (req, res) => {
@@ -277,22 +308,92 @@ router.delete('/hq/custom-templates/:id', (req, res) => {
 // Site manager: interactive form templates
 router.get('/site/templates', (req, res) => {
   try {
+    const metadataMap = getTemplateMetadataMap();
     const custom = db.prepare(`
       SELECT id, name, has_signature FROM custom_form_templates ORDER BY created_at DESC
     `).all();
 
-    const customTemplates = custom.map((t) => ({
-      key: `custom_pdf_${t.id}`,
-      label: t.name,
-      is_custom_pdf: true,
-      has_signature: t.has_signature === 1
-    }));
+    const builtInTemplates = Object.values(TEMPLATE_DEFS).map(({ key, label, defaultText }) => {
+      const meta = metadataMap[key] || {};
+      return {
+        key,
+        label: meta.display_name?.trim() || label,
+        template_text: meta.template_text ?? defaultText ?? '',
+        is_custom_pdf: false
+      };
+    });
+
+    const customTemplates = custom.map((t) => {
+      const key = `custom_pdf_${t.id}`;
+      const meta = metadataMap[key] || {};
+      return {
+        key,
+        label: meta.display_name?.trim() || t.name,
+        template_text: meta.template_text ?? '',
+        is_custom_pdf: true,
+        has_signature: t.has_signature === 1
+      };
+    });
+
+    res.json({ templates: [...builtInTemplates, ...customTemplates] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Site manager: read template editable metadata map
+router.get('/site/templates/metadata', (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT template_key, display_name, template_text, updated_at
+      FROM form_template_metadata
+      ORDER BY updated_at DESC
+    `).all();
+
+    res.json({ items: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Site manager: update template editable metadata (label + content)
+router.put('/site/templates/:templateKey/metadata', (req, res) => {
+  try {
+    const templateKey = String(req.params.templateKey || '').trim();
+    if (!templateKey) return res.status(400).json({ error: 'templateKey הוא שדה חובה' });
+
+    const displayName = String(req.body.displayName || '').trim();
+    const templateText = req.body.templateText == null ? '' : String(req.body.templateText);
+
+    const isBuiltIn = Boolean(TEMPLATE_DEFS[templateKey]);
+    const isCustom = /^custom_pdf_\d+$/.test(templateKey);
+
+    if (!isBuiltIn && !isCustom) {
+      return res.status(404).json({ error: 'תבנית לא נמצאה' });
+    }
+
+    if (isCustom) {
+      const customId = Number(templateKey.replace('custom_pdf_', ''));
+      const customTemplate = db.prepare('SELECT id FROM custom_form_templates WHERE id = ?').get(customId);
+      if (!customTemplate) return res.status(404).json({ error: 'תבנית מותאמת לא נמצאה' });
+    }
+
+    db.prepare(`
+      INSERT INTO form_template_metadata (template_key, display_name, template_text, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(template_key) DO UPDATE SET
+        display_name = excluded.display_name,
+        template_text = excluded.template_text,
+        updated_at = CURRENT_TIMESTAMP
+    `).run(templateKey, displayName || null, templateText);
 
     res.json({
-      templates: [
-        ...Object.values(TEMPLATE_DEFS).map(({ key, label }) => ({ key, label, is_custom_pdf: false })),
-        ...customTemplates
-      ]
+      success: true,
+      item: {
+        template_key: templateKey,
+        display_name: displayName || null,
+        template_text: templateText
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -302,11 +403,11 @@ router.get('/site/templates', (req, res) => {
 // Site manager: recipients lookup (for structured sending)
 router.get('/site/recipients', (req, res) => {
   try {
-    const type = String(req.query.type || '').trim(); // tenant | supplier | group
+    const type = String(req.query.type || '').trim(); // tenant | supplier
     const buildingId = Number(req.query.buildingId || 0);
 
-    if (!['tenant', 'supplier', 'group'].includes(type)) {
-      return res.status(400).json({ error: 'type חייב להיות tenant, group או supplier' });
+    if (!['tenant', 'supplier'].includes(type)) {
+      return res.status(400).json({ error: 'type חייב להיות tenant או supplier' });
     }
 
     if (type === 'tenant') {
@@ -320,16 +421,6 @@ router.get('/site/recipients', (req, res) => {
       `).all(buildingId);
 
       return res.json({ items: tenants });
-    }
-
-    if (type === 'group') {
-      const groups = db.prepare(`
-        SELECT id, name
-        FROM buildings
-        ORDER BY name ASC
-      `).all();
-
-      return res.json({ items: groups.map((g) => ({ ...g, recipient_type: 'group' })) });
     }
 
     const suppliers = db.prepare(`
@@ -349,7 +440,7 @@ router.post('/site/send', async (req, res) => {
   try {
     const {
       templateKey,
-      recipientType, // supplier | tenant | group
+      recipientType, // supplier | tenant
       recipientId,
       buildingId,
       recipientName,
@@ -372,7 +463,7 @@ router.post('/site/send', async (req, res) => {
     } else if (!TEMPLATE_DEFS[templateKey]) {
       return res.status(400).json({ error: 'סוג טופס לא מוכר' });
     }
-    if (!recipientType || !['supplier', 'tenant', 'group'].includes(recipientType)) return res.status(400).json({ error: 'סוג נמען לא תקין' });
+    if (!recipientType || !['supplier', 'tenant'].includes(recipientType)) return res.status(400).json({ error: 'סוג נמען לא תקין' });
 
     const parsedRecipientId = recipientId ? Number(recipientId) : null;
     const parsedBuildingId = buildingId ? Number(buildingId) : null;
@@ -428,28 +519,17 @@ router.post('/site/send', async (req, res) => {
       }
     }
 
-    if (recipientType === 'group') {
-      const groupId = parsedRecipientId || parsedBuildingId;
-      if (groupId) {
-        const building = db.prepare(`
-          SELECT id, name
-          FROM buildings
-          WHERE id = ?
-        `).get(groupId);
-
-        if (!building) return res.status(400).json({ error: 'קבוצה/מבנה לא נמצאו' });
-        resolvedBuildingId = building.id;
-        resolvedName = resolvedName || `קבוצת ${building.name}`;
-      }
-
-      if (!resolvedName) {
-        return res.status(400).json({ error: 'שם קבוצה הוא שדה חובה' });
-      }
-    }
+    const templatePresentation = resolveTemplatePresentation(
+      templateKey,
+      isCustomPdf ? customTemplate.name : TEMPLATE_DEFS[templateKey].label,
+      isCustomPdf ? '' : TEMPLATE_DEFS[templateKey].defaultText || ''
+    );
 
     const payloadObj = {
       title: title || '',
       message: message || '',
+      templateLabel: templatePresentation.label,
+      templateText: (message || templatePresentation.template_text || '').trim(),
       amount: amount || null
     };
     const payload = JSON.stringify(payloadObj);
@@ -680,16 +760,24 @@ router.get('/site/dispatches/:id', (req, res) => {
     // Resolve template definition
     let template;
     if (dispatch.custom_template_id && dispatch.custom_template_file) {
+      const presentation = resolveTemplatePresentation(dispatch.template_key, dispatch.custom_template_name || 'טופס PDF', '');
       template = {
         key: dispatch.template_key,
-        label: dispatch.custom_template_name || 'טופס PDF',
+        label: presentation.label,
+        template_text: presentation.template_text,
         is_custom_pdf: true,
         pdf_url: dispatch.custom_template_file,
         has_signature: dispatch.has_signature === 1
       };
     } else {
-      template = TEMPLATE_DEFS[dispatch.template_key];
-      if (!template) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
+      const baseTemplate = TEMPLATE_DEFS[dispatch.template_key];
+      if (!baseTemplate) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
+      const presentation = resolveTemplatePresentation(dispatch.template_key, baseTemplate.label, baseTemplate.defaultText || '');
+      template = {
+        ...baseTemplate,
+        label: presentation.label,
+        template_text: presentation.template_text
+      };
     }
 
     if (dispatch.status === 'sent') {
