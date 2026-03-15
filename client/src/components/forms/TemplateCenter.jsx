@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { API_URL } from '../../config';
 import { useApp } from '../../context/AppContext';
+
+GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
+const DEFAULT_SIGNATURE_BOX = { x: 0.62, y: 0.78, width: 0.28, height: 0.12 };
+const clamp01 = (value) => Math.min(1, Math.max(0, value));
 
 const STATUS_LABELS = { sent: 'נשלח', opened: 'נפתח', submitted: 'הוגש', signed: 'נחתם' };
 const STATUS_COLORS = {
@@ -52,7 +59,19 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const [uploading, setUploading] = useState(false);
   const [signaturePlacement, setSignaturePlacement] = useState({ page: 1, x: '', y: '', width: '', height: '' });
   const [signaturePlacementSaved, setSignaturePlacementSaved] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState('');
+  const [pdfDoc, setPdfDoc] = useState(null);
+  const [pdfPageCount, setPdfPageCount] = useState(0);
+  const [pdfCurrentPage, setPdfCurrentPage] = useState(1);
+  const [pdfPageSize, setPdfPageSize] = useState({ width: 0, height: 0 });
+  const [pdfRenderSize, setPdfRenderSize] = useState({ width: 0, height: 0 });
+  const [signatureBox, setSignatureBox] = useState(null);
+  const [dragMode, setDragMode] = useState(null);
+  const dragStateRef = useRef(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
   const fileInputRef = useRef(null);
+  const pdfCanvasRef = useRef(null);
+  const pdfWrapperRef = useRef(null);
 
   const load = async () => {
     setError('');
@@ -222,29 +241,6 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     }
   };
 
-  const saveSignaturePlacement = () => {
-    const page = Number(signaturePlacement.page);
-    const x = Number(signaturePlacement.x);
-    const y = Number(signaturePlacement.y);
-    const width = Number(signaturePlacement.width);
-    const height = Number(signaturePlacement.height);
-
-    const valid = Number.isFinite(page) && page >= 1
-      && Number.isFinite(x) && x >= 0
-      && Number.isFinite(y) && y >= 0
-      && Number.isFinite(width) && width > 0
-      && Number.isFinite(height) && height > 0;
-
-    if (!valid) {
-      setUploadError('יש להזין מיקום חתימה תקין: עמוד + X/Y + רוחב/גובה');
-      setSignaturePlacementSaved(false);
-      return;
-    }
-
-    setUploadError('');
-    setSignaturePlacementSaved(true);
-  };
-
   const submitUpload = async () => {
     if (!uploadFile) return setUploadError('נא לבחור קובץ PDF');
     if (!uploadName.trim()) return setUploadError('נא לתת שם לטופס');
@@ -280,6 +276,199 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       setUploading(false);
     }
   };
+
+  useEffect(() => {
+    if (!uploadFile) {
+      setPdfUrl('');
+      setPdfDoc(null);
+      setPdfPageCount(0);
+      setPdfCurrentPage(1);
+      setPdfPageSize({ width: 0, height: 0 });
+      setPdfRenderSize({ width: 0, height: 0 });
+      setSignatureBox(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(uploadFile);
+    setPdfUrl(objectUrl);
+    setSignaturePlacementSaved(false);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [uploadFile]);
+
+  useEffect(() => {
+    if (!pdfUrl || uploadHasSignature !== true) return;
+    let cancelled = false;
+    let loadingTask;
+
+    const loadPdf = async () => {
+      setLoadingPdf(true);
+      try {
+        loadingTask = getDocument(pdfUrl);
+        const doc = await loadingTask.promise;
+        if (cancelled) return;
+        setPdfDoc(doc);
+        setPdfPageCount(doc.numPages || 1);
+        setPdfCurrentPage(1);
+        setSignatureBox({ ...DEFAULT_SIGNATURE_BOX });
+      } catch (e) {
+        if (!cancelled) {
+          setUploadError('לא ניתן לטעון את ה-PDF לתצוגה מקדימה');
+          setPdfDoc(null);
+        }
+      } finally {
+        if (!cancelled) setLoadingPdf(false);
+      }
+    };
+
+    loadPdf();
+    return () => {
+      cancelled = true;
+      if (loadingTask?.destroy) loadingTask.destroy();
+    };
+  }, [pdfUrl, uploadHasSignature]);
+
+  useEffect(() => {
+    if (!pdfDoc || uploadHasSignature !== true) return;
+    let cancelled = false;
+
+    const renderCurrentPage = async () => {
+      try {
+        const page = await pdfDoc.getPage(pdfCurrentPage);
+        if (cancelled) return;
+
+        const baseViewport = page.getViewport({ scale: 1 });
+        const containerWidth = Math.max(320, Math.min(760, (pdfWrapperRef.current?.clientWidth || 520) - 2));
+        const scale = containerWidth / baseViewport.width;
+        const viewport = page.getViewport({ scale });
+
+        const canvas = pdfCanvasRef.current;
+        if (!canvas) return;
+        const context = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+
+        await page.render({ canvasContext: context, viewport }).promise;
+        if (cancelled) return;
+
+        setPdfPageSize({ width: baseViewport.width, height: baseViewport.height });
+        setPdfRenderSize({ width: viewport.width, height: viewport.height });
+      } catch {
+        if (!cancelled) setUploadError('שגיאה בהצגת עמוד ה-PDF');
+      }
+    };
+
+    renderCurrentPage();
+    return () => { cancelled = true; };
+  }, [pdfDoc, pdfCurrentPage, uploadHasSignature]);
+
+  const computeSignaturePlacementFromBox = (box = signatureBox) => {
+    if (!box || !pdfPageSize.width || !pdfPageSize.height) return null;
+    return {
+      page: pdfCurrentPage,
+      x: Number((box.x * pdfPageSize.width).toFixed(2)),
+      y: Number((box.y * pdfPageSize.height).toFixed(2)),
+      width: Number((box.width * pdfPageSize.width).toFixed(2)),
+      height: Number((box.height * pdfPageSize.height).toFixed(2))
+    };
+  };
+
+  const startDrag = (e, mode) => {
+    if (!signatureBox || !pdfRenderSize.width || !pdfRenderSize.height) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragStateRef.current = {
+      mode,
+      startX: e.clientX,
+      startY: e.clientY,
+      startBox: { ...signatureBox }
+    };
+    setDragMode(mode);
+    setSignaturePlacementSaved(false);
+  };
+
+  useEffect(() => {
+    if (!dragMode) return;
+
+    const onMove = (e) => {
+      const dragState = dragStateRef.current;
+      if (!dragState || !pdfRenderSize.width || !pdfRenderSize.height) return;
+
+      const deltaX = (e.clientX - dragState.startX) / pdfRenderSize.width;
+      const deltaY = (e.clientY - dragState.startY) / pdfRenderSize.height;
+      const minW = 60 / pdfRenderSize.width;
+      const minH = 30 / pdfRenderSize.height;
+
+      setSignatureBox((prev) => {
+        if (!prev) return prev;
+        let next = { ...dragState.startBox };
+
+        if (dragState.mode === 'move') {
+          next.x = clamp01(next.x + deltaX);
+          next.y = clamp01(next.y + deltaY);
+          next.x = clamp01(Math.min(next.x, 1 - next.width));
+          next.y = clamp01(Math.min(next.y, 1 - next.height));
+        } else if (dragState.mode === 'resize') {
+          const width = Math.max(minW, Math.min(1 - next.x, next.width + deltaX));
+          const height = Math.max(minH, Math.min(1 - next.y, next.height + deltaY));
+          next.width = width;
+          next.height = height;
+        }
+
+        return next;
+      });
+    };
+
+    const onUp = () => {
+      setDragMode(null);
+      dragStateRef.current = null;
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [dragMode, pdfRenderSize.height, pdfRenderSize.width]);
+
+  const placeSignatureBox = (e) => {
+    if (!pdfRenderSize.width || !pdfRenderSize.height) return;
+    const bounds = e.currentTarget.getBoundingClientRect();
+    const clickX = clamp01((e.clientX - bounds.left) / bounds.width);
+    const clickY = clamp01((e.clientY - bounds.top) / bounds.height);
+    const width = signatureBox?.width || DEFAULT_SIGNATURE_BOX.width;
+    const height = signatureBox?.height || DEFAULT_SIGNATURE_BOX.height;
+
+    setSignatureBox({
+      x: clamp01(Math.min(clickX - width / 2, 1 - width)),
+      y: clamp01(Math.min(clickY - height / 2, 1 - height)),
+      width,
+      height
+    });
+    setSignaturePlacementSaved(false);
+  };
+
+  const confirmVisualPlacement = () => {
+    const placement = computeSignaturePlacementFromBox();
+    if (!placement) {
+      setUploadError('לא ניתן לשמור מיקום חתימה. נסה לבחור עמוד/מיקום מחדש.');
+      setSignaturePlacementSaved(false);
+      return;
+    }
+
+    setSignaturePlacement(placement);
+    setSignaturePlacementSaved(true);
+    setUploadError('');
+  };
+
+  useEffect(() => {
+    if (!signatureBox || uploadHasSignature !== true) return;
+    const placement = computeSignaturePlacementFromBox(signatureBox);
+    if (!placement) return;
+    setSignaturePlacement(placement);
+  }, [signatureBox, pdfCurrentPage, pdfPageSize.width, pdfPageSize.height, uploadHasSignature]);
 
   const tabData = activeTab === 'pending' ? pendingSignature : activeTab === 'today' ? sentToday : history;
 
@@ -449,29 +638,82 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               <h2 className="text-xl font-bold">טען טופס PDF</h2>
               <button onClick={() => setShowUploadModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
             </div>
-            <div onDragOver={(e) => { e.preventDefault(); setUploadDragOver(true); }} onDragLeave={() => setUploadDragOver(false)} onDrop={(e) => { e.preventDefault(); setUploadDragOver(false); const f = e.dataTransfer?.files?.[0]; if (f) setUploadFile(f); }} onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer ${uploadDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50'}`}>
-              <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
+            <div onDragOver={(e) => { e.preventDefault(); setUploadDragOver(true); }} onDragLeave={() => setUploadDragOver(false)} onDrop={(e) => { e.preventDefault(); setUploadDragOver(false); const f = e.dataTransfer?.files?.[0]; if (f) { setUploadFile(f); setUploadError(''); setSignaturePlacementSaved(false); } }} onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer ${uploadDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50'}`}>
+              <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => { setUploadFile(e.target.files?.[0] || null); setUploadError(''); setSignaturePlacementSaved(false); }} />
               {uploadFile ? <div className="font-semibold">{uploadFile.name}</div> : <div className="text-sm text-gray-500">גרור או לחץ לבחירת PDF</div>}
             </div>
             <input className="w-full border border-gray-200 rounded-lg px-3 py-2" value={uploadName} onChange={(e) => setUploadName(e.target.value)} placeholder="שם הטופס" />
             <div className="flex gap-2">
-              <button onClick={() => { setUploadHasSignature(true); setSignaturePlacementSaved(false); }} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === true ? 'bg-indigo-600 text-white' : ''}`}>עם חתימה</button>
-              <button onClick={() => { setUploadHasSignature(false); setSignaturePlacementSaved(false); }} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === false ? 'bg-gray-600 text-white' : ''}`}>ללא חתימה</button>
+              <button onClick={() => { setUploadHasSignature(true); setSignaturePlacementSaved(false); setUploadError(''); if (!signatureBox) setSignatureBox({ ...DEFAULT_SIGNATURE_BOX }); }} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === true ? 'bg-indigo-600 text-white' : ''}`}>עם חתימה</button>
+              <button onClick={() => { setUploadHasSignature(false); setSignaturePlacementSaved(false); setUploadError(''); setSignatureBox(null); }} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === false ? 'bg-gray-600 text-white' : ''}`}>ללא חתימה</button>
             </div>
 
             {uploadHasSignature === true && (
               <div className="space-y-3 border border-indigo-100 bg-indigo-50/40 rounded-lg p-3">
                 <div className="text-sm font-semibold">שלב מיקום חתימה (חובה)</div>
-                <div className="text-xs text-gray-600">הגדר מיקום חתימה על גבי ה-PDF: עמוד + X/Y + רוחב/גובה</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="number" min="1" className="border rounded-lg px-3 py-2" placeholder="עמוד" value={signaturePlacement.page} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, page: e.target.value })); setSignaturePlacementSaved(false); }} />
-                  <input type="number" min="0" className="border rounded-lg px-3 py-2" placeholder="X" value={signaturePlacement.x} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, x: e.target.value })); setSignaturePlacementSaved(false); }} />
-                  <input type="number" min="0" className="border rounded-lg px-3 py-2" placeholder="Y" value={signaturePlacement.y} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, y: e.target.value })); setSignaturePlacementSaved(false); }} />
-                  <input type="number" min="1" className="border rounded-lg px-3 py-2" placeholder="רוחב" value={signaturePlacement.width} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, width: e.target.value })); setSignaturePlacementSaved(false); }} />
-                  <input type="number" min="1" className="border rounded-lg px-3 py-2 col-span-2" placeholder="גובה" value={signaturePlacement.height} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, height: e.target.value })); setSignaturePlacementSaved(false); }} />
-                </div>
-                <button type="button" onClick={saveSignaturePlacement} className="w-full border border-indigo-300 text-indigo-700 py-2 rounded-lg">שמור מיקום חתימה</button>
-                {signaturePlacementSaved && <div className="text-xs text-green-700">✓ מיקום חתימה נשמר. אפשר לשמור את התבנית.</div>}
+                <div className="text-xs text-gray-700">לחץ על ה-PDF כדי למקם חתימה</div>
+
+                {!uploadFile && <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">יש לבחור קובץ PDF לפני מיקום חתימה.</div>}
+
+                {uploadFile && (
+                  <div className="space-y-2">
+                    {pdfPageCount > 1 && (
+                      <label className="text-xs text-gray-700 flex items-center gap-2">
+                        עמוד למיקום
+                        <select
+                          className="border rounded-md px-2 py-1 bg-white"
+                          value={pdfCurrentPage}
+                          onChange={(e) => { setPdfCurrentPage(Number(e.target.value)); setSignaturePlacementSaved(false); }}
+                        >
+                          {Array.from({ length: pdfPageCount }, (_, i) => i + 1).map((pageNo) => (
+                            <option key={pageNo} value={pageNo}>עמוד {pageNo}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+
+                    <div
+                      ref={pdfWrapperRef}
+                      className="relative border border-gray-300 rounded-lg bg-white overflow-auto max-h-[55vh] mx-auto"
+                      onClick={placeSignatureBox}
+                    >
+                      {loadingPdf && <div className="text-xs text-gray-500 p-3">טוען PDF...</div>}
+                      <canvas ref={pdfCanvasRef} className="block mx-auto" />
+
+                      {signatureBox && pdfRenderSize.width > 0 && pdfRenderSize.height > 0 && (
+                        <div
+                          className="absolute border-2 border-indigo-600 bg-indigo-500/15 rounded cursor-move select-none"
+                          style={{
+                            left: `${signatureBox.x * 100}%`,
+                            top: `${signatureBox.y * 100}%`,
+                            width: `${signatureBox.width * 100}%`,
+                            height: `${signatureBox.height * 100}%`
+                          }}
+                          onMouseDown={(e) => startDrag(e, 'move')}
+                          title="גרור להזזת החתימה"
+                        >
+                          <div className="text-[10px] text-indigo-700 bg-white/90 inline-block px-1 rounded m-1">חתימה</div>
+                          <button
+                            type="button"
+                            className="absolute -bottom-2 -left-2 w-4 h-4 rounded-full bg-indigo-600 border-2 border-white cursor-nwse-resize"
+                            onMouseDown={(e) => startDrag(e, 'resize')}
+                            aria-label="שינוי גודל"
+                            title="שינוי גודל"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {signatureBox && (
+                      <div className="text-[11px] text-gray-500">
+                        קואורדינטות: עמוד {signaturePlacement.page} | X: {signaturePlacement.x} | Y: {signaturePlacement.y} | רוחב: {signaturePlacement.width} | גובה: {signaturePlacement.height}
+                      </div>
+                    )}
+
+                    <button type="button" onClick={confirmVisualPlacement} className="w-full border border-indigo-300 text-indigo-700 py-2 rounded-lg">אישור מיקום חתימה</button>
+                    {signaturePlacementSaved && <div className="text-xs text-green-700">✓ מיקום חתימה נשמר. אפשר לשמור את התבנית.</div>}
+                  </div>
+                )}
               </div>
             )}
 
