@@ -237,7 +237,9 @@ router.delete('/hq/contracts/:id', (req, res) => {
 router.get('/hq/custom-templates', (req, res) => {
   try {
     const rows = db.prepare(`
-      SELECT id, name, file_path, has_signature, created_at
+      SELECT id, name, file_path, has_signature,
+             signature_page, signature_x, signature_y, signature_width, signature_height,
+             created_at
       FROM custom_form_templates
       ORDER BY created_at DESC
     `).all();
@@ -253,8 +255,26 @@ router.post('/hq/custom-templates', upload.single('file'), (req, res) => {
     const name = (req.body.name || '').trim();
     const hasSignature = req.body.has_signature === '1' || req.body.has_signature === 'true' ? 1 : 0;
 
+    const signaturePage = req.body.signature_page ? Number(req.body.signature_page) : null;
+    const signatureX = req.body.signature_x ? Number(req.body.signature_x) : null;
+    const signatureY = req.body.signature_y ? Number(req.body.signature_y) : null;
+    const signatureWidth = req.body.signature_width ? Number(req.body.signature_width) : null;
+    const signatureHeight = req.body.signature_height ? Number(req.body.signature_height) : null;
+
     if (!name) return res.status(400).json({ error: 'שם הטופס הוא שדה חובה' });
     if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ PDF' });
+
+    if (hasSignature) {
+      const valid = Number.isFinite(signaturePage) && signaturePage >= 1
+        && Number.isFinite(signatureX) && signatureX >= 0
+        && Number.isFinite(signatureY) && signatureY >= 0
+        && Number.isFinite(signatureWidth) && signatureWidth > 0
+        && Number.isFinite(signatureHeight) && signatureHeight > 0;
+
+      if (!valid) {
+        return res.status(400).json({ error: 'בעת בחירת חתימה חובה לשמור מיקום חתימה תקין (עמוד + X/Y + רוחב/גובה)' });
+      }
+    }
 
     const ext = path.extname(req.file.originalname).toLowerCase();
     if (ext !== '.pdf') {
@@ -265,9 +285,21 @@ router.post('/hq/custom-templates', upload.single('file'), (req, res) => {
     const relativePath = `/uploads/forms/pdf_templates/${req.file.filename}`;
 
     const result = db.prepare(`
-      INSERT INTO custom_form_templates (name, file_path, has_signature)
-      VALUES (?, ?, ?)
-    `).run(name, relativePath, hasSignature);
+      INSERT INTO custom_form_templates (
+        name, file_path, has_signature,
+        signature_page, signature_x, signature_y, signature_width, signature_height
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      name,
+      relativePath,
+      hasSignature,
+      hasSignature ? signaturePage : null,
+      hasSignature ? signatureX : null,
+      hasSignature ? signatureY : null,
+      hasSignature ? signatureWidth : null,
+      hasSignature ? signatureHeight : null
+    );
 
     res.status(201).json({
       success: true,
@@ -275,7 +307,14 @@ router.post('/hq/custom-templates', upload.single('file'), (req, res) => {
         id: result.lastInsertRowid,
         name,
         file_path: relativePath,
-        has_signature: hasSignature
+        has_signature: hasSignature,
+        signature_placement: hasSignature ? {
+          page: signaturePage,
+          x: signatureX,
+          y: signatureY,
+          width: signatureWidth,
+          height: signatureHeight
+        } : null
       }
     });
   } catch (error) {
@@ -310,7 +349,10 @@ router.get('/site/templates', (req, res) => {
   try {
     const metadataMap = getTemplateMetadataMap();
     const custom = db.prepare(`
-      SELECT id, name, has_signature FROM custom_form_templates ORDER BY created_at DESC
+      SELECT id, name, has_signature,
+             signature_page, signature_x, signature_y, signature_width, signature_height
+      FROM custom_form_templates
+      ORDER BY created_at DESC
     `).all();
 
     const builtInTemplates = Object.values(TEMPLATE_DEFS).map(({ key, label, defaultText }) => {
@@ -331,7 +373,14 @@ router.get('/site/templates', (req, res) => {
         label: meta.display_name?.trim() || t.name,
         template_text: meta.template_text ?? '',
         is_custom_pdf: true,
-        has_signature: t.has_signature === 1
+        has_signature: t.has_signature === 1,
+        signature_placement: t.has_signature === 1 ? {
+          page: t.signature_page,
+          x: t.signature_x,
+          y: t.signature_y,
+          width: t.signature_width,
+          height: t.signature_height
+        } : null
       };
     });
 
@@ -748,7 +797,12 @@ router.get('/site/dispatches/:id', (req, res) => {
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
              fd.payload_json, fd.custom_template_id, fd.has_signature, fd.signed_at,
              b.name AS building_name,
-             cft.name AS custom_template_name, cft.file_path AS custom_template_file
+             cft.name AS custom_template_name, cft.file_path AS custom_template_file,
+             cft.signature_page AS custom_signature_page,
+             cft.signature_x AS custom_signature_x,
+             cft.signature_y AS custom_signature_y,
+             cft.signature_width AS custom_signature_width,
+             cft.signature_height AS custom_signature_height
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       LEFT JOIN custom_form_templates cft ON cft.id = fd.custom_template_id
@@ -767,7 +821,14 @@ router.get('/site/dispatches/:id', (req, res) => {
         template_text: presentation.template_text,
         is_custom_pdf: true,
         pdf_url: dispatch.custom_template_file,
-        has_signature: dispatch.has_signature === 1
+        has_signature: dispatch.has_signature === 1,
+        signature_placement: dispatch.has_signature === 1 ? {
+          page: dispatch.custom_signature_page,
+          x: dispatch.custom_signature_x,
+          y: dispatch.custom_signature_y,
+          width: dispatch.custom_signature_width,
+          height: dispatch.custom_signature_height
+        } : null
       };
     } else {
       const baseTemplate = TEMPLATE_DEFS[dispatch.template_key];

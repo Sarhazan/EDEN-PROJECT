@@ -47,6 +47,8 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const [uploadDragOver, setUploadDragOver] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [signaturePlacement, setSignaturePlacement] = useState({ page: 1, x: '', y: '', width: '', height: '' });
+  const [signaturePlacementSaved, setSignaturePlacementSaved] = useState(false);
   const fileInputRef = useRef(null);
 
   const load = async () => {
@@ -187,10 +189,34 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     }
   };
 
+  const saveSignaturePlacement = () => {
+    const page = Number(signaturePlacement.page);
+    const x = Number(signaturePlacement.x);
+    const y = Number(signaturePlacement.y);
+    const width = Number(signaturePlacement.width);
+    const height = Number(signaturePlacement.height);
+
+    const valid = Number.isFinite(page) && page >= 1
+      && Number.isFinite(x) && x >= 0
+      && Number.isFinite(y) && y >= 0
+      && Number.isFinite(width) && width > 0
+      && Number.isFinite(height) && height > 0;
+
+    if (!valid) {
+      setUploadError('יש להזין מיקום חתימה תקין: עמוד + X/Y + רוחב/גובה');
+      setSignaturePlacementSaved(false);
+      return;
+    }
+
+    setUploadError('');
+    setSignaturePlacementSaved(true);
+  };
+
   const submitUpload = async () => {
     if (!uploadFile) return setUploadError('נא לבחור קובץ PDF');
     if (!uploadName.trim()) return setUploadError('נא לתת שם לטופס');
     if (uploadHasSignature === null) return setUploadError('נא לבחור אם נדרשת חתימה');
+    if (uploadHasSignature && !signaturePlacementSaved) return setUploadError('יש לשמור מיקום חתימה לפני שמירת התבנית');
 
     setUploading(true);
     setUploadError('');
@@ -199,12 +225,21 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       fd.append('file', uploadFile);
       fd.append('name', uploadName.trim());
       fd.append('has_signature', uploadHasSignature ? '1' : '0');
+      if (uploadHasSignature) {
+        fd.append('signature_page', String(signaturePlacement.page));
+        fd.append('signature_x', String(signaturePlacement.x));
+        fd.append('signature_y', String(signaturePlacement.y));
+        fd.append('signature_width', String(signaturePlacement.width));
+        fd.append('signature_height', String(signaturePlacement.height));
+      }
       fd.append('mode', 'pdf_template');
       const res = await fetch(`${API_URL}/forms/hq/custom-templates`, { method: 'POST', body: fd });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'שגיאה בהעלאה');
       setShowUploadModal(false);
       setUploadFile(null); setUploadName(''); setUploadHasSignature(null);
+      setSignaturePlacement({ page: 1, x: '', y: '', width: '', height: '' });
+      setSignaturePlacementSaved(false);
       await load();
     } catch (e) {
       setUploadError(e.message || 'שגיאה בהעלאה');
@@ -366,9 +401,26 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
             </div>
             <input className="w-full border border-gray-200 rounded-lg px-3 py-2" value={uploadName} onChange={(e) => setUploadName(e.target.value)} placeholder="שם הטופס" />
             <div className="flex gap-2">
-              <button onClick={() => setUploadHasSignature(true)} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === true ? 'bg-indigo-600 text-white' : ''}`}>עם חתימה</button>
-              <button onClick={() => setUploadHasSignature(false)} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === false ? 'bg-gray-600 text-white' : ''}`}>ללא חתימה</button>
+              <button onClick={() => { setUploadHasSignature(true); setSignaturePlacementSaved(false); }} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === true ? 'bg-indigo-600 text-white' : ''}`}>עם חתימה</button>
+              <button onClick={() => { setUploadHasSignature(false); setSignaturePlacementSaved(false); }} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === false ? 'bg-gray-600 text-white' : ''}`}>ללא חתימה</button>
             </div>
+
+            {uploadHasSignature === true && (
+              <div className="space-y-3 border border-indigo-100 bg-indigo-50/40 rounded-lg p-3">
+                <div className="text-sm font-semibold">שלב מיקום חתימה (חובה)</div>
+                <div className="text-xs text-gray-600">הגדר מיקום חתימה על גבי ה-PDF: עמוד + X/Y + רוחב/גובה</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="number" min="1" className="border rounded-lg px-3 py-2" placeholder="עמוד" value={signaturePlacement.page} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, page: e.target.value })); setSignaturePlacementSaved(false); }} />
+                  <input type="number" min="0" className="border rounded-lg px-3 py-2" placeholder="X" value={signaturePlacement.x} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, x: e.target.value })); setSignaturePlacementSaved(false); }} />
+                  <input type="number" min="0" className="border rounded-lg px-3 py-2" placeholder="Y" value={signaturePlacement.y} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, y: e.target.value })); setSignaturePlacementSaved(false); }} />
+                  <input type="number" min="1" className="border rounded-lg px-3 py-2" placeholder="רוחב" value={signaturePlacement.width} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, width: e.target.value })); setSignaturePlacementSaved(false); }} />
+                  <input type="number" min="1" className="border rounded-lg px-3 py-2 col-span-2" placeholder="גובה" value={signaturePlacement.height} onChange={(e) => { setSignaturePlacement((p) => ({ ...p, height: e.target.value })); setSignaturePlacementSaved(false); }} />
+                </div>
+                <button type="button" onClick={saveSignaturePlacement} className="w-full border border-indigo-300 text-indigo-700 py-2 rounded-lg">שמור מיקום חתימה</button>
+                {signaturePlacementSaved && <div className="text-xs text-green-700">✓ מיקום חתימה נשמר. אפשר לשמור את התבנית.</div>}
+              </div>
+            )}
+
             {uploadError && <div className="text-red-600 text-sm">{uploadError}</div>}
             <button onClick={submitUpload} disabled={uploading} className="w-full bg-indigo-600 text-white py-2.5 rounded-lg">{uploading ? 'מעלה...' : 'שמור טופס'}</button>
           </div>

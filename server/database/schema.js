@@ -598,6 +598,11 @@ function initializeDatabase() {
       name TEXT NOT NULL,
       file_path TEXT NOT NULL,
       has_signature INTEGER NOT NULL DEFAULT 0,
+      signature_page INTEGER,
+      signature_x REAL,
+      signature_y REAL,
+      signature_width REAL,
+      signature_height REAL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -739,6 +744,46 @@ function initializeDatabase() {
 
   try {
     db.exec(`ALTER TABLE form_dispatches ADD COLUMN delivery_error TEXT`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE custom_form_templates ADD COLUMN signature_page INTEGER`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE custom_form_templates ADD COLUMN signature_x REAL`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE custom_form_templates ADD COLUMN signature_y REAL`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE custom_form_templates ADD COLUMN signature_width REAL`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
+    db.exec(`ALTER TABLE custom_form_templates ADD COLUMN signature_height REAL`);
   } catch (e) {
     if (!e.message.includes('duplicate column')) {
       throw e;
