@@ -302,11 +302,11 @@ router.get('/site/templates', (req, res) => {
 // Site manager: recipients lookup (for structured sending)
 router.get('/site/recipients', (req, res) => {
   try {
-    const type = String(req.query.type || '').trim(); // tenant | supplier
+    const type = String(req.query.type || '').trim(); // tenant | supplier | group
     const buildingId = Number(req.query.buildingId || 0);
 
-    if (!['tenant', 'supplier'].includes(type)) {
-      return res.status(400).json({ error: 'type חייב להיות tenant או supplier' });
+    if (!['tenant', 'supplier', 'group'].includes(type)) {
+      return res.status(400).json({ error: 'type חייב להיות tenant, group או supplier' });
     }
 
     if (type === 'tenant') {
@@ -320,6 +320,16 @@ router.get('/site/recipients', (req, res) => {
       `).all(buildingId);
 
       return res.json({ items: tenants });
+    }
+
+    if (type === 'group') {
+      const groups = db.prepare(`
+        SELECT id, name
+        FROM buildings
+        ORDER BY name ASC
+      `).all();
+
+      return res.json({ items: groups.map((g) => ({ ...g, recipient_type: 'group' })) });
     }
 
     const suppliers = db.prepare(`
@@ -339,7 +349,7 @@ router.post('/site/send', async (req, res) => {
   try {
     const {
       templateKey,
-      recipientType, // supplier | tenant
+      recipientType, // supplier | tenant | group
       recipientId,
       buildingId,
       recipientName,
@@ -362,7 +372,7 @@ router.post('/site/send', async (req, res) => {
     } else if (!TEMPLATE_DEFS[templateKey]) {
       return res.status(400).json({ error: 'סוג טופס לא מוכר' });
     }
-    if (!recipientType || !['supplier', 'tenant'].includes(recipientType)) return res.status(400).json({ error: 'סוג נמען לא תקין' });
+    if (!recipientType || !['supplier', 'tenant', 'group'].includes(recipientType)) return res.status(400).json({ error: 'סוג נמען לא תקין' });
 
     const parsedRecipientId = recipientId ? Number(recipientId) : null;
     const parsedBuildingId = buildingId ? Number(buildingId) : null;
@@ -415,6 +425,25 @@ router.post('/site/send', async (req, res) => {
 
       if (!resolvedName) {
         return res.status(400).json({ error: 'שם נמען הוא שדה חובה' });
+      }
+    }
+
+    if (recipientType === 'group') {
+      const groupId = parsedRecipientId || parsedBuildingId;
+      if (groupId) {
+        const building = db.prepare(`
+          SELECT id, name
+          FROM buildings
+          WHERE id = ?
+        `).get(groupId);
+
+        if (!building) return res.status(400).json({ error: 'קבוצה/מבנה לא נמצאו' });
+        resolvedBuildingId = building.id;
+        resolvedName = resolvedName || `קבוצת ${building.name}`;
+      }
+
+      if (!resolvedName) {
+        return res.status(400).json({ error: 'שם קבוצה הוא שדה חובה' });
       }
     }
 
@@ -551,6 +580,77 @@ router.get('/site/dispatches', (req, res) => {
     `).all();
 
     res.json({ items: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/site/dispatches/pending-signature', (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
+             fd.status, fd.created_at, fd.opened_at, fd.submitted_at, fd.signed_at,
+             fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
+             fd.building_id, b.name AS building_name
+      FROM form_dispatches fd
+      LEFT JOIN buildings b ON b.id = fd.building_id
+      WHERE fd.has_signature = 1
+        AND fd.status IN ('sent', 'opened', 'submitted')
+      ORDER BY fd.created_at DESC
+      LIMIT 200
+    `).all();
+
+    res.json({ items: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/site/dispatches/sent-today', (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
+             fd.status, fd.created_at, fd.opened_at, fd.submitted_at, fd.signed_at,
+             fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
+             fd.building_id, b.name AS building_name
+      FROM form_dispatches fd
+      LEFT JOIN buildings b ON b.id = fd.building_id
+      WHERE DATE(fd.created_at, 'localtime') = DATE('now', 'localtime')
+      ORDER BY fd.created_at DESC
+      LIMIT 200
+    `).all();
+
+    res.json({ items: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/site/dispatches/history', (req, res) => {
+  try {
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
+    const offset = (page - 1) * limit;
+
+    const totalRow = db.prepare('SELECT COUNT(*) AS total FROM form_dispatches').get();
+    const rows = db.prepare(`
+      SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
+             fd.status, fd.created_at, fd.opened_at, fd.submitted_at, fd.signed_at,
+             fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
+             fd.building_id, b.name AS building_name
+      FROM form_dispatches fd
+      LEFT JOIN buildings b ON b.id = fd.building_id
+      ORDER BY fd.created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(limit, offset);
+
+    res.json({
+      items: rows,
+      page,
+      limit,
+      total: totalRow?.total || 0,
+      hasMore: offset + rows.length < (totalRow?.total || 0)
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

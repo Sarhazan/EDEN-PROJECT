@@ -1,0 +1,289 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { API_URL } from '../../config';
+import { useApp } from '../../context/AppContext';
+
+const STATUS_LABELS = { sent: 'נשלח', opened: 'נפתח', submitted: 'הוגש', signed: 'נחתם' };
+const STATUS_COLORS = {
+  sent: 'bg-blue-100 text-blue-700',
+  opened: 'bg-yellow-100 text-yellow-700',
+  submitted: 'bg-green-100 text-green-700',
+  signed: 'bg-purple-100 text-purple-700'
+};
+
+export default function TemplateCenter({ title = 'מרכז תבניות', subtitle = 'בחר תבנית ושלח בלחיצה' }) {
+  const { buildings } = useApp();
+  const [templates, setTemplates] = useState([]);
+  const [pendingSignature, setPendingSignature] = useState([]);
+  const [sentToday, setSentToday] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [activeTab, setActiveTab] = useState('pending');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [recipients, setRecipients] = useState([]);
+
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [form, setForm] = useState({
+    recipientType: 'tenant',
+    buildingId: '',
+    recipientId: '',
+    recipientName: '',
+    recipientContact: '',
+    title: '',
+    message: '',
+    amount: '',
+    deliveryMode: 'manual'
+  });
+
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadName, setUploadName] = useState('');
+  const [uploadHasSignature, setUploadHasSignature] = useState(null);
+  const [uploadDragOver, setUploadDragOver] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const load = async () => {
+    setError('');
+    try {
+      const [tRes, pRes, sRes, hRes] = await Promise.all([
+        fetch(`${API_URL}/forms/site/templates`),
+        fetch(`${API_URL}/forms/site/dispatches/pending-signature`),
+        fetch(`${API_URL}/forms/site/dispatches/sent-today`),
+        fetch(`${API_URL}/forms/site/dispatches/history?limit=100&page=1`)
+      ]);
+      const [tData, pData, sData, hData] = await Promise.all([tRes.json(), pRes.json(), sRes.json(), hRes.json()]);
+      if (!tRes.ok || !pRes.ok || !sRes.ok || !hRes.ok) throw new Error(tData.error || pData.error || sData.error || hData.error || 'שגיאה בטעינת מרכז התבניות');
+      setTemplates(tData.templates || []);
+      setPendingSignature(pData.items || []);
+      setSentToday(sData.items || []);
+      setHistory(hData.items || []);
+    } catch (e) {
+      setError(e.message || 'שגיאה בטעינת טפסים');
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (form.recipientType === 'tenant' && !form.buildingId && buildings.length > 0) {
+      setForm((p) => ({ ...p, buildingId: String(buildings[0].id) }));
+      return;
+    }
+
+    const fetchRecipients = async () => {
+      try {
+        const params = new URLSearchParams({ type: form.recipientType });
+        if (form.recipientType === 'tenant' && form.buildingId) params.set('buildingId', form.buildingId);
+        if (form.recipientType === 'tenant' && !form.buildingId) return setRecipients([]);
+        const res = await fetch(`${API_URL}/forms/site/recipients?${params.toString()}`);
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'שגיאה בטעינת נמענים');
+        setRecipients(payload.items || []);
+      } catch (e) {
+        setRecipients([]);
+        setError(e.message || 'שגיאה בטעינת נמענים');
+      }
+    };
+
+    fetchRecipients();
+  }, [form.recipientType, form.buildingId, buildings]);
+
+  const selectedRecipient = useMemo(() => recipients.find((r) => String(r.id) === String(form.recipientId)) || null, [recipients, form.recipientId]);
+  useEffect(() => {
+    if (!selectedRecipient) return;
+    setForm((p) => ({
+      ...p,
+      recipientName: selectedRecipient.name || '',
+      recipientContact: selectedRecipient.phone || selectedRecipient.email || ''
+    }));
+  }, [selectedRecipient]);
+
+  const openSend = (template) => {
+    setSelectedTemplate(template);
+    setForm((p) => ({ ...p, recipientId: '', recipientName: '', recipientContact: '', title: '', message: '', amount: '' }));
+    setSendOpen(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const send = async (e) => {
+    e.preventDefault();
+    if (!selectedTemplate) return;
+    setError('');
+    setSuccess('');
+
+    try {
+      const payload = { ...form, templateKey: selectedTemplate.key };
+      if (!payload.recipientName?.trim()) throw new Error('נא לבחור/להזין נמען');
+      if (payload.recipientType === 'tenant' && !payload.buildingId) throw new Error('נא לבחור מבנה');
+
+      const res = await fetch(`${API_URL}/forms/site/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'שגיאה בשליחה');
+      setSuccess(`נשלח בהצלחה: ${data.formUrl}`);
+      setSendOpen(false);
+      await load();
+    } catch (e2) {
+      setError(e2.message || 'שגיאה בשליחה');
+    }
+  };
+
+  const submitUpload = async () => {
+    if (!uploadFile) return setUploadError('נא לבחור קובץ PDF');
+    if (!uploadName.trim()) return setUploadError('נא לתת שם לטופס');
+    if (uploadHasSignature === null) return setUploadError('נא לבחור אם נדרשת חתימה');
+
+    setUploading(true);
+    setUploadError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', uploadFile);
+      fd.append('name', uploadName.trim());
+      fd.append('has_signature', uploadHasSignature ? '1' : '0');
+      fd.append('mode', 'pdf_template');
+      const res = await fetch(`${API_URL}/forms/hq/custom-templates`, { method: 'POST', body: fd });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'שגיאה בהעלאה');
+      setShowUploadModal(false);
+      setUploadFile(null); setUploadName(''); setUploadHasSignature(null);
+      await load();
+    } catch (e) {
+      setUploadError(e.message || 'שגיאה בהעלאה');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const tabData = activeTab === 'pending' ? pendingSignature : activeTab === 'today' ? sentToday : history;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">{title}</h1>
+          <p className="text-gray-600 mt-1">{subtitle}</p>
+        </div>
+        <button onClick={() => setShowUploadModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">📄 טען טופס</button>
+      </div>
+
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
+      {success && <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3">{success}</div>}
+
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {templates.map((template) => (
+          <div key={template.key} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+            <div className="font-semibold text-lg">{template.label}</div>
+            <div className="text-xs text-gray-500">{template.is_custom_pdf ? 'תבנית PDF מותאמת' : 'תבנית מערכת'}</div>
+            <button onClick={() => openSend(template)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">שלח תבנית</button>
+          </div>
+        ))}
+      </section>
+
+      <section className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setActiveTab('pending')} className={`px-3 py-2 rounded-lg text-sm ${activeTab === 'pending' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>ממתין לחתימה</button>
+          <button onClick={() => setActiveTab('today')} className={`px-3 py-2 rounded-lg text-sm ${activeTab === 'today' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>נשלח היום</button>
+          <button onClick={() => setActiveTab('history')} className={`px-3 py-2 rounded-lg text-sm ${activeTab === 'history' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>היסטוריה</button>
+        </div>
+
+        {tabData.length === 0 ? <div className="text-gray-500">אין נתונים להצגה</div> : (
+          <div className="space-y-2">
+            {tabData.map((h) => (
+              <div key={h.id} className="border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">#{h.id} • {h.recipient_name}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[h.status] || 'bg-gray-100 text-gray-600'}`}>{STATUS_LABELS[h.status] || h.status}</span>
+                </div>
+                <div className="text-sm text-gray-500">{h.template_key} | {h.building_name || '-'} | {h.recipient_contact || '-'}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {sendOpen && selectedTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form onSubmit={send} className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 space-y-3" dir="rtl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold">שליחת תבנית: {selectedTemplate.label}</h3>
+              <button type="button" onClick={() => setSendOpen(false)} className="text-2xl text-gray-500">×</button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-3">
+              <label className="text-sm">קהל יעד
+                <select className="mt-1 w-full border rounded-lg px-3 py-2" value={form.recipientType} onChange={(e) => setForm((p) => ({ ...p, recipientType: e.target.value, recipientId: '', recipientName: '', recipientContact: '' }))}>
+                  <option value="tenant">דייר</option>
+                  <option value="group">קבוצה</option>
+                  <option value="supplier">ספק</option>
+                </select>
+              </label>
+
+              <label className="text-sm">מבנה/קבוצה
+                <select className="mt-1 w-full border rounded-lg px-3 py-2" value={form.buildingId} onChange={(e) => setForm((p) => ({ ...p, buildingId: e.target.value, recipientId: '', recipientName: '', recipientContact: '' }))}>
+                  <option value="">בחר מבנה</option>
+                  {buildings.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </label>
+
+              <label className="text-sm">בחירת נמען
+                <select className="mt-1 w-full border rounded-lg px-3 py-2" value={form.recipientId} onChange={(e) => setForm((p) => ({ ...p, recipientId: e.target.value }))}>
+                  <option value="">בחר</option>
+                  {recipients.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </label>
+
+              <label className="text-sm">שם נמען
+                <input className="mt-1 w-full border rounded-lg px-3 py-2" value={form.recipientName} onChange={(e) => setForm((p) => ({ ...p, recipientName: e.target.value }))} />
+              </label>
+
+              <label className="text-sm">טלפון/אימייל
+                <input className="mt-1 w-full border rounded-lg px-3 py-2" value={form.recipientContact} onChange={(e) => setForm((p) => ({ ...p, recipientContact: e.target.value }))} />
+              </label>
+
+              <label className="text-sm">כותרת
+                <input className="mt-1 w-full border rounded-lg px-3 py-2" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+              </label>
+            </div>
+
+            <label className="text-sm block">הודעה
+              <textarea className="mt-1 w-full border rounded-lg px-3 py-2" rows={3} value={form.message} onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))} />
+            </label>
+
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setSendOpen(false)} className="px-4 py-2 border rounded-lg">ביטול</button>
+              <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg">שלח</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5" dir="rtl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">טען טופס PDF</h2>
+              <button onClick={() => setShowUploadModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+            </div>
+            <div onDragOver={(e) => { e.preventDefault(); setUploadDragOver(true); }} onDragLeave={() => setUploadDragOver(false)} onDrop={(e) => { e.preventDefault(); setUploadDragOver(false); const f = e.dataTransfer?.files?.[0]; if (f) setUploadFile(f); }} onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer ${uploadDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50'}`}>
+              <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
+              {uploadFile ? <div className="font-semibold">{uploadFile.name}</div> : <div className="text-sm text-gray-500">גרור או לחץ לבחירת PDF</div>}
+            </div>
+            <input className="w-full border border-gray-200 rounded-lg px-3 py-2" value={uploadName} onChange={(e) => setUploadName(e.target.value)} placeholder="שם הטופס" />
+            <div className="flex gap-2">
+              <button onClick={() => setUploadHasSignature(true)} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === true ? 'bg-indigo-600 text-white' : ''}`}>עם חתימה</button>
+              <button onClick={() => setUploadHasSignature(false)} className={`flex-1 py-2 rounded-lg border ${uploadHasSignature === false ? 'bg-gray-600 text-white' : ''}`}>ללא חתימה</button>
+            </div>
+            {uploadError && <div className="text-red-600 text-sm">{uploadError}</div>}
+            <button onClick={submitUpload} disabled={uploading} className="w-full bg-indigo-600 text-white py-2.5 rounded-lg">{uploading ? 'מעלה...' : 'שמור טופס'}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
