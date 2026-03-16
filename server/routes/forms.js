@@ -31,8 +31,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 const whatsappService = require('../services/whatsapp');
 
-const LIVE_ALLOWLIST_RAW = process.env.FORMS_LIVE_ALLOWLIST || '0549441093';
-
 function normalizePhone(input) {
   const digits = String(input || '').replace(/\D/g, '');
   if (!digits) return '';
@@ -40,20 +38,13 @@ function normalizePhone(input) {
   return `972${digits.replace(/^0+/, '')}`;
 }
 
-function getLiveAllowlist() {
-  return LIVE_ALLOWLIST_RAW
-    .split(',')
-    .map((s) => normalizePhone(s.trim()))
-    .filter(Boolean);
-}
-
 function buildDispatchMessage(dispatch, payload) {
   const fallbackLabel = TEMPLATE_DEFS[dispatch.template_key]?.label || payload?.templateLabel || dispatch.template_key;
   const resolvedTemplateLabel = payload?.templateLabel || resolveTemplatePresentation(dispatch.template_key, fallbackLabel).label;
   const formUrl = `/forms/fill/${dispatch.id}`;
-  const contentText = payload?.templateText || payload?.message;
 
   const isSignedCustomPdf = Boolean(payload?.isSignedCustomPdf);
+  const contentText = isSignedCustomPdf ? null : (payload?.templateText || payload?.message);
   const introLines = isSignedCustomPdf
     ? [
         `שלום ${dispatch.recipient_name}`,
@@ -710,25 +701,17 @@ router.post('/site/send', async (req, res) => {
     let deliveryError = null;
 
     if (resolvedDeliveryMode === 'live') {
-      const normalizedRecipient = normalizePhone(resolvedContact);
-      const allowlist = getLiveAllowlist();
-
-      if (!normalizedRecipient || !allowlist.includes(normalizedRecipient)) {
-        finalDeliveryStatus = 'blocked';
-        deliveryError = 'מספר לא מורשה ל-LIVE';
+      const waStatus = whatsappService.getStatus();
+      if (!waStatus.isReady) {
+        finalDeliveryStatus = 'failed';
+        deliveryError = 'וואטסאפ לא מחובר';
       } else {
-        const waStatus = whatsappService.getStatus();
-        if (!waStatus.isReady) {
+        try {
+          await whatsappService.sendMessage(resolvedContact, previewMessage);
+          finalDeliveryStatus = 'sent';
+        } catch (sendError) {
           finalDeliveryStatus = 'failed';
-          deliveryError = 'וואטסאפ לא מחובר';
-        } else {
-          try {
-            await whatsappService.sendMessage(resolvedContact, previewMessage);
-            finalDeliveryStatus = 'sent';
-          } catch (sendError) {
-            finalDeliveryStatus = 'failed';
-            deliveryError = sendError.message || 'send failed';
-          }
+          deliveryError = sendError.message || 'send failed';
         }
       }
 
@@ -1144,7 +1127,7 @@ router.get('/hq/dispatches/:id/delivery-preview', (req, res) => {
   }
 });
 
-// HQ: send live via WhatsApp (explicit, allowlist-protected)
+// HQ: send live via WhatsApp (explicit)
 router.post('/hq/dispatches/:id/send-live', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -1158,15 +1141,6 @@ router.post('/hq/dispatches/:id/send-live', async (req, res) => {
     `).get(id);
 
     if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
-
-    const normalizedRecipient = normalizePhone(dispatch.recipient_contact);
-    const allowlist = getLiveAllowlist();
-    if (!normalizedRecipient || !allowlist.includes(normalizedRecipient)) {
-      return res.status(403).json({
-        error: 'המספר לא מורשה לשליחת LIVE',
-        details: 'השליחה בלייב מוגבלת למספרי TEST בלבד'
-      });
-    }
 
     const status = whatsappService.getStatus();
     if (!status.isReady) {

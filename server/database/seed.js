@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const { db } = require('./schema');
 const { addDays, addMonths, addWeeks, format } = require('date-fns');
 
@@ -66,25 +68,34 @@ function seedDatabase() {
   insertLocation.run('גינה קדמית', 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=800', '32.0856', '34.7821');
   insertLocation.run('חדר מכונות - קומה 1', 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800', '32.0853', '34.7819');
 
-  // Insert buildings
+  // Insert buildings (keep demo set small and consistent: up to two)
   const insertBuilding = db.prepare(`
     INSERT INTO buildings (name)
     VALUES (?)
   `);
   insertBuilding.run('מגדל הרצל 27');
   insertBuilding.run('בית הים 4');
-  insertBuilding.run('מגדל הגפן 12');
 
-  // Insert tenants
+  // Insert tenants (include a persistent test tenant + richer demo details)
   const insertTenant = db.prepare(`
     INSERT INTO tenants (name, phone, email, apartment_number, floor, building_id, notes)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
-  insertTenant.run('נועה כהן', '0501111111', 'noa.cohen@example.com', '12', '3', 1, 'מעדיפה הודעות וואטסאפ בשעות הערב');
-  insertTenant.run('יואב לוי', '0502222222', 'yoav.levi@example.com', '21', '7', 2, 'מבקש תיאום מראש לפני כניסה לדירה');
-  insertTenant.run('רוני מזרחי', '0523004455', 'roni.mizrahi@example.com', '5', '1', 3, 'חדש בבניין, קוד אינטרקום 4505');
-  insertTenant.run('ליאת פרץ', '0546677881', 'liat.peretz@example.com', '18', '4', 3, 'עובדת משמרות - עדיף ליצור קשר אחרי 16:00');
-  insertTenant.run('אמיר חדד', '0538899002', 'amir.hadad@example.com', '23', '6', 1, 'רגיש לרעש בבוקר מוקדם');
+
+  const demoTenants = [
+    ['עדן קנדי', '0539441903', 'eden.kendi@example.com', '2', '1', 1, 'דיירת בדיקות קבועה לזרימת שליחת טפסים'],
+    ['נועה כהן', '0501111111', 'noa.cohen@example.com', '12', '3', 1, 'מעדיפה הודעות וואטסאפ בשעות הערב'],
+    ['אמיר חדד', '0538899002', 'amir.hadad@example.com', '23', '6', 1, 'רגיש לרעש בבוקר מוקדם'],
+    ['שירה דגן', '0526773210', 'shira.dagan@example.com', '8', '2', 1, 'מבקשת תיעוד מסודר לכל פנייה'],
+    ['יואב לוי', '0502222222', 'yoav.levi@example.com', '21', '7', 2, 'מבקש תיאום מראש לפני כניסה לדירה'],
+    ['רוני מזרחי', '0523004455', 'roni.mizrahi@example.com', '5', '1', 2, 'חדש בבניין, קוד אינטרקום 4505'],
+    ['ליאת פרץ', '0546677881', 'liat.peretz@example.com', '18', '4', 2, 'עובדת משמרות - עדיף ליצור קשר אחרי 16:00'],
+    ['גיא נבון', '0509094433', 'guy.navon@example.com', '14', '5', 2, 'זמין בעיקר בוואטסאפ ולא בשיחות קוליות']
+  ];
+
+  for (const tenant of demoTenants) {
+    insertTenant.run(...tenant);
+  }
 
   // Insert tasks
   const insertTask = db.prepare(`
@@ -158,7 +169,44 @@ function seedDefaultLanguages() {
   }
 }
 
+function resolveLocalUploadPath(filePathValue) {
+  if (!filePathValue) return null;
+  const normalized = String(filePathValue).replace(/\\/g, '/').replace(/^\/+/, '');
+  return path.join(__dirname, '..', '..', normalized);
+}
+
+function safeDeleteFile(filePathValue) {
+  const absolute = resolveLocalUploadPath(filePathValue);
+  if (!absolute) return;
+
+  try {
+    if (fs.existsSync(absolute) && fs.statSync(absolute).isFile()) {
+      fs.unlinkSync(absolute);
+    }
+  } catch (error) {
+    console.warn(`[seed.clearDatabase] Failed to delete file ${absolute}: ${error.message}`);
+  }
+}
+
+function clearDemoUploadedAssets() {
+  const templateFiles = db.prepare(`
+    SELECT file_path
+    FROM custom_form_templates
+    WHERE file_path IS NOT NULL AND TRIM(file_path) <> ''
+  `).all();
+
+  const contractFiles = db.prepare(`
+    SELECT file_path
+    FROM building_contracts
+    WHERE file_path IS NOT NULL AND TRIM(file_path) <> ''
+  `).all();
+
+  [...templateFiles, ...contractFiles].forEach((row) => safeDeleteFile(row.file_path));
+}
+
 function clearDatabase() {
+  clearDemoUploadedAssets();
+
   const tableRows = db.prepare(`
     SELECT name
     FROM sqlite_master

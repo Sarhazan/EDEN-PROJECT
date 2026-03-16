@@ -47,7 +47,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     title: '',
     message: '',
     amount: '',
-    deliveryMode: 'manual'
+    deliveryMode: 'live'
   });
 
   const [showUploadModal, setShowUploadModal] = useState(false);
