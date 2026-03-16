@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { API_URL } from '../config';
+import { API_URL, BACKEND_URL } from '../config';
 
 // Simple canvas-based signature pad
 function SignaturePad({ onSignature, disabled }) {
@@ -180,6 +180,9 @@ export default function FormFillPage() {
   const isCustomPdf = item.template?.is_custom_pdf;
   const hasSignature = item.has_signature;
   const isDone = item.status === 'submitted' || item.status === 'signed';
+  const pdfUrl = item.template?.pdf_url
+    ? (String(item.template.pdf_url).startsWith('http') ? item.template.pdf_url : `${BACKEND_URL}${item.template.pdf_url}`)
+    : null;
   const signedCustomIntro = isCustomPdf && hasSignature ? [
     `שלום ${item.recipient_name}`,
     `טופס ${item.template?.label || 'טופס'} נשלח אלייך לחתימה`,
@@ -201,7 +204,7 @@ export default function FormFillPage() {
           )}
           {item.building_name && <p className="text-gray-600">מבנה: {item.building_name}</p>}
           {item.payload?.title && <p className="text-gray-800 font-medium">{item.payload.title}</p>}
-          {item.payload?.message && <p className="text-gray-700 whitespace-pre-wrap">{item.payload.message}</p>}
+          {item.payload?.message && !signedCustomIntro && <p className="text-gray-700 whitespace-pre-wrap">{item.payload.message}</p>}
           {item.payload?.amount && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-800 mt-2">
               סכום לתשלום: {item.payload.amount}
@@ -215,16 +218,16 @@ export default function FormFillPage() {
         </div>
 
         {/* PDF Viewer */}
-        {isCustomPdf && item.template.pdf_url && (
+        {isCustomPdf && pdfUrl && (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700">מסמך לעיון</span>
-              <a href={item.template.pdf_url} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline font-semibold">
+              <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline font-semibold">
                 פתח בחלון חדש ↗
               </a>
             </div>
             <a
-              href={item.template.pdf_url}
+              href={pdfUrl}
               target="_blank"
               rel="noreferrer"
               className="block mx-4 mt-3 mb-2 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-medium"
@@ -232,7 +235,7 @@ export default function FormFillPage() {
               פתח את קובץ ה‑PDF לקריאה וחתימה
             </a>
             <iframe
-              src={item.template.pdf_url}
+              src={pdfUrl}
               title="טופס PDF"
               className="w-full"
               style={{ height: '500px', border: 'none' }}
