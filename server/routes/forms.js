@@ -752,6 +752,7 @@ router.post('/site/send', async (req, res) => {
       success: true,
       dispatchId: id,
       formUrl,
+      templateLabel: templatePresentation.label,
       delivery: {
         channel: deliveryChannel,
         mode: resolvedDeliveryMode,
@@ -773,7 +774,8 @@ router.get('/site/dispatches', (req, res) => {
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
              fd.building_id, b.name AS building_name,
-             fd.tenant_id, fd.supplier_id
+             fd.tenant_id, fd.supplier_id,
+             fd.payload_json
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       ORDER BY fd.created_at DESC
@@ -792,7 +794,8 @@ router.get('/site/dispatches/pending-signature', (req, res) => {
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at, fd.signed_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
-             fd.building_id, b.name AS building_name
+             fd.building_id, b.name AS building_name,
+             fd.payload_json
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       WHERE fd.has_signature = 1
@@ -813,7 +816,8 @@ router.get('/site/dispatches/sent-today', (req, res) => {
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at, fd.signed_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
-             fd.building_id, b.name AS building_name
+             fd.building_id, b.name AS building_name,
+             fd.payload_json
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       WHERE DATE(fd.created_at, 'localtime') = DATE('now', 'localtime')
@@ -838,7 +842,8 @@ router.get('/site/dispatches/history', (req, res) => {
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at, fd.signed_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
-             fd.building_id, b.name AS building_name
+             fd.building_id, b.name AS building_name,
+             fd.payload_json
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       ORDER BY fd.created_at DESC

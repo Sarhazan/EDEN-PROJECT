@@ -180,9 +180,25 @@ export default function FormFillPage() {
   const isCustomPdf = item.template?.is_custom_pdf;
   const hasSignature = item.has_signature;
   const isDone = item.status === 'submitted' || item.status === 'signed';
-  const pdfUrl = item.template?.pdf_url
-    ? (String(item.template.pdf_url).startsWith('http') ? item.template.pdf_url : `${BACKEND_URL}${item.template.pdf_url}`)
-    : null;
+
+  const resolvePdfUrl = (rawUrl) => {
+    const value = String(rawUrl || '').trim();
+    if (!value) return null;
+
+    if (/^https?:\/\//i.test(value)) return encodeURI(value);
+
+    const normalizedPath = value.startsWith('/') ? value : `/${value}`;
+    const fallbackOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002';
+    const base = String(BACKEND_URL || '').trim() || fallbackOrigin;
+
+    try {
+      return encodeURI(new URL(normalizedPath, base).toString());
+    } catch {
+      return encodeURI(`${base.replace(/\/$/, '')}${normalizedPath}`);
+    }
+  };
+
+  const pdfUrl = resolvePdfUrl(item.template?.pdf_url);
   const signedCustomIntro = isCustomPdf && hasSignature ? [
     `שלום ${item.recipient_name}`,
     `טופס ${item.template?.label || 'טופס'} נשלח אלייך לחתימה`,

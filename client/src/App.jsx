@@ -111,7 +111,8 @@ function MainContent() {
   };
 
   // Route modes
-  const isPublicRoute = location.pathname.startsWith('/confirm/') || location.pathname.startsWith('/forms/fill/');
+  const pathname = String(location.pathname || '');
+  const isPublicRoute = pathname.includes('/confirm/') || pathname.includes('/forms/fill/');
   const isHQRoute = location.pathname.startsWith('/hq');
 
   // HQ portal auth gate (separate login/session role)

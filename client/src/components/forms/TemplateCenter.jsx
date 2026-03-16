@@ -26,6 +26,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const [activeTab, setActiveTab] = useState('pending');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [successLink, setSuccessLink] = useState('');
   const [sending, setSending] = useState(false);
   const [recipients, setRecipients] = useState([]);
 
@@ -54,6 +55,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadName, setUploadName] = useState('');
+  const [uploadSourceTemplate, setUploadSourceTemplate] = useState('');
   const [uploadHasSignature, setUploadHasSignature] = useState(null);
   const [uploadDragOver, setUploadDragOver] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -74,6 +76,24 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const pdfCanvasRef = useRef(null);
   const pdfWrapperRef = useRef(null);
 
+  const normalizeDispatchItem = (item) => {
+    let payload = {};
+    if (item?.payload_json) {
+      try {
+        payload = typeof item.payload_json === 'string' ? JSON.parse(item.payload_json) : item.payload_json;
+      } catch {
+        payload = {};
+      }
+    }
+
+    return {
+      ...item,
+      payload,
+      template_label: item?.template_label || payload?.templateLabel || '',
+      message_text: item?.message_text || payload?.templateText || payload?.message || ''
+    };
+  };
+
   const load = async () => {
     setError('');
     try {
@@ -86,9 +106,9 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       const [tData, pData, sData, hData] = await Promise.all([tRes.json(), pRes.json(), sRes.json(), hRes.json()]);
       if (!tRes.ok || !pRes.ok || !sRes.ok || !hRes.ok) throw new Error(tData.error || pData.error || sData.error || hData.error || 'שגיאה בטעינת מרכז התבניות');
       setTemplates(tData.templates || []);
-      setPendingSignature(pData.items || []);
-      setSentToday(sData.items || []);
-      setHistory(hData.items || []);
+      setPendingSignature((pData.items || []).map(normalizeDispatchItem));
+      setSentToday((sData.items || []).map(normalizeDispatchItem));
+      setHistory((hData.items || []).map(normalizeDispatchItem));
     } catch (e) {
       setError(e.message || 'שגיאה בטעינת טפסים');
     }
@@ -144,6 +164,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     setSendOpen(true);
     setError('');
     setSuccess('');
+    setSuccessLink('');
   };
 
   const openEditTemplate = (template) => {
@@ -153,6 +174,25 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       templateText: template.template_text || ''
     });
     setEditOpen(true);
+    setError('');
+  };
+
+  const openUploadForTemplate = (template) => {
+    setUploadName(template?.label || '');
+    setUploadSourceTemplate(template?.label || '');
+    setUploadFile(null);
+    setUploadHasSignature(null);
+    setUploadError('');
+    setSignaturePlacement({ page: 1, x: '', y: '', width: '', height: '' });
+    setSignaturePlacementSaved(false);
+    setPdfUrl('');
+    setPdfDoc(null);
+    setPdfPageCount(0);
+    setPdfCurrentPage(1);
+    setPdfPageSize({ width: 0, height: 0 });
+    setPdfRenderSize({ width: 0, height: 0 });
+    setSignatureBox(null);
+    setShowUploadModal(true);
     setError('');
   };
 
@@ -178,6 +218,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       setEditOpen(false);
       setEditingTemplate(null);
       setSuccess('התבנית נשמרה בהצלחה');
+      setSuccessLink('');
       await load();
     } catch (e2) {
       setError(e2.message || 'שגיאה בשמירת תבנית');
@@ -191,6 +232,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     setDeleteOpen(true);
     setError('');
     setSuccess('');
+    setSuccessLink('');
   };
 
   const confirmDeleteTemplate = async () => {
@@ -208,6 +250,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       setDeleteOpen(false);
       setTemplateToDelete(null);
       setSuccess('התבנית נמחקה בהצלחה');
+      setSuccessLink('');
       await load();
     } catch (e) {
       setError(e.message || 'שגיאה במחיקת תבנית');
@@ -221,6 +264,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     if (!selectedTemplate || sending) return;
     setError('');
     setSuccess('');
+    setSuccessLink('');
     setSending(true);
 
     try {
@@ -248,7 +292,14 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
         throw new Error(data?.delivery?.error || 'הטופס נשמר אבל לא נשלח ב-WhatsApp. בדוק חיבור ב-Settings.');
       }
 
-      setSuccess(`נשלח בהצלחה: ${data.formUrl}`);
+      const recipientPrefix = payload.recipientType === 'supplier' ? 'לספק/ית' : 'לדייר/ת';
+      const selectedBuilding = payload.recipientType === 'tenant'
+        ? buildings.find((b) => String(b.id) === String(payload.buildingId))?.name
+        : '';
+      const successMessage = `✅ נשלח טופס "${data?.templateLabel || selectedTemplate?.label || 'טופס'}" ${recipientPrefix} ${payload.recipientName}${selectedBuilding ? `, ${selectedBuilding}` : ''}`;
+
+      setSuccess(successMessage);
+      setSuccessLink(data.formUrl || '');
       setSendOpen(false);
       await load();
     } catch (e2) {
@@ -283,7 +334,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'שגיאה בהעלאה');
       setShowUploadModal(false);
-      setUploadFile(null); setUploadName(''); setUploadHasSignature(null);
+      setUploadFile(null); setUploadName(''); setUploadSourceTemplate(''); setUploadHasSignature(null);
       setSignaturePlacement({ page: 1, x: '', y: '', width: '', height: '' });
       setSignaturePlacementSaved(false);
       await load();
@@ -487,6 +538,22 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     setSignaturePlacement(placement);
   }, [signatureBox, pdfCurrentPage, pdfPageSize.width, pdfPageSize.height, uploadHasSignature]);
 
+  const formatDispatchDateTime = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleString('he-IL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getTemplateName = (dispatch) => dispatch.template_label || dispatch.payload?.templateLabel || dispatch.template_key || '-';
+  const getDispatchMessage = (dispatch) => dispatch.message_text || dispatch.payload?.templateText || dispatch.payload?.message || '';
+
   const tabData = activeTab === 'pending' ? pendingSignature : activeTab === 'today' ? sentToday : history;
 
   return (
@@ -496,11 +563,25 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <h1 className="text-3xl font-bold">{title}</h1>
           <p className="text-gray-600 mt-1">{subtitle}</p>
         </div>
-        <button onClick={() => setShowUploadModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">📄 טען טופס</button>
+        <button onClick={() => { setUploadSourceTemplate(''); setShowUploadModal(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">📄 טען טופס</button>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
-      {success && <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3">{success}</div>}
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 space-y-1">
+          <div>{success}</div>
+          {successLink && (
+            <a
+              href={successLink.startsWith('http') ? successLink : `${API_URL.replace(/\/api\/?$/, '')}${successLink}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex text-sm font-medium text-green-800 underline hover:text-green-900"
+            >
+              פתח קישור לטופס
+            </a>
+          )}
+        </div>
+      )}
 
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {templates.map((template) => (
@@ -511,9 +592,10 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               תוכן תבנית
               <textarea readOnly rows={3} value={template.template_text || ''} className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50 text-sm" />
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button onClick={() => openEditTemplate(template)} className="w-full border border-gray-300 hover:bg-gray-50 py-2 rounded-lg">עריכה</button>
               <button onClick={() => openSend(template)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">שלח תבנית</button>
+              <button onClick={() => openUploadForTemplate(template)} className="w-full border border-indigo-300 text-indigo-700 hover:bg-indigo-50 py-2 rounded-lg">הוסף קובץ</button>
               <button onClick={() => openDeleteTemplate(template)} className="w-full border border-red-300 text-red-700 hover:bg-red-50 py-2 rounded-lg">מחק</button>
             </div>
           </div>
@@ -535,7 +617,17 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                   <span className="font-medium">#{h.id} • {h.recipient_name}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[h.status] || 'bg-gray-100 text-gray-600'}`}>{STATUS_LABELS[h.status] || h.status}</span>
                 </div>
-                <div className="text-sm text-gray-500">{h.template_key} | {h.building_name || '-'} | {h.recipient_contact || '-'}</div>
+                <div className="text-sm text-gray-500">{h.building_name || '-'} | {h.recipient_contact || '-'}</div>
+                <div className="mt-2 space-y-1 text-sm" dir="rtl">
+                  <div><span className="font-medium text-gray-700">טופס:</span> <span className="text-gray-600">{getTemplateName(h)}</span></div>
+                  <div><span className="font-medium text-gray-700">נשלח ב:</span> <span className="text-gray-600">{formatDispatchDateTime(h.created_at)}</span></div>
+                  {getDispatchMessage(h) ? (
+                    <div>
+                      <span className="font-medium text-gray-700">הודעה שנשלחה:</span>
+                      <div className="mt-1 bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 whitespace-pre-wrap">{getDispatchMessage(h)}</div>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>
@@ -668,8 +760,13 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5" dir="rtl">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">טען טופס PDF</h2>
-              <button onClick={() => setShowUploadModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              <button onClick={() => { setUploadSourceTemplate(''); setShowUploadModal(false); }} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
             </div>
+            {uploadSourceTemplate && (
+              <div className="text-xs rounded-md border border-indigo-200 bg-indigo-50 text-indigo-800 px-3 py-2">
+                הועלה מתוך כרטיס תבנית: <span className="font-semibold">{uploadSourceTemplate}</span>
+              </div>
+            )}
             <div onDragOver={(e) => { e.preventDefault(); setUploadDragOver(true); }} onDragLeave={() => setUploadDragOver(false)} onDrop={(e) => { e.preventDefault(); setUploadDragOver(false); const f = e.dataTransfer?.files?.[0]; if (f) { setUploadFile(f); setUploadError(''); setSignaturePlacementSaved(false); } }} onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer ${uploadDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50'}`}>
               <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => { setUploadFile(e.target.files?.[0] || null); setUploadError(''); setSignaturePlacementSaved(false); }} />
               {uploadFile ? <div className="font-semibold">{uploadFile.name}</div> : <div className="text-sm text-gray-500">גרור או לחץ לבחירת PDF</div>}
