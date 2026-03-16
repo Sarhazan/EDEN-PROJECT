@@ -30,6 +30,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 const whatsappService = require('../services/whatsapp');
+const { buildFormFillUrl } = require('../utils/publicClientUrl');
 
 function normalizePhone(input) {
   const digits = String(input || '').replace(/\D/g, '');
@@ -38,25 +39,10 @@ function normalizePhone(input) {
   return `972${digits.replace(/^0+/, '')}`;
 }
 
-function resolvePublicBaseUrl() {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const publicClientUrl = process.env.PUBLIC_CLIENT_URL;
-  const publicApiUrl = process.env.PUBLIC_API_URL;
-  const localClientUrl = process.env.CLIENT_URL;
-
-  const rawBase = isProduction
-    ? (publicClientUrl || publicApiUrl || localClientUrl || 'http://localhost:3002')
-    : (publicClientUrl || localClientUrl || publicApiUrl || 'http://localhost:5174');
-
-  return String(rawBase || '')
-    .replace(/\/$/, '')
-    .replace(/\/api\/?$/, '');
-}
-
 function buildDispatchMessage(dispatch, payload) {
   const fallbackLabel = TEMPLATE_DEFS[dispatch.template_key]?.label || payload?.templateLabel || dispatch.template_key;
   const resolvedTemplateLabel = payload?.templateLabel || resolveTemplatePresentation(dispatch.template_key, fallbackLabel).label;
-  const formUrl = `${resolvePublicBaseUrl()}/forms/fill/${dispatch.id}`;
+  const formUrl = buildFormFillUrl(dispatch.id);
 
   const isSignedCustomPdf = Boolean(payload?.isSignedCustomPdf);
   const contentText = isSignedCustomPdf ? null : (payload?.templateText || payload?.message);
@@ -695,7 +681,7 @@ router.post('/site/send', async (req, res) => {
     );
 
     const id = result.lastInsertRowid;
-    const formUrl = `/forms/fill/${id}`;
+    const formUrl = buildFormFillUrl(id);
 
     const previewMessage = buildDispatchMessage({
       id,
@@ -1138,7 +1124,7 @@ router.get('/hq/dispatches/:id/delivery-preview', (req, res) => {
         dispatchId: dispatch.id,
         recipientName: dispatch.recipient_name,
         recipientContact: dispatch.recipient_contact,
-        formUrl: `/forms/fill/${dispatch.id}`,
+        formUrl: buildFormFillUrl(dispatch.id),
         previewMessage
       }
     });

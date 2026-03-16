@@ -572,7 +572,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <div>{success}</div>
           {successLink && (
             <a
-              href={successLink.startsWith('http') ? successLink : `${API_URL.replace(/\/api\/?$/, '')}${successLink}`}
+              href={successLink}
               target="_blank"
               rel="noreferrer"
               className="inline-flex text-sm font-medium text-green-800 underline hover:text-green-900"
