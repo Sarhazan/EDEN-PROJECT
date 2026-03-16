@@ -18,7 +18,7 @@ const STATUS_COLORS = {
 };
 
 export default function TemplateCenter({ title = 'מרכז תבניות', subtitle = 'בחר תבנית ושלח בלחיצה' }) {
-  const { buildings } = useApp();
+  const { buildings, whatsappConnected } = useApp();
   const [templates, setTemplates] = useState([]);
   const [pendingSignature, setPendingSignature] = useState([]);
   const [sentToday, setSentToday] = useState([]);
@@ -26,6 +26,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const [activeTab, setActiveTab] = useState('pending');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [sending, setSending] = useState(false);
   const [recipients, setRecipients] = useState([]);
 
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -217,12 +218,20 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
 
   const send = async (e) => {
     e.preventDefault();
-    if (!selectedTemplate) return;
+    if (!selectedTemplate || sending) return;
     setError('');
     setSuccess('');
+    setSending(true);
 
     try {
-      const payload = { ...form, templateKey: selectedTemplate.key, templateText: form.message };
+      if (!whatsappConnected) throw new Error('וואטסאפ לא מחובר');
+
+      const payload = {
+        ...form,
+        templateKey: selectedTemplate.key,
+        templateText: form.message,
+        deliveryMode: 'live'
+      };
       if (!payload.recipientName?.trim()) throw new Error('נא לבחור/להזין נמען');
       if (payload.recipientType === 'tenant' && !payload.buildingId) throw new Error('נא לבחור מבנה לפני בחירת דייר');
 
@@ -233,11 +242,19 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'שגיאה בשליחה');
+
+      const deliveryStatus = data?.delivery?.status;
+      if (deliveryStatus && deliveryStatus !== 'sent') {
+        throw new Error(data?.delivery?.error || 'הטופס נשמר אבל לא נשלח ב-WhatsApp. בדוק חיבור ב-Settings.');
+      }
+
       setSuccess(`נשלח בהצלחה: ${data.formUrl}`);
       setSendOpen(false);
       await load();
     } catch (e2) {
       setError(e2.message || 'שגיאה בשליחה');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -579,9 +596,24 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               <textarea className="mt-1 w-full border rounded-lg px-3 py-2" rows={4} value={form.message} onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))} />
             </label>
 
+            {!whatsappConnected && (
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                וואטסאפ לא מחובר. יש להתחבר ב-Settings כדי לאפשר שליחה.
+              </div>
+            )}
+
+            {error && <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
+
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setSendOpen(false)} className="px-4 py-2 border rounded-lg">ביטול</button>
-              <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg">שלח</button>
+              <button
+                type="submit"
+                disabled={!whatsappConnected || sending}
+                title={whatsappConnected ? 'שלח ב-WhatsApp' : 'וואטסאפ לא מחובר'}
+                className={`px-4 py-2 rounded-lg text-white ${(!whatsappConnected || sending) ? 'bg-gray-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+              >
+                {sending ? 'שולח...' : 'שלח'}
+              </button>
             </div>
           </form>
         </div>

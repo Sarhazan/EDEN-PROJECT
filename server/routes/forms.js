@@ -38,10 +38,25 @@ function normalizePhone(input) {
   return `972${digits.replace(/^0+/, '')}`;
 }
 
+function resolvePublicBaseUrl() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const publicClientUrl = process.env.PUBLIC_CLIENT_URL;
+  const publicApiUrl = process.env.PUBLIC_API_URL;
+  const localClientUrl = process.env.CLIENT_URL;
+
+  const rawBase = isProduction
+    ? (publicClientUrl || publicApiUrl || localClientUrl || 'http://localhost:3002')
+    : (publicClientUrl || localClientUrl || publicApiUrl || 'http://localhost:5174');
+
+  return String(rawBase || '')
+    .replace(/\/$/, '')
+    .replace(/\/api\/?$/, '');
+}
+
 function buildDispatchMessage(dispatch, payload) {
   const fallbackLabel = TEMPLATE_DEFS[dispatch.template_key]?.label || payload?.templateLabel || dispatch.template_key;
   const resolvedTemplateLabel = payload?.templateLabel || resolveTemplatePresentation(dispatch.template_key, fallbackLabel).label;
-  const formUrl = `/forms/fill/${dispatch.id}`;
+  const formUrl = `${resolvePublicBaseUrl()}/forms/fill/${dispatch.id}`;
 
   const isSignedCustomPdf = Boolean(payload?.isSignedCustomPdf);
   const contentText = isSignedCustomPdf ? null : (payload?.templateText || payload?.message);
