@@ -158,6 +158,33 @@ function resolveTemplatePresentation(templateKey, fallbackLabel, fallbackText = 
   };
 }
 
+function safeParseJson(rawValue) {
+  if (!rawValue) return null;
+  try {
+    return typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
+  } catch {
+    return null;
+  }
+}
+
+function withFriendlyTemplateLabel(rows = []) {
+  return rows.map((row) => {
+    const payload = safeParseJson(row.payload_json);
+    const builtInLabel = TEMPLATE_DEFS[row.template_key]?.label;
+    const fallbackCustom = row.template_key?.startsWith('custom_pdf_') ? 'טופס PDF מותאם' : null;
+    const templateLabel = row.template_label
+      || payload?.templateLabel
+      || builtInLabel
+      || fallbackCustom
+      || 'טופס';
+
+    return {
+      ...row,
+      template_label: templateLabel
+    };
+  });
+}
+
 // HQ: view forms assets by building
 router.get('/hq/buildings-assets', (req, res) => {
   try {
@@ -369,7 +396,7 @@ router.get('/site/templates', (req, res) => {
   try {
     const metadataMap = getTemplateMetadataMap();
     const custom = db.prepare(`
-      SELECT id, name, has_signature,
+      SELECT id, name, file_path, has_signature,
              signature_page, signature_x, signature_y, signature_width, signature_height
       FROM custom_form_templates
       ORDER BY created_at DESC
@@ -397,6 +424,7 @@ router.get('/site/templates', (req, res) => {
           label: meta.display_name?.trim() || t.name,
           template_text: meta.template_text ?? '',
           is_custom_pdf: true,
+          has_file: Boolean(t.file_path),
           has_signature: t.has_signature === 1,
           signature_placement: t.has_signature === 1 ? {
             page: t.signature_page,
@@ -472,6 +500,106 @@ router.put('/site/templates/:templateKey/metadata', (req, res) => {
       }
     });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Site manager: attach/replace PDF on existing custom template card
+router.put('/site/templates/:templateKey/attachment', upload.single('file'), (req, res) => {
+  try {
+    const templateKey = String(req.params.templateKey || '').trim();
+    if (!templateKey) return res.status(400).json({ error: 'templateKey הוא שדה חובה' });
+
+    if (!/^custom_pdf_\d+$/.test(templateKey)) {
+      if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'ניתן לצרף קובץ רק לתבניות PDF מותאמות' });
+    }
+
+    const customId = Number(templateKey.replace('custom_pdf_', ''));
+    const existing = db.prepare('SELECT * FROM custom_form_templates WHERE id = ?').get(customId);
+    if (!existing) {
+      if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.status(404).json({ error: 'תבנית מותאמת לא נמצאה' });
+    }
+
+    const hasSignature = req.body.has_signature === '1' || req.body.has_signature === 'true' ? 1 : 0;
+    const signaturePage = req.body.signature_page ? Number(req.body.signature_page) : null;
+    const signatureX = req.body.signature_x ? Number(req.body.signature_x) : null;
+    const signatureY = req.body.signature_y ? Number(req.body.signature_y) : null;
+    const signatureWidth = req.body.signature_width ? Number(req.body.signature_width) : null;
+    const signatureHeight = req.body.signature_height ? Number(req.body.signature_height) : null;
+
+    if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ PDF' });
+
+    if (hasSignature) {
+      const valid = Number.isFinite(signaturePage) && signaturePage >= 1
+        && Number.isFinite(signatureX) && signatureX >= 0
+        && Number.isFinite(signatureY) && signatureY >= 0
+        && Number.isFinite(signatureWidth) && signatureWidth > 0
+        && Number.isFinite(signatureHeight) && signatureHeight > 0;
+
+      if (!valid) {
+        if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        return res.status(400).json({ error: 'בעת בחירת חתימה חובה לשמור מיקום חתימה תקין (עמוד + X/Y + רוחב/גובה)' });
+      }
+    }
+
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    if (ext !== '.pdf') {
+      if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'יש לבחור קובץ PDF בלבד' });
+    }
+
+    const relativePath = `/uploads/forms/pdf_templates/${req.file.filename}`;
+    const nextName = String(req.body.name || '').trim() || existing.name;
+
+    db.prepare(`
+      UPDATE custom_form_templates
+      SET name = ?,
+          file_path = ?,
+          has_signature = ?,
+          signature_page = ?,
+          signature_x = ?,
+          signature_y = ?,
+          signature_width = ?,
+          signature_height = ?
+      WHERE id = ?
+    `).run(
+      nextName,
+      relativePath,
+      hasSignature,
+      hasSignature ? signaturePage : null,
+      hasSignature ? signatureX : null,
+      hasSignature ? signatureY : null,
+      hasSignature ? signatureWidth : null,
+      hasSignature ? signatureHeight : null,
+      customId
+    );
+
+    if (existing.file_path) {
+      const absolute = path.join(__dirname, '..', '..', existing.file_path.replace(/^\//, ''));
+      if (fs.existsSync(absolute)) fs.unlinkSync(absolute);
+    }
+
+    res.json({
+      success: true,
+      item: {
+        id: customId,
+        key: templateKey,
+        name: nextName,
+        file_path: relativePath,
+        has_signature: hasSignature,
+        signature_placement: hasSignature ? {
+          page: signaturePage,
+          x: signatureX,
+          y: signatureY,
+          width: signatureWidth,
+          height: signatureHeight
+        } : null
+      }
+    });
+  } catch (error) {
+    if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({ error: error.message });
   }
 });
@@ -778,14 +906,16 @@ router.get('/site/dispatches', (req, res) => {
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
              fd.building_id, b.name AS building_name,
              fd.tenant_id, fd.supplier_id,
+             ftm.display_name AS template_label,
              fd.payload_json
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
+      LEFT JOIN form_template_metadata ftm ON ftm.template_key = fd.template_key
       ORDER BY fd.created_at DESC
       LIMIT 100
     `).all();
 
-    res.json({ items: rows });
+    res.json({ items: withFriendlyTemplateLabel(rows) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -798,16 +928,18 @@ router.get('/site/dispatches/pending-signature', (req, res) => {
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at, fd.signed_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
              fd.building_id, b.name AS building_name,
+             ftm.display_name AS template_label,
              fd.payload_json
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
+      LEFT JOIN form_template_metadata ftm ON ftm.template_key = fd.template_key
       WHERE fd.has_signature = 1
         AND fd.status IN ('sent', 'opened', 'submitted')
       ORDER BY fd.created_at DESC
       LIMIT 200
     `).all();
 
-    res.json({ items: rows });
+    res.json({ items: withFriendlyTemplateLabel(rows) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -820,15 +952,17 @@ router.get('/site/dispatches/sent-today', (req, res) => {
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at, fd.signed_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
              fd.building_id, b.name AS building_name,
+             ftm.display_name AS template_label,
              fd.payload_json
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
+      LEFT JOIN form_template_metadata ftm ON ftm.template_key = fd.template_key
       WHERE DATE(fd.created_at, 'localtime') = DATE('now', 'localtime')
       ORDER BY fd.created_at DESC
       LIMIT 200
     `).all();
 
-    res.json({ items: rows });
+    res.json({ items: withFriendlyTemplateLabel(rows) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -846,15 +980,17 @@ router.get('/site/dispatches/history', (req, res) => {
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at, fd.signed_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
              fd.building_id, b.name AS building_name,
+             ftm.display_name AS template_label,
              fd.payload_json
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
+      LEFT JOIN form_template_metadata ftm ON ftm.template_key = fd.template_key
       ORDER BY fd.created_at DESC
       LIMIT ? OFFSET ?
     `).all(limit, offset);
 
     res.json({
-      items: rows,
+      items: withFriendlyTemplateLabel(rows),
       page,
       limit,
       total: totalRow?.total || 0,

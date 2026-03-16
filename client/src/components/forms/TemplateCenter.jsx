@@ -57,6 +57,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadName, setUploadName] = useState('');
   const [uploadSourceTemplate, setUploadSourceTemplate] = useState('');
+  const [uploadTargetTemplateKey, setUploadTargetTemplateKey] = useState('');
   const [uploadHasSignature, setUploadHasSignature] = useState(null);
   const [uploadDragOver, setUploadDragOver] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -181,8 +182,9 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const openUploadForTemplate = (template) => {
     setUploadName(template?.label || '');
     setUploadSourceTemplate(template?.label || '');
+    setUploadTargetTemplateKey(template?.key || '');
     setUploadFile(null);
-    setUploadHasSignature(null);
+    setUploadHasSignature(template?.has_signature === true ? true : template?.has_signature === false ? false : null);
     setUploadError('');
     setSignaturePlacement({ page: 1, x: '', y: '', width: '', height: '' });
     setSignaturePlacementSaved(false);
@@ -331,13 +333,21 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
         fd.append('signature_height', String(signaturePlacement.height));
       }
       fd.append('mode', 'pdf_template');
-      const res = await fetch(`${API_URL}/forms/hq/custom-templates`, { method: 'POST', body: fd });
+
+      const isAttachMode = Boolean(uploadTargetTemplateKey);
+      const endpoint = isAttachMode
+        ? `${API_URL}/forms/site/templates/${encodeURIComponent(uploadTargetTemplateKey)}/attachment`
+        : `${API_URL}/forms/hq/custom-templates`;
+      const method = isAttachMode ? 'PUT' : 'POST';
+
+      const res = await fetch(endpoint, { method, body: fd });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'שגיאה בהעלאה');
       setShowUploadModal(false);
-      setUploadFile(null); setUploadName(''); setUploadSourceTemplate(''); setUploadHasSignature(null);
+      setUploadFile(null); setUploadName(''); setUploadSourceTemplate(''); setUploadTargetTemplateKey(''); setUploadHasSignature(null);
       setSignaturePlacement({ page: 1, x: '', y: '', width: '', height: '' });
       setSignaturePlacementSaved(false);
+      setSuccess(isAttachMode ? 'הקובץ עודכן בכרטיס התבנית' : 'התבנית נטענה בהצלחה');
       await load();
     } catch (e) {
       setUploadError(e.message || 'שגיאה בהעלאה');
@@ -564,7 +574,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <h1 className="text-3xl font-bold">{title}</h1>
           <p className="text-gray-600 mt-1">{subtitle}</p>
         </div>
-        <button onClick={() => { setUploadSourceTemplate(''); setShowUploadModal(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">📄 טען טופס</button>
+        <button onClick={() => { setUploadSourceTemplate(''); setUploadTargetTemplateKey(''); setShowUploadModal(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">📄 טען טופס</button>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
@@ -591,6 +601,14 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               <div className="min-w-0">
                 <div className="font-semibold text-lg leading-tight">{template.label}</div>
                 <div className="text-xs text-gray-500 mt-1">{template.is_custom_pdf ? 'תבנית PDF מותאמת' : 'תבנית מערכת'}</div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {template.has_file && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">יש קובץ</span>
+                  )}
+                  {template.has_file && template.has_signature && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">יש קובץ + נדרשת חתימה</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button
@@ -642,9 +660,11 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                   <span className="font-medium">#{h.id} • {h.recipient_name}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[h.status] || 'bg-gray-100 text-gray-600'}`}>{STATUS_LABELS[h.status] || h.status}</span>
                 </div>
-                <div className="text-sm text-gray-500">{h.building_name || '-'} | {h.recipient_contact || '-'}</div>
+                <div className="mt-2 inline-flex items-center rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 px-2.5 py-1 text-sm font-semibold" dir="rtl">
+                  טופס שנשלח: {getTemplateName(h)}
+                </div>
+                <div className="text-sm text-gray-500 mt-1">{h.building_name || '-'} | {h.recipient_contact || '-'}</div>
                 <div className="mt-2 space-y-1 text-sm" dir="rtl">
-                  <div><span className="font-medium text-gray-700">טופס:</span> <span className="text-gray-600">{getTemplateName(h)}</span></div>
                   <div><span className="font-medium text-gray-700">נשלח ב:</span> <span className="text-gray-600">{formatDispatchDateTime(h.created_at)}</span></div>
                   {getDispatchMessage(h) ? (
                     <div>
@@ -784,8 +804,8 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5" dir="rtl">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">טען טופס PDF</h2>
-              <button onClick={() => { setUploadSourceTemplate(''); setShowUploadModal(false); }} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              <h2 className="text-xl font-bold">{uploadTargetTemplateKey ? 'הוסף/עדכן קובץ לתבנית' : 'טען טופס PDF'}</h2>
+              <button onClick={() => { setUploadSourceTemplate(''); setUploadTargetTemplateKey(''); setShowUploadModal(false); }} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
             </div>
             {uploadSourceTemplate && (
               <div className="text-xs rounded-md border border-indigo-200 bg-indigo-50 text-indigo-800 px-3 py-2">
