@@ -3,6 +3,7 @@ import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { API_URL } from '../../config';
 import { useApp } from '../../context/AppContext';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -585,18 +586,42 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
 
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {templates.map((template) => (
-          <div key={template.key} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-            <div className="font-semibold text-lg">{template.label}</div>
-            <div className="text-xs text-gray-500">{template.is_custom_pdf ? 'תבנית PDF מותאמת' : 'תבנית מערכת'}</div>
+          <div key={template.key} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3" dir="rtl">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold text-lg leading-tight">{template.label}</div>
+                <div className="text-xs text-gray-500 mt-1">{template.is_custom_pdf ? 'תבנית PDF מותאמת' : 'תבנית מערכת'}</div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => openEditTemplate(template)}
+                  title="עריכה"
+                  aria-label="עריכה"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 text-indigo-600 hover:bg-indigo-50"
+                >
+                  <FaEdit className="text-xs" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openDeleteTemplate(template)}
+                  title="מחק"
+                  aria-label="מחק"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  <FaTrash className="text-xs" />
+                </button>
+              </div>
+            </div>
+
             <label className="text-xs text-gray-600 block">
               תוכן תבנית
               <textarea readOnly rows={3} value={template.template_text || ''} className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50 text-sm" />
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => openEditTemplate(template)} className="w-full border border-gray-300 hover:bg-gray-50 py-2 rounded-lg">עריכה</button>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
               <button onClick={() => openSend(template)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">שלח תבנית</button>
               <button onClick={() => openUploadForTemplate(template)} className="w-full border border-indigo-300 text-indigo-700 hover:bg-indigo-50 py-2 rounded-lg">הוסף קובץ</button>
-              <button onClick={() => openDeleteTemplate(template)} className="w-full border border-red-300 text-red-700 hover:bg-red-50 py-2 rounded-lg">מחק</button>
             </div>
           </div>
         ))}

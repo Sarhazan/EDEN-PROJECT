@@ -32,6 +32,23 @@ const upload = multer({ storage });
 const whatsappService = require('../services/whatsapp');
 const { buildFormFillUrl } = require('../utils/publicClientUrl');
 
+function resolvePublicOrigin(req) {
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
+  const host = forwardedHost || req.get('host');
+  const proto = forwardedProto || req.protocol || 'http';
+  return `${proto}://${host}`.replace(/\/$/, '');
+}
+
+function resolvePublicAssetUrl(req, rawPath) {
+  const value = String(rawPath || '').trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+
+  const normalizedPath = value.startsWith('/') ? value : `/${value}`;
+  return `${resolvePublicOrigin(req)}${normalizedPath}`;
+}
+
 function normalizePhone(input) {
   const digits = String(input || '').replace(/\D/g, '');
   if (!digits) return '';
@@ -883,7 +900,7 @@ router.get('/site/dispatches/:id', (req, res) => {
         label: presentation.label,
         template_text: presentation.template_text,
         is_custom_pdf: true,
-        pdf_url: dispatch.custom_template_file,
+        pdf_url: resolvePublicAssetUrl(req, dispatch.custom_template_file),
         has_signature: dispatch.has_signature === 1,
         signature_placement: dispatch.has_signature === 1 ? {
           page: dispatch.custom_signature_page,

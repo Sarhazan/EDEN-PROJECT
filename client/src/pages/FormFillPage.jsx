@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { API_URL, BACKEND_URL } from '../config';
+import { API_URL } from '../config';
 
 // Simple canvas-based signature pad
 function SignaturePad({ onSignature, disabled }) {
@@ -188,13 +188,12 @@ export default function FormFillPage() {
     if (/^https?:\/\//i.test(value)) return encodeURI(value);
 
     const normalizedPath = value.startsWith('/') ? value : `/${value}`;
-    const fallbackOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002';
-    const base = String(BACKEND_URL || '').trim() || fallbackOrigin;
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
     try {
-      return encodeURI(new URL(normalizedPath, base).toString());
+      return encodeURI(new URL(normalizedPath, origin || 'http://localhost:3002').toString());
     } catch {
-      return encodeURI(`${base.replace(/\/$/, '')}${normalizedPath}`);
+      return encodeURI(`${origin.replace(/\/$/, '')}${normalizedPath}`);
     }
   };
 

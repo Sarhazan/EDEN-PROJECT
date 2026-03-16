@@ -112,7 +112,9 @@ function MainContent() {
 
   // Route modes
   const pathname = String(location.pathname || '');
-  const isPublicRoute = pathname.includes('/confirm/') || pathname.includes('/forms/fill/');
+  const hashPath = typeof window !== 'undefined' ? String(window.location.hash || '') : '';
+  const routeProbe = `${pathname}${hashPath}`;
+  const isPublicRoute = /\/confirm\/[^/]+\/?($|\?|#)/.test(routeProbe) || /\/forms\/fill\/[^/]+\/?($|\?|#)/.test(routeProbe);
   const isHQRoute = location.pathname.startsWith('/hq');
 
   // HQ portal auth gate (separate login/session role)
