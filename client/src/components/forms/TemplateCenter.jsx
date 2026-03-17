@@ -23,7 +23,8 @@ function PdfThumbnail({ filePath, apiUrl }) {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
-  const fileUrl = filePath && apiUrl ? `${apiUrl}${filePath}` : '';
+  // apiUrl may be "" (same-origin production) — still valid as a relative base
+  const fileUrl = filePath ? `${apiUrl || ''}${filePath}` : '';
 
   useEffect(() => {
     if (!filePath || !apiUrl || !canvasRef.current) {
@@ -60,7 +61,8 @@ function PdfThumbnail({ filePath, apiUrl }) {
         canvas.height = scaledViewport.height;
 
         await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
-      } catch {
+      } catch (err) {
+        console.error('[PdfThumbnail] failed to render PDF:', fileUrl, err?.message || err);
         if (!cancelled) setFailed(true);
       } finally {
         if (!cancelled) setLoading(false);
