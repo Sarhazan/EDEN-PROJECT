@@ -255,6 +255,16 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     setError('');
   };
 
+  const openCreateTemplate = () => {
+    setEditingTemplate({ key: '', label: '', template_text: '', isNew: true });
+    setEditForm({
+      displayName: '',
+      templateText: ''
+    });
+    setEditOpen(true);
+    setError('');
+  };
+
   const openUploadForTemplate = (template) => {
     const rawHasSignature = template?.has_signature;
     const parsedHasSignature = rawHasSignature === true || rawHasSignature === 1 || rawHasSignature === '1'
@@ -283,6 +293,11 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const saveTemplateEdit = async (e) => {
     e.preventDefault();
     if (!editingTemplate) return;
+
+    if (!editingTemplate.key) {
+      setError('כדי ליצור תבנית חדשה יש ללחוץ "הוסף קובץ" בתוך המודל.');
+      return;
+    }
 
     setSavingEdit(true);
     setError('');
@@ -656,7 +671,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <h1 className="text-3xl font-bold">{title}</h1>
           <p className="text-gray-600 mt-1">{subtitle}</p>
         </div>
-        <button onClick={() => { setUploadSourceTemplate(''); setUploadTargetTemplateKey(''); setShowUploadModal(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">📄 טען טופס</button>
+        <button onClick={openCreateTemplate} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">➕ הוסף תבנית</button>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
@@ -858,7 +873,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form onSubmit={saveTemplateEdit} className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 space-y-4" dir="rtl">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold">עריכת תבנית</h3>
+              <h3 className="text-xl font-bold">{editingTemplate?.key ? 'עריכת תבנית' : 'הוספת תבנית'}</h3>
               <button type="button" onClick={() => setEditOpen(false)} className="text-2xl text-gray-500">×</button>
             </div>
 
@@ -869,6 +884,40 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
             <label className="text-sm block">תוכן תבנית
               <textarea className="mt-1 w-full border rounded-lg px-3 py-2" rows={5} value={editForm.templateText} onChange={(e) => setEditForm((p) => ({ ...p, templateText: e.target.value }))} />
             </label>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditOpen(false);
+                if (editingTemplate?.key) {
+                  openUploadForTemplate({
+                    ...editingTemplate,
+                    label: editForm.displayName || editingTemplate.label,
+                    has_signature: editingTemplate?.has_signature
+                  });
+                } else {
+                  setUploadSourceTemplate(editForm.displayName || 'תבנית חדשה');
+                  setUploadTargetTemplateKey('');
+                  setUploadName(editForm.displayName || '');
+                  setUploadFile(null);
+                  setUploadHasSignature(null);
+                  setUploadError('');
+                  setSignaturePlacement({ page: 1, x: '', y: '', width: '', height: '' });
+                  setSignaturePlacementSaved(false);
+                  setPdfUrl('');
+                  setPdfDoc(null);
+                  setPdfPageCount(0);
+                  setPdfCurrentPage(1);
+                  setPdfPageSize({ width: 0, height: 0 });
+                  setPdfRenderSize({ width: 0, height: 0 });
+                  setSignatureBox(null);
+                  setShowUploadModal(true);
+                }
+              }}
+              className="w-full border border-indigo-300 text-indigo-700 hover:bg-indigo-50 rounded-lg py-2.5 font-medium"
+            >
+              הוסף קובץ
+            </button>
 
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setEditOpen(false)} className="px-4 py-2 border rounded-lg">ביטול</button>
