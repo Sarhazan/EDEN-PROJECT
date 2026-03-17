@@ -905,27 +905,8 @@ router.post('/site/send', async (req, res) => {
         deliveryError = 'וואטסאפ לא מחובר';
       } else {
         try {
-          // Determine if there's a PDF file to send with the message
-          let pdfAbsPath = null;
-          const pdfCaption = previewMessage;
-
-          if (isCustomPdf && customTemplate?.file_path) {
-            const p = path.join(__dirname, '..', '..', customTemplate.file_path.replace(/^\//, ''));
-            if (fs.existsSync(p)) pdfAbsPath = p;
-          } else if (!isCustomPdf) {
-            // System template — check for file in form_template_metadata
-            const meta = db.prepare(`SELECT file_path FROM form_template_metadata WHERE template_key = ? AND is_deleted = 0`).get(templateKey);
-            if (meta?.file_path) {
-              const p = path.join(__dirname, '..', '..', meta.file_path.replace(/^\//, ''));
-              if (fs.existsSync(p)) pdfAbsPath = p;
-            }
-          }
-
-          if (pdfAbsPath) {
-            await whatsappService.sendFile(resolvedContact, pdfAbsPath, pdfCaption);
-          } else {
-            await whatsappService.sendMessage(resolvedContact, previewMessage);
-          }
+          // Send text only — PDF is accessible via the link in the message
+          await whatsappService.sendMessage(resolvedContact, previewMessage);
           finalDeliveryStatus = 'sent';
         } catch (sendError) {
           finalDeliveryStatus = 'failed';
@@ -1405,17 +1386,8 @@ router.post('/hq/dispatches/:id/send-live', async (req, res) => {
     });
 
     try {
-      // Send file with message as caption, or message-only if no file
-      if (dispatch.custom_template_file) {
-        const absPath = path.join(__dirname, '..', '..', dispatch.custom_template_file.replace(/^\//, ''));
-        if (fs.existsSync(absPath)) {
-          await whatsappService.sendFile(dispatch.recipient_contact, absPath, message);
-        } else {
-          await whatsappService.sendMessage(dispatch.recipient_contact, message);
-        }
-      } else {
-        await whatsappService.sendMessage(dispatch.recipient_contact, message);
-      }
+      // Send text only — PDF is accessible via the link in the message
+      await whatsappService.sendMessage(dispatch.recipient_contact, message);
 
       db.prepare(`
         UPDATE form_dispatches
