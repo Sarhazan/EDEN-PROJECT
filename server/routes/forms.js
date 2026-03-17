@@ -29,6 +29,18 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+// Dedicated uploader that always saves to pdf_templates dir (avoids req.body timing issue with multer)
+const pdfTemplateUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, pdfTemplatesDir),
+    filename: (req, file, cb) => {
+      const safeBase = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
+      cb(null, `${Date.now()}_${safeBase}`);
+    }
+  })
+});
+
 const whatsappService = require('../services/whatsapp');
 const { buildFormFillUrl } = require('../utils/publicClientUrl');
 
@@ -135,7 +147,8 @@ const TEMPLATE_DEFS = {
 
 function getTemplateMetadataMap() {
   const rows = db.prepare(`
-    SELECT template_key, display_name, template_text, is_deleted
+    SELECT template_key, display_name, template_text, is_deleted,
+           file_path, has_signature, signature_page, signature_x, signature_y, signature_width, signature_height
     FROM form_template_metadata
   `).all();
 
@@ -297,7 +310,7 @@ router.get('/hq/custom-templates', (req, res) => {
 });
 
 // HQ: upload custom PDF template
-router.post('/hq/custom-templates', upload.single('file'), (req, res) => {
+router.post('/hq/custom-templates', pdfTemplateUpload.single('file'), (req, res) => {
   try {
     const name = (req.body.name || '').trim();
     const hasSignature = req.body.has_signature === '1' || req.body.has_signature === 'true' ? 1 : 0;
@@ -402,18 +415,37 @@ router.get('/site/templates', (req, res) => {
       ORDER BY created_at DESC
     `).all();
 
-    const builtInTemplates = Object.values(TEMPLATE_DEFS)
-      .map(({ key, label, defaultText }) => {
-        const meta = metadataMap[key] || {};
-        return {
-          key,
-          label: meta.display_name?.trim() || label,
-          template_text: meta.template_text ?? defaultText ?? '',
-          is_custom_pdf: false,
-          is_deleted: meta.is_deleted === 1
-        };
-      })
-      .filter((t) => !t.is_deleted);
+    const hideBuiltInTemplates = db.prepare(`
+      SELECT value
+      FROM settings
+      WHERE key = 'hide_builtin_forms_after_clear'
+      LIMIT 1
+    `).get()?.value === '1';
+
+    const builtInTemplates = hideBuiltInTemplates
+      ? []
+      : Object.values(TEMPLATE_DEFS)
+          .map(({ key, label, defaultText }) => {
+            const meta = metadataMap[key] || {};
+            return {
+              key,
+              label: meta.display_name?.trim() || label,
+              template_text: meta.template_text ?? defaultText ?? '',
+              is_custom_pdf: false,
+              has_file: Boolean(meta.file_path),
+              file_path: meta.file_path || null,
+              has_signature: meta.has_signature === 1,
+              signature_placement: meta.has_signature === 1 ? {
+                page: meta.signature_page,
+                x: meta.signature_x,
+                y: meta.signature_y,
+                width: meta.signature_width,
+                height: meta.signature_height
+              } : null,
+              is_deleted: meta.is_deleted === 1
+            };
+          })
+          .filter((t) => !t.is_deleted);
 
     const customTemplates = custom
       .map((t) => {
@@ -425,6 +457,7 @@ router.get('/site/templates', (req, res) => {
           template_text: meta.template_text ?? '',
           is_custom_pdf: true,
           has_file: Boolean(t.file_path),
+          file_path: t.file_path || null,
           has_signature: t.has_signature === 1,
           signature_placement: t.has_signature === 1 ? {
             page: t.signature_page,
@@ -504,30 +537,21 @@ router.put('/site/templates/:templateKey/metadata', (req, res) => {
   }
 });
 
-// Site manager: attach/replace PDF on existing custom template card
-router.put('/site/templates/:templateKey/attachment', upload.single('file'), (req, res) => {
+// Site manager: attach/replace PDF on existing template card (custom_pdf OR built-in)
+const attachTemplateFileHandler = (req, res) => {
   try {
     const templateKey = String(req.params.templateKey || '').trim();
     if (!templateKey) return res.status(400).json({ error: 'templateKey הוא שדה חובה' });
 
-    if (!/^custom_pdf_\d+$/.test(templateKey)) {
-      if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-      return res.status(400).json({ error: 'ניתן לצרף קובץ רק לתבניות PDF מותאמות' });
-    }
+    const isCustomPdf = /^custom_pdf_\d+$/.test(templateKey);
 
-    const customId = Number(templateKey.replace('custom_pdf_', ''));
-    const existing = db.prepare('SELECT * FROM custom_form_templates WHERE id = ?').get(customId);
-    if (!existing) {
-      if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-      return res.status(404).json({ error: 'תבנית מותאמת לא נמצאה' });
-    }
-
-    const hasSignature = req.body.has_signature === '1' || req.body.has_signature === 'true' ? 1 : 0;
-    const signaturePage = req.body.signature_page ? Number(req.body.signature_page) : null;
-    const signatureX = req.body.signature_x ? Number(req.body.signature_x) : null;
-    const signatureY = req.body.signature_y ? Number(req.body.signature_y) : null;
-    const signatureWidth = req.body.signature_width ? Number(req.body.signature_width) : null;
-    const signatureHeight = req.body.signature_height ? Number(req.body.signature_height) : null;
+    const body = req.body || {};
+    const hasSignature = body.has_signature === '1' || body.has_signature === 'true' ? 1 : 0;
+    const signaturePage = body.signature_page ? Number(body.signature_page) : null;
+    const signatureX = body.signature_x ? Number(body.signature_x) : null;
+    const signatureY = body.signature_y ? Number(body.signature_y) : null;
+    const signatureWidth = body.signature_width ? Number(body.signature_width) : null;
+    const signatureHeight = body.signature_height ? Number(body.signature_height) : null;
 
     if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ PDF' });
 
@@ -551,58 +575,85 @@ router.put('/site/templates/:templateKey/attachment', upload.single('file'), (re
     }
 
     const relativePath = `/uploads/forms/pdf_templates/${req.file.filename}`;
-    const nextName = String(req.body.name || '').trim() || existing.name;
 
-    db.prepare(`
-      UPDATE custom_form_templates
-      SET name = ?,
-          file_path = ?,
-          has_signature = ?,
-          signature_page = ?,
-          signature_x = ?,
-          signature_y = ?,
-          signature_width = ?,
-          signature_height = ?
-      WHERE id = ?
-    `).run(
-      nextName,
-      relativePath,
-      hasSignature,
-      hasSignature ? signaturePage : null,
-      hasSignature ? signatureX : null,
-      hasSignature ? signatureY : null,
-      hasSignature ? signatureWidth : null,
-      hasSignature ? signatureHeight : null,
-      customId
-    );
-
-    if (existing.file_path) {
-      const absolute = path.join(__dirname, '..', '..', existing.file_path.replace(/^\//, ''));
-      if (fs.existsSync(absolute)) fs.unlinkSync(absolute);
+    if (isCustomPdf) {
+      // --- Custom PDF template ---
+      const customId = Number(templateKey.replace('custom_pdf_', ''));
+      const existing = db.prepare('SELECT * FROM custom_form_templates WHERE id = ?').get(customId);
+      if (!existing) {
+        if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        return res.status(404).json({ error: 'תבנית מותאמת לא נמצאה' });
+      }
+      const nextName = String(body.name || '').trim() || existing.name;
+      db.prepare(`
+        UPDATE custom_form_templates
+        SET name = ?, file_path = ?, has_signature = ?,
+            signature_page = ?, signature_x = ?, signature_y = ?,
+            signature_width = ?, signature_height = ?
+        WHERE id = ?
+      `).run(
+        nextName, relativePath, hasSignature,
+        hasSignature ? signaturePage : null,
+        hasSignature ? signatureX : null,
+        hasSignature ? signatureY : null,
+        hasSignature ? signatureWidth : null,
+        hasSignature ? signatureHeight : null,
+        customId
+      );
+      if (existing.file_path) {
+        const absolute = path.join(__dirname, '..', '..', existing.file_path.replace(/^\//, ''));
+        if (fs.existsSync(absolute)) fs.unlinkSync(absolute);
+      }
+    } else {
+      // --- Built-in (system) template — store file in form_template_metadata ---
+      const existingMeta = db.prepare('SELECT * FROM form_template_metadata WHERE template_key = ?').get(templateKey);
+      if (existingMeta?.file_path) {
+        const absolute = path.join(__dirname, '..', '..', existingMeta.file_path.replace(/^\//, ''));
+        if (fs.existsSync(absolute)) fs.unlinkSync(absolute);
+      }
+      db.prepare(`
+        INSERT INTO form_template_metadata
+          (template_key, file_path, has_signature, signature_page, signature_x, signature_y, signature_width, signature_height, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(template_key) DO UPDATE SET
+          file_path = excluded.file_path,
+          has_signature = excluded.has_signature,
+          signature_page = excluded.signature_page,
+          signature_x = excluded.signature_x,
+          signature_y = excluded.signature_y,
+          signature_width = excluded.signature_width,
+          signature_height = excluded.signature_height,
+          updated_at = excluded.updated_at
+      `).run(
+        templateKey, relativePath, hasSignature,
+        hasSignature ? signaturePage : null,
+        hasSignature ? signatureX : null,
+        hasSignature ? signatureY : null,
+        hasSignature ? signatureWidth : null,
+        hasSignature ? signatureHeight : null
+      );
     }
 
-    res.json({
+    return res.json({
       success: true,
       item: {
-        id: customId,
         key: templateKey,
-        name: nextName,
         file_path: relativePath,
         has_signature: hasSignature,
         signature_placement: hasSignature ? {
-          page: signaturePage,
-          x: signatureX,
-          y: signatureY,
-          width: signatureWidth,
-          height: signatureHeight
+          page: signaturePage, x: signatureX, y: signatureY,
+          width: signatureWidth, height: signatureHeight
         } : null
       }
     });
   } catch (error) {
     if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
-});
+};
+
+router.put('/site/templates/:templateKey/attachment', pdfTemplateUpload.single('file'), attachTemplateFileHandler);
+router.post('/site/templates/:templateKey/attachment', pdfTemplateUpload.single('file'), attachTemplateFileHandler);
 
 // Site manager: delete template from Template Center (safe)
 router.delete('/site/templates/:templateKey', (req, res) => {

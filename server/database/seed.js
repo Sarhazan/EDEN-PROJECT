@@ -3,6 +3,8 @@ const path = require('path');
 const { db } = require('./schema');
 const { addDays, addMonths, addWeeks, format } = require('date-fns');
 
+const HIDE_BUILTIN_FORMS_AFTER_CLEAR_KEY = 'hide_builtin_forms_after_clear';
+
 function seedDatabase() {
   // Clear existing data safely (respecting evolving schema)
   clearDatabase();
@@ -148,6 +150,12 @@ function seedDatabase() {
   insertTask.run('בדיקת חימום מים', 'בדיקת תקינות דוד חשמלי ומערכת חימום', 2, 3, 'monthly', nextWeek, '13:00', 'normal', 'draft', 1);
 
   seedDefaultLanguages();
+  db.prepare(`
+    INSERT INTO settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+  `).run(HIDE_BUILTIN_FORMS_AFTER_CLEAR_KEY, '0');
+
   console.log('Database seeded with sample data successfully');
 }
 
@@ -233,6 +241,13 @@ function clearDatabase() {
 
   // Always restore default languages after clear
   seedDefaultLanguages();
+
+  // After explicit clear, hide built-in form templates so forms screen is empty.
+  db.prepare(`
+    INSERT INTO settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+  `).run(HIDE_BUILTIN_FORMS_AFTER_CLEAR_KEY, '1');
 
   console.log('Database cleared successfully');
 }

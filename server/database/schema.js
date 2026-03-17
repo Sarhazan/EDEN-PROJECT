@@ -823,6 +823,20 @@ function initializeDatabase() {
     }
   }
 
+  // File attachment support for built-in (system) templates
+  const fileColumns = [
+    `ALTER TABLE form_template_metadata ADD COLUMN file_path TEXT`,
+    `ALTER TABLE form_template_metadata ADD COLUMN has_signature INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE form_template_metadata ADD COLUMN signature_page INTEGER`,
+    `ALTER TABLE form_template_metadata ADD COLUMN signature_x REAL`,
+    `ALTER TABLE form_template_metadata ADD COLUMN signature_y REAL`,
+    `ALTER TABLE form_template_metadata ADD COLUMN signature_width REAL`,
+    `ALTER TABLE form_template_metadata ADD COLUMN signature_height REAL`,
+  ];
+  for (const sql of fileColumns) {
+    try { db.exec(sql); } catch (e) { if (!e.message.includes('duplicate column')) throw e; }
+  }
+
   // Settings table for external service configurations (API keys, etc.)
   db.exec(`
     CREATE TABLE IF NOT EXISTS settings (

@@ -379,7 +379,17 @@ class WhatsAppService {
   /**
    * Send WhatsApp message
    */
-  async sendMessage(phoneNumber, message) {
+  async sendMessage(phoneNumber, message, timeoutMs = 30000) {
+    // Wrap entire send in a timeout to prevent UI from getting stuck indefinitely
+    return Promise.race([
+      this._sendMessageInternal(phoneNumber, message),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('שליחת WhatsApp נכשלה (timeout) — נסה שנית')), timeoutMs)
+      )
+    ]);
+  }
+
+  async _sendMessageInternal(phoneNumber, message) {
     try {
       if (!this.isReady) {
         throw new Error('WhatsApp is not ready. Please authenticate first.');

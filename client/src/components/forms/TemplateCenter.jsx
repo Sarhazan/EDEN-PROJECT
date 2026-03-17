@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { API_URL } from '../../config';
+import { API_URL, BACKEND_URL } from '../../config';
 import { useApp } from '../../context/AppContext';
-import { FaEdit, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPaperclip } from 'react-icons/fa';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -17,6 +17,80 @@ const STATUS_COLORS = {
   submitted: 'bg-green-100 text-green-700',
   signed: 'bg-purple-100 text-purple-700'
 };
+
+function PdfThumbnail({ filePath, apiUrl }) {
+  const canvasRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  const fileUrl = filePath && apiUrl ? `${apiUrl}${filePath}` : '';
+
+  useEffect(() => {
+    if (!filePath || !apiUrl || !canvasRef.current) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    let loadingTask;
+    let loadedDoc = null;
+
+    const renderThumbnail = async () => {
+      try {
+        setLoading(true);
+        setFailed(false);
+
+        loadingTask = getDocument(fileUrl);
+        loadedDoc = await loadingTask.promise;
+        if (cancelled) return;
+
+        const page = await loadedDoc.getPage(1);
+        if (cancelled) return;
+
+        const viewport = page.getViewport({ scale: 1 });
+        const targetWidth = 220;
+        const scale = targetWidth / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+      } catch {
+        if (!cancelled) setFailed(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    renderThumbnail();
+
+    return () => {
+      cancelled = true;
+      if (loadingTask?.destroy) loadingTask.destroy();
+      if (loadedDoc?.destroy) loadedDoc.destroy();
+    };
+  }, [filePath, apiUrl, fileUrl]);
+
+  if (failed || !fileUrl) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => window.open(fileUrl, '_blank', 'noopener,noreferrer')}
+      className="relative w-20 h-28 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden flex items-center justify-center"
+      title="פתח את הקובץ"
+      aria-label="פתח את הקובץ"
+    >
+      {loading && <span className="absolute bottom-1 text-[10px] text-gray-500">טוען...</span>}
+      <canvas ref={canvasRef} className="max-w-full max-h-full block" />
+    </button>
+  );
+}
 
 export default function TemplateCenter({ title = 'מרכז תבניות', subtitle = 'בחר תבנית ושלח בלחיצה' }) {
   const { buildings, whatsappConnected } = useApp();
@@ -180,11 +254,16 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   };
 
   const openUploadForTemplate = (template) => {
+    const rawHasSignature = template?.has_signature;
+    const parsedHasSignature = rawHasSignature === true || rawHasSignature === 1 || rawHasSignature === '1'
+      ? true
+      : (rawHasSignature === false || rawHasSignature === 0 || rawHasSignature === '0' ? false : null);
+
     setUploadName(template?.label || '');
     setUploadSourceTemplate(template?.label || '');
     setUploadTargetTemplateKey(template?.key || '');
     setUploadFile(null);
-    setUploadHasSignature(template?.has_signature === true ? true : template?.has_signature === false ? false : null);
+    setUploadHasSignature(parsedHasSignature);
     setUploadError('');
     setSignaturePlacement({ page: 1, x: '', y: '', width: '', height: '' });
     setSignaturePlacementSaved(false);
@@ -318,6 +397,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     if (uploadHasSignature === null) return setUploadError('נא לבחור אם נדרשת חתימה');
     if (uploadHasSignature && !signaturePlacementSaved) return setUploadError('יש לשמור מיקום חתימה לפני שמירת התבנית');
 
+
     setUploading(true);
     setUploadError('');
     try {
@@ -338,7 +418,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       const endpoint = isAttachMode
         ? `${API_URL}/forms/site/templates/${encodeURIComponent(uploadTargetTemplateKey)}/attachment`
         : `${API_URL}/forms/hq/custom-templates`;
-      const method = isAttachMode ? 'PUT' : 'POST';
+      const method = 'POST';
 
       const res = await fetch(endpoint, { method, body: fd });
       const payload = await res.json();
@@ -610,36 +690,52 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => openEditTemplate(template)}
-                  title="עריכה"
-                  aria-label="עריכה"
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 text-indigo-600 hover:bg-indigo-50"
-                >
-                  <FaEdit className="text-xs" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openDeleteTemplate(template)}
-                  title="מחק"
-                  aria-label="מחק"
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
-                >
-                  <FaTrash className="text-xs" />
-                </button>
+              <div className="flex items-start gap-2 shrink-0">
+                {template.has_file && template.file_path ? (
+                  <PdfThumbnail filePath={template.file_path} apiUrl={BACKEND_URL} />
+                ) : (
+                  <div className="w-20 h-28 rounded-lg border border-dashed border-gray-200 bg-gray-50/70" aria-hidden="true" />
+                )}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => openUploadForTemplate(template)}
+                    title={template.has_file ? 'החלף קובץ' : 'הוסף קובץ'}
+                    aria-label={template.has_file ? 'החלף קובץ' : 'הוסף קובץ'}
+                    className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-sm ${template.has_file ? 'border-emerald-300 text-emerald-600 hover:bg-emerald-50' : 'border-gray-300 text-gray-500 hover:bg-gray-50'}`}
+                  >
+                    <FaPaperclip className="text-xs" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEditTemplate(template)}
+                    title="עריכה"
+                    aria-label="עריכה"
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 text-indigo-600 hover:bg-indigo-50"
+                  >
+                    <FaEdit className="text-xs" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openDeleteTemplate(template)}
+                    title="מחק"
+                    aria-label="מחק"
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    <FaTrash className="text-xs" />
+                  </button>
+                </div>
               </div>
             </div>
+
 
             <label className="text-xs text-gray-600 block">
               תוכן תבנית
               <textarea readOnly rows={3} value={template.template_text || ''} className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50 text-sm" />
             </label>
 
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <button onClick={() => openSend(template)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">שלח תבנית</button>
-              <button onClick={() => openUploadForTemplate(template)} className="w-full border border-indigo-300 text-indigo-700 hover:bg-indigo-50 py-2 rounded-lg">הוסף קובץ</button>
+            <div className="pt-1">
+              <button onClick={() => openSend(template)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">שלח טופס</button>
             </div>
           </div>
         ))}
