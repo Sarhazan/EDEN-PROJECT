@@ -1087,7 +1087,7 @@ router.get('/site/dispatches/:id', (req, res) => {
         label: presentation.label,
         template_text: presentation.template_text,
         is_custom_pdf: true,
-        pdf_url: resolvePublicAssetUrl(req, dispatch.custom_template_file),
+        pdf_url: dispatch.custom_template_file,
         has_signature: dispatch.has_signature === 1,
         signature_placement: dispatch.has_signature === 1 ? {
           page: dispatch.custom_signature_page,
