@@ -27,7 +27,7 @@ function PdfThumbnail({ filePath, apiUrl }) {
   const fileUrl = filePath ? `${apiUrl || ''}${filePath}` : '';
 
   useEffect(() => {
-    if (!filePath || !apiUrl || !canvasRef.current) {
+    if (!filePath || !fileUrl || !canvasRef.current) {
       setLoading(false);
       return;
     }
