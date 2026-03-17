@@ -236,12 +236,31 @@ export default function FormFillPage() {
                 פתח את קובץ ה‑PDF לקריאה וחתימה
               </a>
             )}
-            <iframe
-              src={pdfUrl}
-              title="מסמך לצפייה"
-              className="w-full rounded border"
-              style={{ height: '500px' }}
-            />
+            {/* Desktop iframe */}
+            <div className="hidden md:block">
+              <iframe
+                src={pdfUrl}
+                title="מסמך לצפייה"
+                className="w-full rounded border"
+                style={{ height: '500px' }}
+              />
+            </div>
+
+            {/* Mobile PDF card */}
+            <div className="block md:hidden p-4">
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="text-red-500 text-3xl">📄</div>
+                <div className="flex-1 text-right">
+                  <div className="font-medium text-gray-800">מסמך לצפייה</div>
+                  <div className="text-sm text-blue-600">לחץ לפתיחה ←</div>
+                </div>
+              </a>
+            </div>
           </div>
         )}
 
