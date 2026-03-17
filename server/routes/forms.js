@@ -10,10 +10,20 @@ const uploadsRoot = path.join(__dirname, '..', '..', 'uploads', 'forms');
 const logoDir = path.join(uploadsRoot, 'logos');
 const contractsDir = path.join(uploadsRoot, 'contracts');
 const pdfTemplatesDir = path.join(uploadsRoot, 'pdf_templates');
+const signedDir = path.join(uploadsRoot, 'signed');
 
-[uploadsRoot, logoDir, contractsDir, pdfTemplatesDir].forEach((dir) => {
+[uploadsRoot, logoDir, contractsDir, pdfTemplatesDir, signedDir].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
+
+let PDFDocument, rgb;
+try {
+  const pdfLib = require('pdf-lib');
+  PDFDocument = pdfLib.PDFDocument;
+  rgb = pdfLib.rgb;
+} catch {
+  // pdf-lib not installed — signature embedding will be skipped
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -851,7 +861,14 @@ router.post('/site/send', async (req, res) => {
     const resolvedDeliveryMode = requestedMode === 'live' ? 'live' : 'manual';
     const deliveryStatus = resolvedDeliveryMode === 'live' ? 'sending' : 'queued';
 
-    const hasSignatureVal = customTemplate ? (customTemplate.has_signature ? 1 : 0) : 0;
+    let hasSignatureVal = 0;
+    if (customTemplate) {
+      hasSignatureVal = customTemplate.has_signature ? 1 : 0;
+    } else {
+      // Built-in template — check form_template_metadata
+      const builtInMeta = db.prepare('SELECT has_signature FROM form_template_metadata WHERE template_key = ? AND is_deleted = 0').get(templateKey);
+      hasSignatureVal = builtInMeta?.has_signature === 1 ? 1 : 0;
+    }
 
     const result = db.prepare(`
       INSERT INTO form_dispatches (
@@ -1064,7 +1081,7 @@ router.get('/site/dispatches/:id', (req, res) => {
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
-             fd.payload_json, fd.custom_template_id, fd.has_signature, fd.signed_at,
+             fd.payload_json, fd.custom_template_id, fd.has_signature, fd.signed_at, fd.signed_pdf_path,
              b.name AS building_name,
              cft.name AS custom_template_name, cft.file_path AS custom_template_file,
              cft.signature_page AS custom_signature_page,
@@ -1108,11 +1125,21 @@ router.get('/site/dispatches/:id', (req, res) => {
       const baseTemplate = TEMPLATE_DEFS[dispatch.template_key];
       if (!baseTemplate) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
       const presentation = resolveTemplatePresentation(dispatch.template_key, baseTemplate.label, baseTemplate.defaultText || '');
+      const builtInMeta = db.prepare('SELECT has_signature, signature_page, signature_x, signature_y, signature_width, signature_height FROM form_template_metadata WHERE template_key = ? AND is_deleted = 0').get(dispatch.template_key);
+      const builtInHasSig = builtInMeta?.has_signature === 1;
       template = {
         ...baseTemplate,
         label: presentation.label,
         template_text: presentation.template_text,
-        pdf_url: dispatch.system_template_file || null
+        pdf_url: dispatch.system_template_file || null,
+        has_signature: builtInHasSig,
+        signature_placement: builtInHasSig ? {
+          page: builtInMeta.signature_page,
+          x: builtInMeta.signature_x,
+          y: builtInMeta.signature_y,
+          width: builtInMeta.signature_width,
+          height: builtInMeta.signature_height
+        } : null
       };
     }
 
@@ -1137,8 +1164,9 @@ router.get('/site/dispatches/:id', (req, res) => {
         ...dispatch,
         payload: dispatch.payload_json ? JSON.parse(dispatch.payload_json) : {},
         template,
-        has_signature: dispatch.has_signature === 1,
+        has_signature: dispatch.has_signature === 1 || template.has_signature === true,
         signed_at: dispatch.signed_at || null,
+        signed_pdf_path: dispatch.signed_pdf_path || null,
         submission: existingSubmission
           ? {
               ...existingSubmission,
@@ -1153,7 +1181,7 @@ router.get('/site/dispatches/:id', (req, res) => {
 });
 
 // Public form fill: submit answers
-router.post('/site/dispatches/:id/submit', (req, res) => {
+router.post('/site/dispatches/:id/submit', async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: 'id לא תקין' });
@@ -1188,8 +1216,18 @@ router.post('/site/dispatches/:id/submit', (req, res) => {
       }
     }
 
+    // Resolve effective has_signature (dispatch may be old with has_signature=0 but template has it)
+    let effectiveHasSignature = dispatch.has_signature === 1;
+    if (!effectiveHasSignature && !dispatch.custom_template_id) {
+      const builtInMeta = db.prepare('SELECT has_signature, signature_page, signature_x, signature_y, signature_width, signature_height, file_path FROM form_template_metadata WHERE template_key = ? AND is_deleted = 0').get(dispatch.template_key);
+      if (builtInMeta?.has_signature === 1) {
+        effectiveHasSignature = true;
+        dispatch._builtInSignatureMeta = builtInMeta;
+      }
+    }
+
     // For signature forms: validate signature provided
-    if (dispatch.has_signature && !signature_dataurl) {
+    if (effectiveHasSignature && !signature_dataurl) {
       return res.status(400).json({ error: 'נדרשת חתימה להגשת הטופס' });
     }
 
@@ -1213,8 +1251,7 @@ router.post('/site/dispatches/:id/submit', (req, res) => {
       String(submittedByContact || '').trim() || null
     );
 
-    const finalStatus = (dispatch.has_signature && signature_dataurl) ? 'signed' : 'submitted';
-    const signedAt = finalStatus === 'signed' ? 'CURRENT_TIMESTAMP' : 'NULL';
+    const finalStatus = (effectiveHasSignature && signature_dataurl) ? 'signed' : 'submitted';
 
     db.prepare(`
       UPDATE form_dispatches
@@ -1225,7 +1262,97 @@ router.post('/site/dispatches/:id/submit', (req, res) => {
       WHERE id = ?
     `).run(finalStatus, finalStatus, id);
 
-    res.json({ success: true, status: finalStatus });
+    // Embed signature into original PDF if applicable
+    let signedPdfPath = null;
+    if (effectiveHasSignature && signature_dataurl && PDFDocument) {
+      try {
+        // Resolve PDF source — custom template or built-in template file
+        let pdfFilePath = null;
+        let sigMeta = null;
+
+        if (dispatch.custom_template_id) {
+          const customTemplate = db.prepare(`
+            SELECT file_path, signature_page, signature_x, signature_y, signature_width, signature_height
+            FROM custom_form_templates
+            WHERE id = ?
+          `).get(dispatch.custom_template_id);
+          if (customTemplate && customTemplate.file_path) {
+            pdfFilePath = customTemplate.file_path;
+            sigMeta = customTemplate;
+          }
+        } else {
+          // Built-in template — use form_template_metadata
+          const builtInMeta = dispatch._builtInSignatureMeta?.file_path
+            ? dispatch._builtInSignatureMeta
+            : db.prepare('SELECT has_signature, signature_page, signature_x, signature_y, signature_width, signature_height, file_path FROM form_template_metadata WHERE template_key = ? AND is_deleted = 0').get(dispatch.template_key);
+          if (builtInMeta && builtInMeta.file_path) {
+            pdfFilePath = builtInMeta.file_path;
+            sigMeta = builtInMeta;
+          }
+        }
+
+        if (pdfFilePath && sigMeta) {
+          const originalPdfAbsolute = path.join(__dirname, '..', '..', pdfFilePath.replace(/^\//, ''));
+
+          if (fs.existsSync(originalPdfAbsolute)) {
+            const pdfBytes = fs.readFileSync(originalPdfAbsolute);
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const pages = pdfDoc.getPages();
+
+            const sigPageIndex = (sigMeta.signature_page || 1) - 1; // 1-based to 0-based
+            if (sigPageIndex >= 0 && sigPageIndex < pages.length) {
+              const page = pages[sigPageIndex];
+              const pageHeight = page.getHeight();
+
+              // Decode signature data URL to PNG bytes
+              const base64Match = signature_dataurl.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/i);
+              if (base64Match) {
+                const imgFormat = base64Match[1].toLowerCase();
+                const imgBuffer = Buffer.from(base64Match[2], 'base64');
+
+                let embeddedImage;
+                if (imgFormat === 'png') {
+                  embeddedImage = await pdfDoc.embedPng(imgBuffer);
+                } else {
+                  embeddedImage = await pdfDoc.embedJpg(imgBuffer);
+                }
+
+                // Coordinates from the template are stored as PDF-space values.
+                // signature_y is measured from the top of the page (client convention),
+                // but pdf-lib uses bottom-left origin, so we convert.
+                const sigX = sigMeta.signature_x || 0;
+                const sigY = sigMeta.signature_y || 0;
+                const sigW = sigMeta.signature_width || 150;
+                const sigH = sigMeta.signature_height || 60;
+
+                page.drawImage(embeddedImage, {
+                  x: sigX,
+                  y: pageHeight - sigY - sigH,
+                  width: sigW,
+                  height: sigH
+                });
+
+                const signedPdfBytes = await pdfDoc.save();
+                const signedFilename = `signed_${id}_${Date.now()}.pdf`;
+                const signedAbsolute = path.join(signedDir, signedFilename);
+                fs.writeFileSync(signedAbsolute, signedPdfBytes);
+
+                signedPdfPath = `/uploads/forms/signed/${signedFilename}`;
+
+                db.prepare(`
+                  UPDATE form_dispatches SET signed_pdf_path = ? WHERE id = ?
+                `).run(signedPdfPath, id);
+              }
+            }
+          }
+        }
+      } catch (pdfError) {
+        console.error(`[forms] Failed to embed signature into PDF for dispatch ${id}:`, pdfError.message);
+        // Non-fatal — submission is still saved, just no signed PDF
+      }
+    }
+
+    res.json({ success: true, status: finalStatus, signed_pdf_path: signedPdfPath });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1263,7 +1390,7 @@ router.get('/hq/dispatches/:id', (req, res) => {
       SELECT fd.id, fd.template_key, fd.recipient_type, fd.recipient_name, fd.recipient_contact,
              fd.status, fd.created_at, fd.opened_at, fd.submitted_at,
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status, fd.external_message_id, fd.delivery_error,
-             fd.payload_json, b.name AS building_name
+             fd.payload_json, fd.signed_pdf_path, b.name AS building_name
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       WHERE fd.id = ?
@@ -1281,6 +1408,7 @@ router.get('/hq/dispatches/:id', (req, res) => {
       item: {
         ...dispatch,
         payload: dispatch.payload_json ? JSON.parse(dispatch.payload_json) : {},
+        signed_pdf_path: dispatch.signed_pdf_path || null,
         submission: submission
           ? {
               ...submission,

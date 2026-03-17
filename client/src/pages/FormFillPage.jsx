@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { API_URL, BACKEND_URL } from '../config';
+
+GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 // Simple canvas-based signature pad
 function SignaturePad({ onSignature, disabled }) {
@@ -84,6 +88,113 @@ function SignaturePad({ onSignature, disabled }) {
       </div>
       {!hasDrawn && !disabled && (
         <p className="text-xs text-gray-400 text-center">חתום כאן באמצעות העכבר או מגע</p>
+      )}
+    </div>
+  );
+}
+
+// Renders a specific PDF page with a signature-zone overlay
+function PdfSignaturePage({ pdfUrl, signaturePlacement }) {
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [pageSize, setPageSize] = useState(null); // { width, height } in PDF points
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const sigPage = signaturePlacement?.page || 1;
+
+  useEffect(() => {
+    if (!pdfUrl || !canvasRef.current) return;
+
+    let cancelled = false;
+    let loadingTask;
+    let loadedDoc = null;
+
+    const render = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+
+        loadingTask = getDocument(pdfUrl);
+        loadedDoc = await loadingTask.promise;
+        if (cancelled) return;
+
+        const totalPages = loadedDoc.numPages;
+        const targetPage = Math.min(sigPage, totalPages);
+        const page = await loadedDoc.getPage(targetPage);
+        if (cancelled) return;
+
+        const viewport = page.getViewport({ scale: 1 });
+        setPageSize({ width: viewport.width, height: viewport.height });
+
+        // Scale to fit container width
+        const container = containerRef.current;
+        const containerWidth = container ? container.clientWidth : 600;
+        const scale = containerWidth / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+      } catch (err) {
+        console.error('[PdfSignaturePage] render error:', err?.message || err);
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    render();
+
+    return () => {
+      cancelled = true;
+      if (loadingTask?.destroy) loadingTask.destroy();
+      if (loadedDoc?.destroy) loadedDoc.destroy();
+    };
+  }, [pdfUrl, sigPage]);
+
+  // Compute overlay position as percentages of the rendered page.
+  // signature_placement coords are in PDF points, origin bottom-left.
+  // We convert to top-left percentage for CSS positioning.
+  const overlay = (() => {
+    if (!pageSize || !signaturePlacement) return null;
+    const { x = 0, y = 0, width = 150, height = 60 } = signaturePlacement;
+    const pw = pageSize.width;
+    const ph = pageSize.height;
+
+    // Server stores y as top-down (see submit handler: pageHeight - sigY - sigH),
+    // so signature_y is measured from the top of the page.
+    return {
+      left: `${(x / pw) * 100}%`,
+      top: `${(y / ph) * 100}%`,
+      width: `${(width / pw) * 100}%`,
+      height: `${(height / ph) * 100}%`
+    };
+  })();
+
+  if (error) return null; // fall back to regular viewer
+
+  return (
+    <div ref={containerRef} className="relative">
+      {loading && (
+        <div className="flex items-center justify-center py-12 text-gray-400 text-sm">טוען עמוד חתימה...</div>
+      )}
+      <canvas ref={canvasRef} className="w-full block rounded" style={{ display: loading ? 'none' : 'block' }} />
+      {overlay && !loading && (
+        <div
+          style={{ position: 'absolute', ...overlay, pointerEvents: 'none' }}
+          className="border-2 border-purple-500 bg-purple-100/30 rounded"
+        >
+          <span
+            className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full shadow"
+          >
+            מיקום החתימה
+          </span>
+        </div>
       )}
     </div>
   );
@@ -226,41 +337,62 @@ export default function FormFillPage() {
                 פתח בחלון חדש ↗
               </a>
             </div>
-            {hasSignature && (
-              <a
-                href={pdfUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="block mx-4 mt-3 mb-2 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-medium"
-              >
-                פתח את קובץ ה‑PDF לקריאה וחתימה
-              </a>
-            )}
-            {/* Desktop iframe */}
-            <div className="hidden md:block">
-              <iframe
-                src={pdfUrl}
-                title="מסמך לצפייה"
-                className="w-full rounded border"
-                style={{ height: '500px' }}
-              />
-            </div>
 
-            {/* Mobile PDF card */}
-            <div className="block md:hidden p-4">
-              <a
-                href={pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="text-red-500 text-3xl">📄</div>
-                <div className="flex-1 text-right">
-                  <div className="font-medium text-gray-800">מסמך לצפייה</div>
-                  <div className="text-sm text-blue-600">לחץ לפתיחה ←</div>
+            {/* Custom PDF with signature: render the signature page with overlay */}
+            {isCustomPdf && hasSignature && item.template?.signature_placement ? (
+              <div className="p-3 space-y-2">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-purple-800 text-sm text-center font-medium">
+                  יש לחתום בעמוד {item.template.signature_placement.page || 1} — מיקום החתימה מסומן מטה
                 </div>
-              </a>
-            </div>
+                <PdfSignaturePage pdfUrl={pdfUrl} signaturePlacement={item.template.signature_placement} />
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block text-center text-xs text-indigo-600 hover:underline font-medium pt-1"
+                >
+                  לצפייה במסמך המלא — פתח בחלון חדש ↗
+                </a>
+              </div>
+            ) : (
+              <>
+                {hasSignature && (
+                  <a
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block mx-4 mt-3 mb-2 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-medium"
+                  >
+                    פתח את קובץ ה‑PDF לקריאה וחתימה
+                  </a>
+                )}
+                {/* Desktop iframe */}
+                <div className="hidden md:block">
+                  <iframe
+                    src={pdfUrl}
+                    title="מסמך לצפייה"
+                    className="w-full rounded border"
+                    style={{ height: '500px' }}
+                  />
+                </div>
+
+                {/* Mobile PDF card */}
+                <div className="block md:hidden p-4">
+                  <a
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="text-red-500 text-3xl">📄</div>
+                    <div className="flex-1 text-right">
+                      <div className="font-medium text-gray-800">מסמך לצפייה</div>
+                      <div className="text-sm text-blue-600">לחץ לפתיחה ←</div>
+                    </div>
+                  </a>
+                </div>
+              </>
+            )}
           </div>
         )}
 

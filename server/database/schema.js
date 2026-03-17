@@ -816,6 +816,14 @@ function initializeDatabase() {
   }
 
   try {
+    db.exec(`ALTER TABLE form_dispatches ADD COLUMN signed_pdf_path TEXT`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      throw e;
+    }
+  }
+
+  try {
     db.exec(`ALTER TABLE form_template_metadata ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0`);
   } catch (e) {
     if (!e.message.includes('duplicate column')) {

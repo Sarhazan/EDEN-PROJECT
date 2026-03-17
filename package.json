@@ -42,6 +42,7 @@
     "jsdom": "^27.4.0",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
+    "pdf-lib": "^1.17.1",
     "puppeteer-core": "^24.36.0",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
