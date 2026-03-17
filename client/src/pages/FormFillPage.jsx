@@ -218,27 +218,29 @@ export default function FormFillPage() {
         </div>
 
         {/* PDF Viewer */}
-        {isCustomPdf && pdfUrl && (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        {pdfUrl && (
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden my-4">
             <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700">מסמך לעיון</span>
               <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline font-semibold">
                 פתח בחלון חדש ↗
               </a>
             </div>
-            <a
-              href={pdfUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="block mx-4 mt-3 mb-2 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-medium"
-            >
-              פתח את קובץ ה‑PDF לקריאה וחתימה
-            </a>
+            {hasSignature && (
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block mx-4 mt-3 mb-2 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-medium"
+              >
+                פתח את קובץ ה‑PDF לקריאה וחתימה
+              </a>
+            )}
             <iframe
               src={pdfUrl}
-              title="טופס PDF"
-              className="w-full"
-              style={{ height: '500px', border: 'none' }}
+              title="מסמך לצפייה"
+              className="w-full rounded border"
+              style={{ height: '500px' }}
             />
           </div>
         )}
@@ -291,41 +293,43 @@ export default function FormFillPage() {
             ))}
 
             {/* Submitter info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-              <label className="text-sm">
-                שם ממלא הטופס
-                <input
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
-                  value={submittedByName}
-                  onChange={(e) => setSubmittedByName(e.target.value)}
-                  disabled={isDone}
-                />
-              </label>
-              <label className="text-sm">
-                טלפון/אימייל (אופציונלי)
-                <input
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
-                  value={submittedByContact}
-                  onChange={(e) => setSubmittedByContact(e.target.value)}
-                  disabled={isDone}
-                />
-              </label>
-            </div>
-
-            {/* Signature pad */}
             {hasSignature && (
-              <div className="border-t border-gray-100 pt-4">
-                {isDone && signatureDataUrl ? (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-700">חתימה שהוגשה:</p>
-                    <div className="border border-gray-200 rounded-xl overflow-hidden inline-block bg-white">
-                      <img src={signatureDataUrl} alt="חתימה" className="max-h-32" />
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                  <label className="text-sm">
+                    שם מלא
+                    <input
+                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
+                      value={submittedByName}
+                      onChange={(e) => setSubmittedByName(e.target.value)}
+                      disabled={isDone}
+                    />
+                  </label>
+                  <label className="text-sm">
+                    תעודת זהות
+                    <input
+                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
+                      value={submittedByContact}
+                      onChange={(e) => setSubmittedByContact(e.target.value)}
+                      disabled={isDone}
+                    />
+                  </label>
+                </div>
+
+                {/* Signature pad */}
+                <div className="border-t border-gray-100 pt-4">
+                  {isDone && signatureDataUrl ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-700">חתימה שהוגשה:</p>
+                      <div className="border border-gray-200 rounded-xl overflow-hidden inline-block bg-white">
+                        <img src={signatureDataUrl} alt="חתימה" className="max-h-32" />
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <SignaturePad onSignature={setSignatureDataUrl} disabled={isDone} />
-                )}
-              </div>
+                  ) : (
+                    <SignaturePad onSignature={setSignatureDataUrl} disabled={isDone} />
+                  )}
+                </div>
+              </>
             )}
 
             {!isDone ? (

@@ -48,20 +48,47 @@ router.get('/status', async (req, res) => {
 });
 
 // Initialize WhatsApp connection and get QR code
+// Always starts fresh: disconnects any existing session + clears auth data, then re-initializes
 router.post('/connect', async (req, res) => {
   try {
-    const status = whatsappService.getStatus();
+    // 1. Destroy client (non-blocking) + kill Chrome
+    try {
+      if (whatsappService.client) {
+        await whatsappService.client.destroy().catch(() => {});
+        whatsappService.client = null;
+        whatsappService.isReady = false;
+        whatsappService.qrCode = null;
+        whatsappService.qrDataUrl = null;
+      }
+    } catch (_) {}
 
-    if (status.isReady) {
-      return res.json({ success: true, message: 'Already connected', isReady: true });
+    // 2. Kill any leftover Chrome processes and remove lock files
+    const env = process.env.NODE_ENV || 'development';
+    const authPath = `./.wwebjs_auth_${env}`;
+    if (env !== 'production') {
+      whatsappService._cleanupStalePuppeteer(authPath, `eden-whatsapp-${env}`);
     }
 
-    if (!status.isInitialized) {
-      // Start initialization - QR will come via Socket.IO
-      whatsappService.initialize().catch(err => {
-        console.error('WhatsApp initialization error:', err);
-      });
+    // 3. Short wait to ensure Chrome is fully dead before deleting the folder
+    await new Promise(r => setTimeout(r, 800));
+
+    // 4. Delete auth folder for a clean fresh QR
+    if (env !== 'production') {
+      const fs = require('fs');
+      try {
+        if (fs.existsSync(authPath)) {
+          fs.rmSync(authPath, { recursive: true, force: true });
+          console.log(`🧹 Cleared auth folder: ${authPath}`);
+        }
+      } catch (e) {
+        console.log('⚠ Could not fully clear auth folder:', e.message);
+      }
     }
+
+    // Start fresh initialization - QR will come via Socket.IO
+    whatsappService.initialize().catch(err => {
+      console.error('WhatsApp initialization error:', err);
+    });
 
     // Return immediately - frontend should listen for Socket.IO events
     res.json({ success: true, message: 'Initializing - watch for QR via Socket.IO', initializing: true });

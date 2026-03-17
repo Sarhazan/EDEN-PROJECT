@@ -1,5 +1,8 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
 
 /**
  * Normalize a phone number to WhatsApp format (digits only, with country code).
@@ -61,6 +64,11 @@ class WhatsAppService {
     console.log(`   clientId: ${clientId}`);
     console.log(`   dataPath: ${dataPath}`);
     console.log(`   isProduction: ${isProduction}`);
+
+    // In development, clean up stale Puppeteer Chrome locks before initializing
+    if (!isProduction) {
+      this._cleanupStalePuppeteer(dataPath, clientId);
+    }
 
     // Configure Puppeteer options based on environment
     let puppeteerOptions = {
@@ -248,6 +256,87 @@ class WhatsAppService {
     await this.client.initialize();
   }
 
+  /**
+   * Development-only: kill stale Puppeteer Chrome processes and remove SingletonLock.
+   * Strategy: read PID from chrome.pid file first (fast + precise),
+   * fallback to wmic scan if pid file missing.
+   */
+  _cleanupStalePuppeteer(dataPath, clientId) {
+    const pidFile = path.join(dataPath, 'chrome.pid');
+
+    // 1. Kill by saved PID (precise, fast)
+    try {
+      if (fs.existsSync(pidFile)) {
+        const pid = parseInt(fs.readFileSync(pidFile, 'utf8').trim(), 10);
+        if (pid && !isNaN(pid)) {
+          try {
+            if (process.platform === 'win32') {
+              execSync(`taskkill /PID ${pid} /T /F 2>nul`, { timeout: 5000 });
+            } else {
+              process.kill(pid, 'SIGKILL');
+            }
+            console.log(`🧹 Killed stale Puppeteer Chrome (PID ${pid})`);
+          } catch (_) {
+            // Process already dead — that's fine
+          }
+        }
+        fs.unlinkSync(pidFile);
+      }
+    } catch (e) {
+      // Non-critical
+    }
+
+    // 2. Remove SingletonLock
+    try {
+      const lockFile = path.join(dataPath, `session-${clientId}`, 'SingletonLock');
+      if (fs.existsSync(lockFile)) {
+        fs.unlinkSync(lockFile);
+        console.log('🧹 Removed stale Puppeteer SingletonLock');
+      }
+    } catch (e) {
+      console.log('⚠ Could not remove SingletonLock:', e.message);
+    }
+
+    // 3. Fallback: wmic scan (catches orphans if pid file was missing)
+    try {
+      if (process.platform === 'win32') {
+        const result = execSync(
+          `wmic process where "name='chrome.exe'" get ProcessId,CommandLine /format:csv 2>nul`,
+          { encoding: 'utf8', timeout: 5000 }
+        );
+        let killed = 0;
+        for (const line of result.split('\n')) {
+          if (line.includes('wwebjs') || line.includes('puppeteer')) {
+            const match = line.match(/,(\d+)\s*$/);
+            if (match) {
+              try { execSync(`taskkill /PID ${match[1]} /F 2>nul`, { timeout: 3000 }); killed++; } catch (_) {}
+            }
+          }
+        }
+        if (killed > 0) console.log(`🧹 Killed ${killed} orphan Puppeteer Chrome process(es) via wmic`);
+      }
+    } catch (e) {
+      // Non-critical
+    }
+  }
+
+  /**
+   * Save Puppeteer Chrome PID to file so next restart can kill it precisely.
+   * Call after client.initialize() succeeds and browser is launched.
+   */
+  _saveChromePid(dataPath) {
+    try {
+      const browser = this.client?.pupBrowser || this.client?._pupBrowser || this.client?.browser;
+      const proc = browser?.process ? browser.process() : null;
+      if (proc?.pid) {
+        fs.writeFileSync(path.join(dataPath, 'chrome.pid'), String(proc.pid));
+        console.log(`💾 Saved Chrome PID ${proc.pid}`);
+      }
+    } catch (e) {
+      // Non-critical
+    }
+  }
+
   scheduleReinitialize(delayMs = 4000, reason = 'unknown') {
     if (this.reinitTimer) {
       clearTimeout(this.reinitTimer);
@@ -387,6 +476,27 @@ class WhatsAppService {
         setTimeout(() => reject(new Error('שליחת WhatsApp נכשלה (timeout) — נסה שנית')), timeoutMs)
       )
     ]);
+  }
+
+  async sendFile(phoneNumber, filePath, caption = '', timeoutMs = 60000) {
+    return Promise.race([
+      this._sendFileInternal(phoneNumber, filePath, caption),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('שליחת קובץ נכשלה (timeout)')), timeoutMs)
+      )
+    ]);
+  }
+
+  async _sendFileInternal(phoneNumber, filePath, caption) {
+    if (!this.isReady) throw new Error('WhatsApp is not ready');
+    const media = MessageMedia.fromFilePath(filePath);
+    const formattedNumber = normalizePhone(phoneNumber);
+    const localDigits = formattedNumber.slice(-9);
+    const chatId = this.knownContactChatIds.get(localDigits)
+      || this.knownContactChatIds.get(formattedNumber)
+      || `${formattedNumber}@c.us`;
+    await this.client.sendMessage(chatId, media, { caption, sendSeen: false });
+    console.log(`📎 File sent to ${chatId}: ${filePath}`);
   }
 
   async _sendMessageInternal(phoneNumber, message) {

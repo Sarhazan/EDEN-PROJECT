@@ -294,25 +294,51 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     e.preventDefault();
     if (!editingTemplate) return;
 
-    if (!editingTemplate.key) {
-      setError('כדי ליצור תבנית חדשה יש ללחוץ "הוסף קובץ" בתוך המודל.');
-      return;
-    }
-
     setSavingEdit(true);
     setError('');
 
     try {
-      const res = await fetch(`${API_URL}/forms/site/templates/${encodeURIComponent(editingTemplate.key)}/metadata`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          displayName: editForm.displayName,
-          templateText: editForm.templateText
-        })
-      });
-      const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error || 'שגיאה בשמירת תבנית');
+      if (!editingTemplate.key) {
+        const fd = new FormData();
+        fd.append('name', editForm.displayName || 'תבנית חדשה');
+        fd.append('has_signature', '0');
+        fd.append('mode', 'pdf_template');
+
+        const createRes = await fetch(`${API_URL}/forms/hq/custom-templates`, {
+          method: 'POST',
+          body: fd
+        });
+        const createPayload = await createRes.json();
+        if (!createRes.ok) throw new Error(createPayload.error || 'שגיאה ביצירת תבנית');
+
+        const newKey = `custom_pdf_${createPayload.item.id}`;
+        
+        if (editForm.templateText || editForm.displayName) {
+          const updateRes = await fetch(`${API_URL}/forms/site/templates/${encodeURIComponent(newKey)}/metadata`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              displayName: editForm.displayName || 'תבנית חדשה',
+              templateText: editForm.templateText || ''
+            })
+          });
+          if (!updateRes.ok) {
+            const updatePayload = await updateRes.json();
+            throw new Error(updatePayload.error || 'שגיאה בעדכון תוכן התבנית');
+          }
+        }
+      } else {
+        const res = await fetch(`${API_URL}/forms/site/templates/${encodeURIComponent(editingTemplate.key)}/metadata`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            displayName: editForm.displayName,
+            templateText: editForm.templateText
+          })
+        });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'שגיאה בשמירת תבנית');
+      }
 
       setEditOpen(false);
       setEditingTemplate(null);
@@ -648,7 +674,9 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
 
   const formatDispatchDateTime = (value) => {
     if (!value) return '-';
-    const date = new Date(value);
+    // SQLite CURRENT_TIMESTAMP is UTC — append ' UTC' so the browser parses it correctly
+    const normalized = (value.includes('Z') || value.includes('+')) ? value : value + ' UTC';
+    const date = new Date(normalized);
     if (Number.isNaN(date.getTime())) return '-';
     return date.toLocaleString('he-IL', {
       day: '2-digit',
@@ -671,7 +699,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <h1 className="text-3xl font-bold">{title}</h1>
           <p className="text-gray-600 mt-1">{subtitle}</p>
         </div>
-        <button onClick={openCreateTemplate} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">➕ הוסף תבנית</button>
+        <button onClick={openCreateTemplate} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">תבנית חדשה</button>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
@@ -873,7 +901,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form onSubmit={saveTemplateEdit} className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 space-y-4" dir="rtl">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold">{editingTemplate?.key ? 'עריכת תבנית' : 'הוספת תבנית'}</h3>
+              <h3 className="text-xl font-bold">{editingTemplate?.key ? 'עריכת תבנית' : 'תבנית חדשה'}</h3>
               <button type="button" onClick={() => setEditOpen(false)} className="text-2xl text-gray-500">×</button>
             </div>
 
@@ -916,12 +944,12 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               }}
               className="w-full border border-indigo-300 text-indigo-700 hover:bg-indigo-50 rounded-lg py-2.5 font-medium"
             >
-              הוסף קובץ
+              טען טופס
             </button>
 
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setEditOpen(false)} className="px-4 py-2 border rounded-lg">ביטול</button>
-              <button disabled={savingEdit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">{savingEdit ? 'שומר...' : 'שמור'}</button>
+              <button disabled={savingEdit || !editForm.displayName.trim()} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg">{savingEdit ? 'שומר...' : 'שמור'}</button>
             </div>
           </form>
         </div>

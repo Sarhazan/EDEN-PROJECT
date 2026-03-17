@@ -322,7 +322,16 @@ router.post('/hq/custom-templates', pdfTemplateUpload.single('file'), (req, res)
     const signatureHeight = req.body.signature_height ? Number(req.body.signature_height) : null;
 
     if (!name) return res.status(400).json({ error: 'שם הטופס הוא שדה חובה' });
-    if (!req.file) return res.status(400).json({ error: 'לא נבחר קובץ PDF' });
+
+    let relativePath = '';
+    if (req.file) {
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      if (ext !== '.pdf') {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ error: 'יש לבחור קובץ PDF בלבד' });
+      }
+      relativePath = `/uploads/forms/pdf_templates/${req.file.filename}`;
+    }
 
     if (hasSignature) {
       const valid = Number.isFinite(signaturePage) && signaturePage >= 1
@@ -335,14 +344,6 @@ router.post('/hq/custom-templates', pdfTemplateUpload.single('file'), (req, res)
         return res.status(400).json({ error: 'בעת בחירת חתימה חובה לשמור מיקום חתימה תקין (עמוד + X/Y + רוחב/גובה)' });
       }
     }
-
-    const ext = path.extname(req.file.originalname).toLowerCase();
-    if (ext !== '.pdf') {
-      fs.unlinkSync(req.file.path);
-      return res.status(400).json({ error: 'יש לבחור קובץ PDF בלבד' });
-    }
-
-    const relativePath = `/uploads/forms/pdf_templates/${req.file.filename}`;
 
     const result = db.prepare(`
       INSERT INTO custom_form_templates (
@@ -904,7 +905,27 @@ router.post('/site/send', async (req, res) => {
         deliveryError = 'וואטסאפ לא מחובר';
       } else {
         try {
-          await whatsappService.sendMessage(resolvedContact, previewMessage);
+          // Determine if there's a PDF file to send with the message
+          let pdfAbsPath = null;
+          const pdfCaption = previewMessage;
+
+          if (isCustomPdf && customTemplate?.file_path) {
+            const p = path.join(__dirname, '..', '..', customTemplate.file_path.replace(/^\//, ''));
+            if (fs.existsSync(p)) pdfAbsPath = p;
+          } else if (!isCustomPdf) {
+            // System template — check for file in form_template_metadata
+            const meta = db.prepare(`SELECT file_path FROM form_template_metadata WHERE template_key = ? AND is_deleted = 0`).get(templateKey);
+            if (meta?.file_path) {
+              const p = path.join(__dirname, '..', '..', meta.file_path.replace(/^\//, ''));
+              if (fs.existsSync(p)) pdfAbsPath = p;
+            }
+          }
+
+          if (pdfAbsPath) {
+            await whatsappService.sendFile(resolvedContact, pdfAbsPath, pdfCaption);
+          } else {
+            await whatsappService.sendMessage(resolvedContact, previewMessage);
+          }
           finalDeliveryStatus = 'sent';
         } catch (sendError) {
           finalDeliveryStatus = 'failed';
@@ -1078,6 +1099,11 @@ router.get('/site/dispatches/:id', (req, res) => {
 
     if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
 
+    if (!dispatch.custom_template_file && dispatch.template_key) {
+      const meta = db.prepare('SELECT file_path FROM form_template_metadata WHERE template_key = ? AND is_deleted = 0').get(dispatch.template_key);
+      dispatch.system_template_file = meta?.file_path || null;
+    }
+
     // Resolve template definition
     let template;
     if (dispatch.custom_template_id && dispatch.custom_template_file) {
@@ -1104,7 +1130,8 @@ router.get('/site/dispatches/:id', (req, res) => {
       template = {
         ...baseTemplate,
         label: presentation.label,
-        template_text: presentation.template_text
+        template_text: presentation.template_text,
+        pdf_url: dispatch.system_template_file || null
       };
     }
 
@@ -1344,10 +1371,12 @@ router.post('/hq/dispatches/:id/send-live', async (req, res) => {
     if (!id) return res.status(400).json({ error: 'id לא תקין' });
 
     const dispatch = db.prepare(`
-      SELECT id, template_key, recipient_name, recipient_contact, payload_json,
-             delivery_status, delivery_mode
-      FROM form_dispatches
-      WHERE id = ?
+      SELECT fd.id, fd.template_key, fd.recipient_name, fd.recipient_contact, fd.payload_json,
+             fd.delivery_status, fd.delivery_mode,
+             cft.name AS custom_template_name, cft.file_path AS custom_template_file
+      FROM form_dispatches fd
+      LEFT JOIN custom_form_templates cft ON cft.id = fd.custom_template_id
+      WHERE fd.id = ?
     `).get(id);
 
     if (!dispatch) return res.status(404).json({ error: 'טופס לא נמצא' });
@@ -1376,7 +1405,17 @@ router.post('/hq/dispatches/:id/send-live', async (req, res) => {
     });
 
     try {
-      await whatsappService.sendMessage(dispatch.recipient_contact, message);
+      // Send file with message as caption, or message-only if no file
+      if (dispatch.custom_template_file) {
+        const absPath = path.join(__dirname, '..', '..', dispatch.custom_template_file.replace(/^\//, ''));
+        if (fs.existsSync(absPath)) {
+          await whatsappService.sendFile(dispatch.recipient_contact, absPath, message);
+        } else {
+          await whatsappService.sendMessage(dispatch.recipient_contact, message);
+        }
+      } else {
+        await whatsappService.sendMessage(dispatch.recipient_contact, message);
+      }
 
       db.prepare(`
         UPDATE form_dispatches

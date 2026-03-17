@@ -258,4 +258,24 @@ server.listen(PORT, '0.0.0.0', () => {
 // Export io instance for use in routes
 module.exports.io = io;
 
- 
+// ─── Graceful shutdown (nodemon/SIGTERM) ──────────────────────────────────
+// When nodemon restarts the server, it sends SIGTERM.
+// We destroy the WhatsApp client (kills Puppeteer Chrome) before exiting,
+// so the next start finds no stale browser running.
+async function gracefulShutdown(signal) {
+  console.log(`\n[Server] ${signal} received — shutting down WhatsApp cleanly...`);
+  try {
+    if (whatsappService.client) {
+      await whatsappService.client.destroy().catch(() => {});
+      whatsappService.client = null;
+    }
+  } catch (e) {
+    // ignore
+  }
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+// ──────────────────────────────────────────────────────────────────────────
+
