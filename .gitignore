@@ -71,3 +71,7 @@ uploads/
 
 test-results/
 playwright-report/
+
+Microsoft/
+tmp-*.pdf
+tmp_*.js
