@@ -825,7 +825,10 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                       טופס שנשלח: {getTemplateName(h)}
                     </div>
                     {h.signed_pdf_path && (
-                      <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} />
+                      <div className="h-7 w-5 overflow-hidden rounded border border-gray-300 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => window.open(`${BACKEND_URL}${h.signed_pdf_path}`, '_blank')}>
+                        <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} />
+                      </div>
                     )}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">{h.building_name || '-'} | {h.recipient_contact || '-'}</div>
