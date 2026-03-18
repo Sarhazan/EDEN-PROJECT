@@ -1201,17 +1201,18 @@ router.post('/site/dispatches/:id/submit', async (req, res) => {
 
     const { answers = {}, submittedByName = '', submittedByContact = '', signature_dataurl = null } = req.body || {};
 
-    // For built-in templates: validate required fields
-    if (!dispatch.custom_template_id) {
+    // For built-in templates with signature: validate required fields
+    // Simple notices (no has_signature) skip field validation — just a "קראתי" button
+    if (!dispatch.custom_template_id && dispatch.has_signature) {
       const template = TEMPLATE_DEFS[dispatch.template_key];
-      if (!template) return res.status(400).json({ error: 'תבנית טופס לא נתמכת' });
-
-      for (const field of template.fields) {
-        if (field.required) {
-          const value = answers[field.key];
-          const isEmpty = value === undefined || value === null || value === '' || value === false;
-          if (isEmpty) {
-            return res.status(400).json({ error: `השדה "${field.label}" הוא חובה` });
+      if (template) {
+        for (const field of template.fields) {
+          if (field.required) {
+            const value = answers[field.key];
+            const isEmpty = value === undefined || value === null || value === '' || value === false;
+            if (isEmpty) {
+              return res.status(400).json({ error: `השדה "${field.label}" הוא חובה` });
+            }
           }
         }
       }

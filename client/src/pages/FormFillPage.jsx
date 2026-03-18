@@ -485,8 +485,9 @@ export default function FormFillPage() {
         {/* Form / Signature */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <form onSubmit={submit} className="space-y-4">
-            {/* Built-in template fields — when hasSignature, skip full_name/id_number/read-ack (shown below) */}
-            {!isCustomPdf && item.template?.fields?.filter((f) =>
+            {/* Built-in template fields — hidden when no PDF + no signature (simple notice = just a button) */}
+            {/* Also skip full_name/id_number/read-ack when hasSignature (shown in dedicated section below) */}
+            {!isCustomPdf && (pdfUrl || hasSignature) && item.template?.fields?.filter((f) =>
               !(hasSignature && (
                 f.key === 'full_name' ||
                 f.key === 'id_number' ||
@@ -588,31 +589,14 @@ export default function FormFillPage() {
               </>
             )}
 
-            {/* No-signature: "I read it" button only */}
-            {!hasSignature && !isDone && (
-              <div className="pt-2 border-t border-gray-100">
-                <div className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    id="readAckNoSig"
-                    checked={readAcknowledged}
-                    onChange={(e) => setReadAcknowledged(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 flex-shrink-0"
-                  />
-                  <label htmlFor="readAckNoSig" className="text-sm font-medium cursor-pointer">
-                    קראתי את {item.template?.label || 'הטופס'}
-                  </label>
-                </div>
-              </div>
-            )}
+            {/* No-signature: no extra UI needed, submit button acts as "I read it" */}
 
             {!isDone ? (
               <button
                 type="submit"
                 disabled={
                   submitting ||
-                  (hasSignature && (!signatureDataUrl || !submittedByName.trim() || !submittedByContact.trim() || !readAcknowledged)) ||
-                  (!hasSignature && !readAcknowledged)
+                  (hasSignature && (!signatureDataUrl || !submittedByName.trim() || !submittedByContact.trim() || !readAcknowledged))
                 }
                 className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
               >
