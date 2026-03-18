@@ -221,13 +221,15 @@ export default function SettingsPage() {
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
+    setQrCode(null); // clear old QR immediately
+
     try {
-      // If already initialized but not ready (e.g. QR expired / not scanned),
-      // disconnect first so the server creates a fresh session and new QR.
-      if (whatsappStatus.isInitialized && !whatsappStatus.isReady) {
+      // Always disconnect first if any session exists — ensures a fresh QR every time
+      if (whatsappStatus.isInitialized || whatsappStatus.isReady || whatsappStatus.needsAuth) {
         await axios.post(`${API_URL}/whatsapp/disconnect`).catch(() => {});
-        setQrCode(null);
         setWhatsappStatus({ isReady: false, needsAuth: false, isInitialized: false, error: null });
+        // Small delay to let the server clean up
+        await new Promise(r => setTimeout(r, 800));
       }
 
       const response = await axios.post(`${API_URL}/whatsapp/connect`);
