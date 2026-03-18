@@ -814,31 +814,35 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <div className="space-y-2">
             {tabData.map((h) => (
               <div key={h.id} className="border border-gray-200 rounded-lg p-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium">#{h.id} • {h.recipient_name}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[h.status] || 'bg-gray-100 text-gray-600'}`}>{STATUS_LABELS[h.status] || h.status}</span>
-                </div>
-                {/* Template label + signed PDF thumbnail side by side */}
-                <div className="mt-2 flex items-center gap-2 flex-wrap">
-                  <div className="inline-flex items-center rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 px-2.5 py-1 text-sm font-semibold" dir="rtl">
-                    טופס שנשלח: {getTemplateName(h)}
-                  </div>
-                  {h.signed_pdf_path && (
-                    <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} small />
-                  )}
-                </div>
-                <div className="text-sm text-gray-500 mt-1">{h.building_name || '-'} | {h.recipient_contact || '-'}</div>
-                <div className="mt-2 space-y-1 text-sm" dir="rtl">
-                  <div><span className="font-medium text-gray-700">נשלח ב:</span> <span className="text-gray-600">{formatDispatchDateTime(h.created_at)}</span></div>
-                  {h.submitted_at && (
-                    <div><span className="font-medium text-gray-700">הוגש ב:</span> <span className="text-gray-600">{formatDispatchDateTime(h.submitted_at)}</span></div>
-                  )}
-                  {getDispatchMessage(h) ? (
-                    <div>
-                      <span className="font-medium text-gray-700">הודעה שנשלחה:</span>
-                      <div className="mt-1 bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 whitespace-pre-wrap">{getDispatchMessage(h)}</div>
+                <div className="flex items-start gap-3">
+                  {/* Left: card content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">#{h.id} • {h.recipient_name}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[h.status] || 'bg-gray-100 text-gray-600'}`}>{STATUS_LABELS[h.status] || h.status}</span>
                     </div>
-                  ) : null}
+                    <div className="mt-2 inline-flex items-center rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 px-2.5 py-1 text-sm font-semibold" dir="rtl">
+                      טופס שנשלח: {getTemplateName(h)}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">{h.building_name || '-'} | {h.recipient_contact || '-'}</div>
+                    <div className="mt-2 space-y-1 text-sm" dir="rtl">
+                      <div><span className="font-medium text-gray-700">נשלח ב:</span> <span className="text-gray-600">{formatDispatchDateTime(h.created_at)}</span></div>
+                      {h.submitted_at && (
+                        <div><span className="font-medium text-gray-700">הוגש ב:</span> <span className="text-gray-600">{formatDispatchDateTime(h.submitted_at)}</span></div>
+                      )}
+                      {getDispatchMessage(h) ? (
+                        <div>
+                          <span className="font-medium text-gray-700">הודעה שנשלחה:</span>
+                          <div className="mt-1 bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 whitespace-pre-wrap">{getDispatchMessage(h)}</div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  {/* Right: signed PDF thumbnail (same size as template cards) */}
+                  {h.signed_pdf_path
+                    ? <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} />
+                    : <div className="w-20 shrink-0" />
+                  }
                 </div>
               </div>
             ))}
