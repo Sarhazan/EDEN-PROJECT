@@ -1000,7 +1000,7 @@ router.get('/site/dispatches/pending-signature', (req, res) => {
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
              fd.building_id, b.name AS building_name,
              ftm.display_name AS template_label,
-             fd.payload_json
+             fd.payload_json, fd.signed_pdf_path
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       LEFT JOIN form_template_metadata ftm ON ftm.template_key = fd.template_key
@@ -1024,7 +1024,7 @@ router.get('/site/dispatches/sent-today', (req, res) => {
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
              fd.building_id, b.name AS building_name,
              ftm.display_name AS template_label,
-             fd.payload_json
+             fd.payload_json, fd.signed_pdf_path
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       LEFT JOIN form_template_metadata ftm ON ftm.template_key = fd.template_key
@@ -1052,7 +1052,7 @@ router.get('/site/dispatches/history', (req, res) => {
              fd.delivery_channel, fd.delivery_mode, fd.delivery_status,
              fd.building_id, b.name AS building_name,
              ftm.display_name AS template_label,
-             fd.payload_json
+             fd.payload_json, fd.signed_pdf_path
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       LEFT JOIN form_template_metadata ftm ON ftm.template_key = fd.template_key
