@@ -404,8 +404,10 @@ export default function FormFillPage() {
         {/* Form / Signature */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <form onSubmit={submit} className="space-y-4">
-            {/* Built-in template fields */}
-            {!isCustomPdf && item.template?.fields?.map((field) => (
+            {/* Built-in template fields — when hasSignature, skip full_name/id_number (shown below) */}
+            {!isCustomPdf && item.template?.fields?.filter((f) =>
+              !(hasSignature && (f.key === 'full_name' || f.key === 'id_number'))
+            ).map((field) => (
               <label key={field.key} className="block text-sm">
                 <span className="font-medium">{field.label} {field.required ? <span className="text-red-500">*</span> : null}</span>
 
