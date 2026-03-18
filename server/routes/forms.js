@@ -1118,6 +1118,23 @@ router.get('/site/dispatches/:id', (req, res) => {
     }
 
     // Resolve template definition
+    // Fallback: if custom_template_id is null but template_key looks like a custom PDF, try to load it
+    if (!dispatch.custom_template_id && dispatch.template_key?.startsWith('custom_pdf_')) {
+      const customId = Number(dispatch.template_key.replace('custom_pdf_', ''));
+      const customTpl = db.prepare('SELECT * FROM custom_form_templates WHERE id = ?').get(customId);
+      if (customTpl) {
+        dispatch.custom_template_id = customTpl.id;
+        dispatch.custom_template_name = customTpl.name;
+        dispatch.custom_template_file = customTpl.file_path;
+        dispatch.custom_signature_page = customTpl.signature_page;
+        dispatch.custom_signature_x = customTpl.signature_x;
+        dispatch.custom_signature_y = customTpl.signature_y;
+        dispatch.custom_signature_width = customTpl.signature_width;
+        dispatch.custom_signature_height = customTpl.signature_height;
+        if (!dispatch.has_signature) dispatch.has_signature = customTpl.has_signature;
+      }
+    }
+
     let template;
     if (dispatch.custom_template_id && dispatch.custom_template_file) {
       const presentation = resolveTemplatePresentation(dispatch.template_key, dispatch.custom_template_name || 'טופס PDF', '');
