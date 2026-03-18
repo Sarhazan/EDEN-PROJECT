@@ -814,14 +814,14 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <div className="space-y-2">
             {tabData.map((h) => (
               <div key={h.id} className="border border-gray-200 rounded-lg p-3">
-                <div className="flex items-start gap-3" dir="ltr">
-                  {/* Thumbnail on the visual-left = RTL right side */}
+                <div className="flex items-start gap-3" dir="rtl">
+                  {/* Thumbnail first in RTL = appears on the right */}
                   {h.signed_pdf_path
                     ? <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} />
                     : <div className="w-20 shrink-0" />
                   }
                   {/* Card content */}
-                  <div className="flex-1 min-w-0" dir="rtl">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">#{h.id} • {h.recipient_name}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[h.status] || 'bg-gray-100 text-gray-600'}`}>{STATUS_LABELS[h.status] || h.status}</span>
