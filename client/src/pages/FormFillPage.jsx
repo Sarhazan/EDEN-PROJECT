@@ -485,9 +485,9 @@ export default function FormFillPage() {
         {/* Form / Signature */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <form onSubmit={submit} className="space-y-4">
-            {/* Built-in template fields — hidden when no PDF + no signature (simple notice = just a button) */}
-            {/* Also skip full_name/id_number/read-ack when hasSignature (shown in dedicated section below) */}
-            {!isCustomPdf && (pdfUrl || hasSignature) && item.template?.fields?.filter((f) =>
+            {/* Built-in template fields — shown ONLY when hasSignature */}
+            {/* PDF without signature = just "קראתי" button, no fields */}
+            {!isCustomPdf && hasSignature && item.template?.fields?.filter((f) =>
               !(hasSignature && (
                 f.key === 'full_name' ||
                 f.key === 'id_number' ||
