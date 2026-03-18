@@ -251,8 +251,20 @@ export default function FormFillPage() {
     setSubmitting(true);
 
     try {
+      // When hasSignature, full_name/id_number/accepted_regulation are hidden from template fields
+      // but the server still validates them — inject them into answers from the dedicated fields.
+      const mergedAnswers = { ...answers };
+      if (item.has_signature) {
+        if (item.template?.fields?.some((f) => f.key === 'full_name'))
+          mergedAnswers.full_name = submittedByName.trim();
+        if (item.template?.fields?.some((f) => f.key === 'id_number'))
+          mergedAnswers.id_number = submittedByContact.trim();
+        if (item.template?.fields?.some((f) => f.key === 'accepted_regulation'))
+          mergedAnswers.accepted_regulation = readAcknowledged;
+      }
+
       const body = {
-        answers,
+        answers: mergedAnswers,
         submittedByName,
         submittedByContact,
         readAcknowledged: true,
