@@ -604,7 +604,7 @@ export default function FormFillPage() {
               </button>
             ) : (
               <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-center">
-                {item.status === 'signed' ? '✍️ הטופס נחתם בהצלחה' : '✅ הטופס הוגש בהצלחה'}
+                {item.status === 'signed' ? '✍️ הטופס נחתם בהצלחה' : '✅ הטופס נקרא בהצלחה'}
               </div>
             )}
           </form>

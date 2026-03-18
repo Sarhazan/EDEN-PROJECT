@@ -10,7 +10,7 @@ GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 const DEFAULT_SIGNATURE_BOX = { x: 0.62, y: 0.78, width: 0.28, height: 0.12 };
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
 
-const STATUS_LABELS = { sent: 'נשלח', opened: 'נפתח', submitted: 'הוגש', signed: 'נחתם' };
+const STATUS_LABELS = { sent: 'נשלח', opened: 'נפתח', submitted: 'נקרא', signed: 'נחתם' };
 const STATUS_COLORS = {
   sent: 'bg-blue-100 text-blue-700',
   opened: 'bg-yellow-100 text-yellow-700',

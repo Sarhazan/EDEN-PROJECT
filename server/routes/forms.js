@@ -1019,7 +1019,7 @@ router.get('/site/dispatches/pending-signature', (req, res) => {
       LEFT JOIN buildings b ON b.id = fd.building_id
       LEFT JOIN form_template_metadata ftm ON ftm.template_key = fd.template_key
       WHERE fd.has_signature = 1
-        AND fd.status IN ('sent', 'opened', 'submitted')
+        AND fd.status IN ('sent', 'opened')
       ORDER BY fd.created_at DESC
       LIMIT 200
     `).all();
