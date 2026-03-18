@@ -98,6 +98,7 @@ function buildDispatchMessage(dispatch, payload) {
 
   return [
     ...introLines,
+    payload?.personalMessage ? payload.personalMessage : null,
     payload?.title ? `נושא: ${payload.title}` : null,
     contentText ? `תוכן: ${contentText}` : null,
     payload?.amount ? `סכום: ${payload.amount}` : null,
@@ -768,6 +769,7 @@ router.post('/site/send', async (req, res) => {
       recipientContact,
       title,
       message,
+      personalMessage,
       amount,
       deliveryMode
     } = req.body;
@@ -849,6 +851,7 @@ router.post('/site/send', async (req, res) => {
     const payloadObj = {
       title: title || '',
       message: message || '',
+      personalMessage: personalMessage?.trim() || '',
       templateLabel: templatePresentation.label,
       templateText: (message || templatePresentation.template_text || '').trim(),
       amount: amount || null,

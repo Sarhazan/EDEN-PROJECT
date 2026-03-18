@@ -85,13 +85,14 @@ function PdfThumbnail({ filePath, apiUrl, small = false }) {
       <button
         type="button"
         onClick={() => window.open(fileUrl, '_blank', 'noopener,noreferrer')}
-        className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden shrink-0"
+        className="inline-flex items-center justify-center rounded border border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden shrink-0"
+        style={{ width: 20, height: 28 }}
         title="פתח מסמך חתום"
         aria-label="פתח מסמך חתום"
       >
         {loading
           ? <span className="text-[8px] text-gray-400">…</span>
-          : <canvas ref={canvasRef} className="max-w-full max-h-full block" />
+          : <canvas ref={canvasRef} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         }
       </button>
     );
@@ -136,6 +137,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
 
   const [form, setForm] = useState({
     recipientType: 'tenant',
+    personalMessage: '',
     buildingId: '',
     recipientId: '',
     recipientName: '',
@@ -416,6 +418,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
         ...form,
         templateKey: selectedTemplate.key,
         templateText: form.message,
+        personalMessage: form.personalMessage?.trim() || '',
         deliveryMode: 'live'
       };
       if (!payload.recipientName?.trim()) throw new Error('נא לבחור/להזין נמען');
@@ -825,10 +828,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                       טופס שנשלח: {getTemplateName(h)}
                     </div>
                     {h.signed_pdf_path && (
-                      <div className="h-7 w-5 overflow-hidden rounded border border-gray-300 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => window.open(`${BACKEND_URL}${h.signed_pdf_path}`, '_blank')}>
-                        <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} />
-                      </div>
+                      <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} small />
                     )}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">{h.building_name || '-'} | {h.recipient_contact || '-'}</div>
@@ -895,11 +895,17 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               <label className="text-sm">טלפון/אימייל
                 <input className="mt-1 w-full border rounded-lg px-3 py-2" value={form.recipientContact} onChange={(e) => setForm((p) => ({ ...p, recipientContact: e.target.value }))} />
               </label>
-
-              <label className="text-sm">כותרת
-                <input className="mt-1 w-full border rounded-lg px-3 py-2" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
-              </label>
             </div>
+
+            <label className="text-sm block">כותרת
+              <input className="mt-1 w-full border rounded-lg px-3 py-2" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+            </label>
+
+            <label className="text-sm block">
+              הודעה אישית
+              <span className="text-xs text-gray-400 mr-1">(אופציונלי — תוצג לנמען לפני תוכן הטופס)</span>
+              <textarea className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" rows={2} placeholder="לדוגמה: שלום יוסי, מצורף הטופס לחתימה..." value={form.personalMessage} onChange={(e) => setForm((p) => ({ ...p, personalMessage: e.target.value }))} />
+            </label>
 
             <label className="text-sm block">תוכן הודעה לתבנית זו
               <textarea className="mt-1 w-full border rounded-lg px-3 py-2" rows={4} value={form.message} onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))} />
