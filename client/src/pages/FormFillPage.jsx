@@ -404,9 +404,14 @@ export default function FormFillPage() {
         {/* Form / Signature */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <form onSubmit={submit} className="space-y-4">
-            {/* Built-in template fields — when hasSignature, skip full_name/id_number (shown below) */}
+            {/* Built-in template fields — when hasSignature, skip full_name/id_number/read-ack (shown below) */}
             {!isCustomPdf && item.template?.fields?.filter((f) =>
-              !(hasSignature && (f.key === 'full_name' || f.key === 'id_number'))
+              !(hasSignature && (
+                f.key === 'full_name' ||
+                f.key === 'id_number' ||
+                f.key === 'accepted_regulation' ||
+                (f.type === 'checkbox' && /קרא|אישור|confirm|read/i.test(f.label + f.key))
+              ))
             ).map((field) => (
               <label key={field.key} className="block text-sm">
                 <span className="font-medium">{field.label} {field.required ? <span className="text-red-500">*</span> : null}</span>
@@ -481,7 +486,7 @@ export default function FormFillPage() {
                       className="w-4 h-4 mt-0.5 flex-shrink-0"
                     />
                     <label htmlFor="readAck" className="text-sm font-medium cursor-pointer">
-                      אני מאשר שקראתי את <span className="text-red-500">*</span> <span className="text-gray-700">{item.template?.label || 'הטופס'}</span>
+                      אני מאשר שקראתי את {item.template?.label || 'הטופס'} <span className="text-red-500">*</span>
                     </label>
                   </div>
                 </div>
