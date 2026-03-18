@@ -1136,7 +1136,7 @@ router.get('/site/dispatches/:id', (req, res) => {
     }
 
     let template;
-    if (dispatch.custom_template_id && dispatch.custom_template_file) {
+    if (dispatch.custom_template_id) {
       const presentation = resolveTemplatePresentation(dispatch.template_key, dispatch.custom_template_name || 'טופס PDF', '');
       template = {
         key: dispatch.template_key,
