@@ -211,6 +211,7 @@ export default function FormFillPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [readAcknowledged, setReadAcknowledged] = useState(false);
 
   const load = async () => {
     try {
@@ -254,6 +255,7 @@ export default function FormFillPage() {
         answers,
         submittedByName,
         submittedByContact,
+        readAcknowledged: true,
         ...(item.has_signature ? { signature_dataurl: signatureDataUrl } : {})
       };
 
@@ -443,12 +445,12 @@ export default function FormFillPage() {
               </label>
             ))}
 
-            {/* Submitter info */}
+            {/* Submitter info + signature (with signature required) */}
             {hasSignature && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-                  <label className="text-sm">
-                    שם מלא
+                <div className="pt-2 border-t border-gray-100 space-y-3">
+                  <label className="block text-sm">
+                    <span className="font-medium">שם מלא <span className="text-red-500">*</span></span>
                     <input
                       className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
                       value={submittedByName}
@@ -456,8 +458,8 @@ export default function FormFillPage() {
                       disabled={isDone}
                     />
                   </label>
-                  <label className="text-sm">
-                    תעודת זהות
+                  <label className="block text-sm">
+                    <span className="font-medium">תעודת זהות <span className="text-red-500">*</span></span>
                     <input
                       className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
                       value={submittedByContact}
@@ -465,6 +467,21 @@ export default function FormFillPage() {
                       disabled={isDone}
                     />
                   </label>
+
+                  {/* "I confirm I read" checkbox */}
+                  <div className="flex items-start gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="readAck"
+                      checked={isDone || readAcknowledged}
+                      onChange={(e) => setReadAcknowledged(e.target.checked)}
+                      disabled={isDone}
+                      className="w-4 h-4 mt-0.5 flex-shrink-0"
+                    />
+                    <label htmlFor="readAck" className="text-sm font-medium cursor-pointer">
+                      אני מאשר שקראתי את <span className="text-red-500">*</span> <span className="text-gray-700">{item.template?.label || 'הטופס'}</span>
+                    </label>
+                  </div>
                 </div>
 
                 {/* Signature pad */}
@@ -483,13 +500,35 @@ export default function FormFillPage() {
               </>
             )}
 
+            {/* No-signature: "I read it" button only */}
+            {!hasSignature && !isDone && (
+              <div className="pt-2 border-t border-gray-100">
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="readAckNoSig"
+                    checked={readAcknowledged}
+                    onChange={(e) => setReadAcknowledged(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 flex-shrink-0"
+                  />
+                  <label htmlFor="readAckNoSig" className="text-sm font-medium cursor-pointer">
+                    קראתי את {item.template?.label || 'הטופס'}
+                  </label>
+                </div>
+              </div>
+            )}
+
             {!isDone ? (
               <button
                 type="submit"
-                disabled={submitting || (hasSignature && !signatureDataUrl)}
+                disabled={
+                  submitting ||
+                  (hasSignature && (!signatureDataUrl || !submittedByName.trim() || !submittedByContact.trim() || !readAcknowledged)) ||
+                  (!hasSignature && !readAcknowledged)
+                }
                 className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
               >
-                {submitting ? 'שולח...' : hasSignature ? '✍️ חתום ושלח' : 'שלח טופס'}
+                {submitting ? 'שולח...' : hasSignature ? '✍️ חתום ושלח' : 'קראתי ✓'}
               </button>
             ) : (
               <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-center">
