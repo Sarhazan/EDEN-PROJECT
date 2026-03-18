@@ -977,7 +977,8 @@ router.get('/site/dispatches', (req, res) => {
              fd.building_id, b.name AS building_name,
              fd.tenant_id, fd.supplier_id,
              ftm.display_name AS template_label,
-             fd.payload_json
+             fd.payload_json,
+             fd.signed_pdf_path
       FROM form_dispatches fd
       LEFT JOIN buildings b ON b.id = fd.building_id
       LEFT JOIN form_template_metadata ftm ON ftm.template_key = fd.template_key

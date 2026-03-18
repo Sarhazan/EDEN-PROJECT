@@ -807,6 +807,9 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                 <div className="text-sm text-gray-500 mt-1">{h.building_name || '-'} | {h.recipient_contact || '-'}</div>
                 <div className="mt-2 space-y-1 text-sm" dir="rtl">
                   <div><span className="font-medium text-gray-700">נשלח ב:</span> <span className="text-gray-600">{formatDispatchDateTime(h.created_at)}</span></div>
+                  {h.submitted_at && (
+                    <div><span className="font-medium text-gray-700">הוגש ב:</span> <span className="text-gray-600">{formatDispatchDateTime(h.submitted_at)}</span></div>
+                  )}
                   {getDispatchMessage(h) ? (
                     <div>
                       <span className="font-medium text-gray-700">הודעה שנשלחה:</span>
@@ -814,6 +817,20 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                     </div>
                   ) : null}
                 </div>
+                {/* Signed PDF attachment */}
+                {h.signed_pdf_path && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} />
+                    <a
+                      href={`${BACKEND_URL}${h.signed_pdf_path}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-indigo-600 hover:underline font-medium"
+                    >
+                      📄 פתח מסמך חתום ↗
+                    </a>
+                  </div>
+                )}
               </div>
             ))}
           </div>

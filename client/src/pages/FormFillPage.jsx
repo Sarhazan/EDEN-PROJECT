@@ -210,7 +210,8 @@ export default function FormFillPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [referenceNumber, setReferenceNumber] = useState('');
   const [readAcknowledged, setReadAcknowledged] = useState(false);
 
   const load = async () => {
@@ -280,8 +281,8 @@ export default function FormFillPage() {
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'שגיאה בשליחת הטופס');
 
-      const statusLabel = payload.status === 'signed' ? 'הטופס נחתם ונשלח בהצלחה. תודה!' : 'הטופס נשלח בהצלחה. תודה!';
-      setSuccess(statusLabel);
+      setSuccess(true);
+      setReferenceNumber(`EDEN-${id}-${Date.now().toString().slice(-6)}`);
       await load();
     } catch (e2) {
       setError(e2.message || 'שגיאה בשליחה');
@@ -289,6 +290,75 @@ export default function FormFillPage() {
       setSubmitting(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex flex-col items-center justify-center p-6" dir="rtl">
+        <style>{`
+          @keyframes envelope-rise {
+            0% { transform: translateY(40px) scale(0.8); opacity: 0; }
+            60% { transform: translateY(-10px) scale(1.05); opacity: 1; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+          }
+          @keyframes envelope-flap {
+            0% { transform: rotateX(0deg); }
+            40% { transform: rotateX(-30deg); }
+            100% { transform: rotateX(0deg); }
+          }
+          @keyframes checkmark-pop {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          @keyframes text-fade {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          .envelope-anim { animation: envelope-rise 0.7s cubic-bezier(.22,.68,0,1.2) forwards; }
+          .checkmark-anim { animation: checkmark-pop 0.5s cubic-bezier(.22,.68,0,1.2) 0.6s both; }
+          .text-anim { animation: text-fade 0.5s ease 1s both; }
+          .ref-anim { animation: text-fade 0.5s ease 1.3s both; }
+        `}</style>
+
+        <div className="envelope-anim mb-6">
+          <div className="relative w-32 h-24 mx-auto">
+            {/* Envelope body */}
+            <div className="absolute inset-0 bg-indigo-600 rounded-xl shadow-2xl" />
+            {/* Envelope flap top */}
+            <div className="absolute top-0 left-0 right-0 h-12 overflow-hidden">
+              <div className="w-0 h-0 mx-auto"
+                style={{ borderLeft: '64px solid transparent', borderRight: '64px solid transparent', borderTop: '48px solid #4f46e5' }} />
+            </div>
+            {/* Envelope V fold */}
+            <div className="absolute top-0 left-0 right-0 h-12 overflow-hidden">
+              <div className="w-0 h-0 mx-auto"
+                style={{ borderLeft: '64px solid transparent', borderRight: '64px solid transparent', borderTop: '48px solid #6366f1' }} />
+            </div>
+            {/* Bottom triangle folds */}
+            <div className="absolute bottom-0 left-0"
+              style={{ width: 0, height: 0, borderBottom: '48px solid #4338ca', borderRight: '64px solid transparent' }} />
+            <div className="absolute bottom-0 right-0"
+              style={{ width: 0, height: 0, borderBottom: '48px solid #4338ca', borderLeft: '64px solid transparent' }} />
+            {/* Checkmark */}
+            <div className="checkmark-anim absolute inset-0 flex items-center justify-center z-10">
+              <span className="text-4xl">✅</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-anim text-center space-y-2">
+          <h2 className="text-2xl font-bold text-gray-800">נשלח בהצלחה!</h2>
+          <p className="text-gray-500 text-sm">הטופס התקבל במערכת. תודה רבה.</p>
+        </div>
+
+        <div className="ref-anim mt-6 bg-white border border-indigo-200 rounded-xl px-6 py-4 text-center shadow-sm">
+          <p className="text-xs text-gray-400 mb-1">מספר אסמכתא</p>
+          <p className="text-lg font-bold text-indigo-700 tracking-widest">{referenceNumber}</p>
+          <p className="text-xs text-gray-400 mt-1">שמור מספר זה לעיונך</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center text-gray-500">טוען טופס...</div>;
@@ -411,7 +481,6 @@ export default function FormFillPage() {
         )}
 
         {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
-        {success && <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-center font-medium">{success}</div>}
 
         {/* Form / Signature */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
