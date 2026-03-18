@@ -923,7 +923,18 @@ router.post('/site/send', async (req, res) => {
       } else {
         try {
           // Send text only — PDF is accessible via the link in the message
-          await whatsappService.sendMessage(resolvedContact, previewMessage);
+          // Retry once on timeout (first send after fresh auth can be slow)
+          try {
+            await whatsappService.sendMessage(resolvedContact, previewMessage);
+          } catch (firstErr) {
+            if (firstErr.message && firstErr.message.includes('timeout')) {
+              console.warn('[forms] First send timed out, retrying once after 3s...');
+              await new Promise(r => setTimeout(r, 3000));
+              await whatsappService.sendMessage(resolvedContact, previewMessage);
+            } else {
+              throw firstErr;
+            }
+          }
           finalDeliveryStatus = 'sent';
         } catch (sendError) {
           finalDeliveryStatus = 'failed';

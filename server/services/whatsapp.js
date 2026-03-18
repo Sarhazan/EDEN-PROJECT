@@ -468,8 +468,9 @@ class WhatsAppService {
   /**
    * Send WhatsApp message
    */
-  async sendMessage(phoneNumber, message, timeoutMs = 30000) {
+  async sendMessage(phoneNumber, message, timeoutMs = 60000) {
     // Wrap entire send in a timeout to prevent UI from getting stuck indefinitely
+    // Use 60s default — first send after fresh auth can be slow (browser session warm-up)
     return Promise.race([
       this._sendMessageInternal(phoneNumber, message),
       new Promise((_, reject) =>
