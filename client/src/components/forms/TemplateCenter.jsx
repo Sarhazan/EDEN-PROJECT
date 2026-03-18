@@ -25,7 +25,7 @@ function PdfThumbnail({ filePath, apiUrl, small = false }) {
 
   // apiUrl may be "" (same-origin production) — still valid as a relative base
   const fileUrl = filePath ? `${apiUrl || ''}${filePath}` : '';
-  const targetWidth = small ? 60 : 220;
+  const targetWidth = small ? 20 : 220;
 
   useEffect(() => {
     if (!filePath || !fileUrl || !canvasRef.current) {
@@ -92,7 +92,7 @@ function PdfThumbnail({ filePath, apiUrl, small = false }) {
       >
         {loading
           ? <span className="text-[8px] text-gray-400">…</span>
-          : <canvas ref={canvasRef} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          : <canvas ref={canvasRef} style={{ display: 'block', width: 20, height: 28 }} />
         }
       </button>
     );
@@ -254,8 +254,9 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
       recipientId: '',
       recipientName: '',
       recipientContact: '',
-      title: '',
+      title: template.label || '',
       message: template.template_text || '',
+      personalMessage: '',
       amount: ''
     }));
     setSendOpen(true);
