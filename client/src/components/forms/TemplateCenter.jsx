@@ -18,13 +18,14 @@ const STATUS_COLORS = {
   signed: 'bg-purple-100 text-purple-700'
 };
 
-function PdfThumbnail({ filePath, apiUrl }) {
+function PdfThumbnail({ filePath, apiUrl, small = false }) {
   const canvasRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
   // apiUrl may be "" (same-origin production) — still valid as a relative base
   const fileUrl = filePath ? `${apiUrl || ''}${filePath}` : '';
+  const targetWidth = small ? 60 : 220;
 
   useEffect(() => {
     if (!filePath || !fileUrl || !canvasRef.current) {
@@ -49,7 +50,6 @@ function PdfThumbnail({ filePath, apiUrl }) {
         if (cancelled) return;
 
         const viewport = page.getViewport({ scale: 1 });
-        const targetWidth = 220;
         const scale = targetWidth / viewport.width;
         const scaledViewport = page.getViewport({ scale });
 
@@ -76,9 +76,26 @@ function PdfThumbnail({ filePath, apiUrl }) {
       if (loadingTask?.destroy) loadingTask.destroy();
       if (loadedDoc?.destroy) loadedDoc.destroy();
     };
-  }, [filePath, apiUrl, fileUrl]);
+  }, [filePath, apiUrl, fileUrl, targetWidth]);
 
   if (failed || !fileUrl) return null;
+
+  if (small) {
+    return (
+      <button
+        type="button"
+        onClick={() => window.open(fileUrl, '_blank', 'noopener,noreferrer')}
+        className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden shrink-0"
+        title="פתח מסמך חתום"
+        aria-label="פתח מסמך חתום"
+      >
+        {loading
+          ? <span className="text-[8px] text-gray-400">…</span>
+          : <canvas ref={canvasRef} className="max-w-full max-h-full block" />
+        }
+      </button>
+    );
+  }
 
   return (
     <button
@@ -807,15 +824,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                     טופס שנשלח: {getTemplateName(h)}
                   </div>
                   {h.signed_pdf_path && (
-                    <a
-                      href={`${BACKEND_URL}${h.signed_pdf_path}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="פתח מסמך חתום"
-                      className="shrink-0"
-                    >
-                      <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} />
-                    </a>
+                    <PdfThumbnail filePath={h.signed_pdf_path} apiUrl={BACKEND_URL} small />
                   )}
                 </div>
                 <div className="text-sm text-gray-500 mt-1">{h.building_name || '-'} | {h.recipient_contact || '-'}</div>
