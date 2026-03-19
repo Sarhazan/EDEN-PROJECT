@@ -400,6 +400,11 @@ export default function FormFillPage() {
           {item.building_name && <p className="text-gray-600">מבנה: {item.building_name}</p>}
           {item.payload?.title && <p className="text-gray-800 font-medium">{item.payload.title}</p>}
           {item.payload?.message && !signedCustomIntro && <p className="text-gray-700 whitespace-pre-wrap">{item.payload.message}</p>}
+          {item.payload?.personalMessage && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-blue-800 mt-2 whitespace-pre-wrap">
+              {item.payload.personalMessage}
+            </div>
+          )}
           {item.payload?.amount && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-800 mt-2">
               סכום לתשלום: {item.payload.amount}

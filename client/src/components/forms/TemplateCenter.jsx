@@ -213,6 +213,28 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
 
   useEffect(() => { load(); }, []);
 
+  // Auto-refresh dispatches every 15 seconds to keep statuses up to date
+  useEffect(() => {
+    const refreshDispatches = async () => {
+      try {
+        const [pRes, sRes, hRes] = await Promise.all([
+          fetch(`${API_URL}/forms/site/dispatches/pending-signature`),
+          fetch(`${API_URL}/forms/site/dispatches/sent-today`),
+          fetch(`${API_URL}/forms/site/dispatches/history?limit=100&page=1`)
+        ]);
+        const [pData, sData, hData] = await Promise.all([pRes.json(), sRes.json(), hRes.json()]);
+        if (pRes.ok) setPendingSignature((pData.items || []).map(normalizeDispatchItem));
+        if (sRes.ok) setSentToday((sData.items || []).map(normalizeDispatchItem));
+        if (hRes.ok) setHistory((hData.items || []).map(normalizeDispatchItem));
+      } catch {
+        // silent refresh — no error UI
+      }
+    };
+
+    const interval = setInterval(refreshDispatches, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const fetchRecipients = async () => {
       try {
