@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { toastApiError, TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
 
-export default function SystemForm({ system, onClose }) {
+export default function SystemForm({ system, onClose, onOpenUnits }) {
   const { addSystem, updateSystem } = useApp();
   const isEditing = !!system;
 
@@ -127,6 +127,16 @@ export default function SystemForm({ system, onClose }) {
           {isEditing ? 'עדכן מערכת' : 'צור מערכת'}
         </button>
       </div>
+
+      {onOpenUnits && (
+        <button
+          type="button"
+          onClick={onOpenUnits}
+          className="w-full mt-2 border border-primary text-primary px-4 py-2 rounded-lg hover:bg-orange-50 min-h-[44px] transition-all duration-150 active:scale-95 flex items-center justify-center gap-2"
+        >
+          ⚙️ יחידות
+        </button>
+      )}
     </form>
   );
 }

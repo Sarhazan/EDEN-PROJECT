@@ -10,6 +10,7 @@ import '../components/forms/datepicker-custom.css';
 import axios from 'axios';
 import { Resizable } from 're-resizable';
 import { API_URL, BACKEND_URL, SHOW_DATA_CONTROLS, LS_KEYS } from '../config';
+import UnitsAttentionSection from '../components/myday/UnitsAttentionSection';
 import { useTaskFilters } from '../hooks/useTaskFilters';
 import { useManagerFilter } from '../hooks/useManagerFilter';
 import { useColumnResize } from '../hooks/useColumnResize';
@@ -1850,9 +1851,9 @@ export default function MyDayPage() {
           </div>
         </div>
       )}
+
+      {/* Units needing attention */}
+      <UnitsAttentionSection />
     </div>
   );
 }
-
-
-

@@ -900,6 +900,37 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_form_delivery_logs_dispatch_id_created_at', 'form_delivery_logs', 'dispatch_id, created_at DESC');
   createIndexIfNotExists('idx_form_template_metadata_updated_at', 'form_template_metadata', 'updated_at DESC');
 
+  // Units table (sub-items of systems, with inspection tracking)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS units (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      system_id INTEGER NOT NULL REFERENCES systems(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      inspection_date DATE,
+      alert_days INTEGER DEFAULT 30,
+      notes TEXT,
+      supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
+      building_id INTEGER REFERENCES buildings(id) ON DELETE SET NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Unit files table (attachments for units)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS unit_files (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      unit_id INTEGER NOT NULL REFERENCES units(id) ON DELETE CASCADE,
+      filename TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      original_name TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  createIndexIfNotExists('idx_units_system_id', 'units', 'system_id');
+  createIndexIfNotExists('idx_units_inspection_date', 'units', 'inspection_date');
+  createIndexIfNotExists('idx_unit_files_unit_id', 'unit_files', 'unit_id');
+
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');
 

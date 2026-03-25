@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useState, useEffect, useRef } from 'react';
+﻿import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { API_URL, SOCKET_URL, LS_KEYS } from '../config';
 
@@ -12,6 +12,8 @@ export function AppProvider({ children }) {
   const [locations, setLocations] = useState([]);
   const [buildings, setBuildings] = useState([]);
   const [tenants, setTenants] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [unitsNeedingAttention, setUnitsNeedingAttention] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -130,7 +132,8 @@ export function AppProvider({ children }) {
         fetchSuppliers(),
         fetchLocations(),
         fetchBuildings(),
-        fetchTenants()
+        fetchTenants(),
+        fetchUnitsNeedingAttention()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -460,6 +463,86 @@ export function AppProvider({ children }) {
     await fetchTenants();
   };
 
+  // Units
+  const fetchUnits = useCallback(async (systemId) => {
+    const url = systemId ? `${API_URL}/units?system_id=${systemId}` : `${API_URL}/units`;
+    const response = await fetch(url);
+    const data = await response.json();
+    setUnits(data);
+    return data;
+  }, []);
+
+  const fetchUnitsNeedingAttention = async () => {
+    try {
+      const response = await fetch(`${API_URL}/units/needs-attention`);
+      const data = await response.json();
+      setUnitsNeedingAttention(data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching units needing attention:', error);
+      setUnitsNeedingAttention([]);
+    }
+  };
+
+  const addUnit = async (unit) => {
+    const response = await fetch(`${API_URL}/units`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(unit)
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.error || 'שגיאה ביצירת יחידה');
+    }
+    const created = await response.json();
+    await fetchUnitsNeedingAttention();
+    return created;
+  };
+
+  const updateUnit = async (id, unit) => {
+    const response = await fetch(`${API_URL}/units/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(unit)
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.error || 'שגיאה בעדכון יחידה');
+    }
+    await fetchUnitsNeedingAttention();
+    return await response.json();
+  };
+
+  const deleteUnit = async (id) => {
+    const response = await fetch(`${API_URL}/units/${id}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error('שגיאה במחיקת יחידה');
+    await fetchUnitsNeedingAttention();
+  };
+
+  const uploadUnitFile = async (unitId, file, filename) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (filename) formData.append('filename', filename);
+    const response = await fetch(`${API_URL}/units/${unitId}/files`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.error || 'שגיאה בהעלאת קובץ');
+    }
+    return await response.json();
+  };
+
+  const deleteUnitFile = async (unitId, fileId) => {
+    const response = await fetch(`${API_URL}/units/${unitId}/files/${fileId}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error('שגיאה במחיקת קובץ');
+  };
+
   // Data management
   const seedData = async () => {
     const response = await fetch(`${API_URL}/data/seed`, {
@@ -550,6 +633,16 @@ export function AppProvider({ children }) {
     addTenant,
     updateTenant,
     deleteTenant,
+    // Unit methods
+    units,
+    unitsNeedingAttention,
+    fetchUnits,
+    fetchUnitsNeedingAttention,
+    addUnit,
+    updateUnit,
+    deleteUnit,
+    uploadUnitFile,
+    deleteUnitFile,
     // Data management
     seedData,
     clearData,

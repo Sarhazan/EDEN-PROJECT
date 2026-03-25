@@ -116,6 +116,7 @@ app.use('/api/history', historyRouter);
 app.use('/api/accounts', require('./routes/accounts'));
 app.use('/api/hq', require('./routes/hq'));
 app.use('/api/forms', require('./routes/forms'));
+app.use('/api/units', require('./routes/units'));
 app.use('/api/billing', require('./routes/billing'));
 
 // Set io instance in routes after all routes are loaded

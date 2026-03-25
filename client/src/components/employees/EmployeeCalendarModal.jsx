@@ -233,11 +233,11 @@ export default function EmployeeCalendarModal({ employee, isOpen, onClose }) {
   const handleSendDay = async () => {
     const dateStr = format(anchorDate, 'yyyy-MM-dd');
     const dayTasks = tasksForDate(anchorDate).filter(
-      (t) => t.status === 'draft' && t.start_time && t.start_time !== '00:00'
+      (t) => t.status === 'draft'
     );
 
     if (dayTasks.length === 0) {
-      alert('אין משימות לשליחה ביום זה (כל המשימות כבר נשלחו או ללא שעת התחלה)');
+      alert('אין משימות לשליחה ביום זה (כל המשימות כבר נשלחו)');
       return;
     }
 
