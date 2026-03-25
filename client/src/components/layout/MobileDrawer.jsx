@@ -55,7 +55,7 @@ export default function MobileDrawer({ isOpen, onClose, navItems }) {
         {/* Header */}
         <div className="p-8 border-b border-gray-700/50 flex items-center justify-between">
           <h1 className="text-2xl font-bold font-alef text-white">
-            ניהול תחזוקה
+            מערכת ניהול ואחזקה
           </h1>
           <button
             onClick={onClose}

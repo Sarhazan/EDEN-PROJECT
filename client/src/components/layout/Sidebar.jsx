@@ -3,10 +3,14 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { FaHome, FaTasks, FaCog, FaTruck, FaUsers, FaWrench, FaMapMarkerAlt, FaHistory, FaSignOutAlt, FaStar, FaRegStar, FaPlus, FaBuilding, FaEnvelope, FaFileAlt, FaMoneyBillWave } from 'react-icons/fa';
 import { useApp } from '../../context/AppContext';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+
 export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation, onAddBuilding, onAddTenant }) {
-  const { connectionStatus, logout, tasks } = useApp();
+  const { connectionStatus, logout, tasks, employees } = useApp();
   const location = useLocation();
   const [starFilter, setStarFilter] = useState(false);
+  const [siteName, setSiteName] = useState('');
+  const [managerEmployeeId, setManagerEmployeeId] = useState(null);
 
   const getAddButtonConfig = () => {
     const path = location.pathname;
@@ -25,6 +29,31 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
   useEffect(() => {
     const saved = localStorage.getItem('starFilter');
     if (saved !== null) setStarFilter(saved === 'true');
+  }, []);
+
+  // Load site name and manager from settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const [siteRes, managerRes] = await Promise.all([
+          fetch(`${API_URL}/accounts/settings/site_name`).then(r => r.json()).catch(() => ({})),
+          fetch(`${API_URL}/accounts/settings/manager_employee_id`).then(r => r.json()).catch(() => ({})),
+        ]);
+        if (siteRes.value) setSiteName(siteRes.value);
+        if (managerRes.value) setManagerEmployeeId(parseInt(managerRes.value, 10));
+      } catch {}
+    };
+    loadSettings();
+
+    // Listen for manager changes from SettingsPage
+    const onManagerChanged = (e) => setManagerEmployeeId(e.detail?.id ? parseInt(e.detail.id, 10) : null);
+    const onSiteNameChanged = (e) => setSiteName(e.detail?.value || '');
+    window.addEventListener('manager:changed', onManagerChanged);
+    window.addEventListener('siteName:changed', onSiteNameChanged);
+    return () => {
+      window.removeEventListener('manager:changed', onManagerChanged);
+      window.removeEventListener('siteName:changed', onSiteNameChanged);
+    };
   }, []);
 
   const handleStarFilterToggle = () => {
@@ -73,7 +102,7 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
     <div className="w-72 bg-gradient-to-b from-gray-900 to-gray-800 text-white h-screen fixed right-0 top-0 shadow-xl flex flex-col">
       <div className="p-8 border-b border-gray-700/50">
         <h1 className="text-2xl font-bold font-alef text-white">
-          ניהול תחזוקה
+          מערכת ניהול ואחזקה
         </h1>
       </div>
 
@@ -132,11 +161,15 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
       {/* Site Info + Connection */}
       <div className="px-4 py-3 border-t border-gray-700/50 space-y-3">
         <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3">
-          <div className="text-[11px] text-slate-400 mb-1">כתובת</div>
-          <div className="text-sm font-semibold text-white">NXT בע"מ</div>
+          <div className="text-[11px] text-slate-400 mb-1">שם המתחם</div>
+          <div className="text-sm font-semibold text-white">{siteName || '—'}</div>
 
-          <div className="text-[11px] text-slate-400 mt-3 mb-1">מנהל אתר</div>
-          <div className="text-sm font-semibold text-white">סהר חזן</div>
+          <div className="text-[11px] text-slate-400 mt-3 mb-1">מנהל המתחם</div>
+          <div className="text-sm font-semibold text-white">
+            {managerEmployeeId
+              ? (employees || []).find(e => e.id === managerEmployeeId)?.name || '—'
+              : '—'}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 text-sm">

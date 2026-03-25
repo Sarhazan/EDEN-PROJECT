@@ -57,6 +57,11 @@ export default function SettingsPage() {
   const [autoSendWorkdayTimeSaving, setAutoSendWorkdayTimeSaving] = useState(false);
   const [autoSendWorkdayTimeSaved, setAutoSendWorkdayTimeSaved] = useState(false);
 
+  // Site name state
+  const [siteName, setSiteName] = useState('');
+  const [siteNameSaving, setSiteNameSaving] = useState(false);
+  const [siteNameSaved, setSiteNameSaved] = useState(false);
+
   // Manager selection state
   const [managerEmployeeId, setManagerEmployeeId] = useState('');
   const [managerSaving, setManagerSaving] = useState(false);
@@ -207,8 +212,12 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchManagerData = async () => {
       try {
-        const settingRes = await axios.get(`${API_URL}/accounts/settings/manager_employee_id`).catch(() => ({ data: { value: '' } }));
-        if (settingRes.data.value) setManagerEmployeeId(settingRes.data.value);
+        const [managerRes, siteRes] = await Promise.all([
+          axios.get(`${API_URL}/accounts/settings/manager_employee_id`).catch(() => ({ data: { value: '' } })),
+          axios.get(`${API_URL}/accounts/settings/site_name`).catch(() => ({ data: { value: '' } })),
+        ]);
+        if (managerRes.data.value) setManagerEmployeeId(managerRes.data.value);
+        if (siteRes.data.value) setSiteName(siteRes.data.value);
       } catch (err) {
         console.error('Error fetching manager data:', err);
       }
@@ -382,6 +391,23 @@ export default function SettingsPage() {
       console.error('Error saving auto send workday time:', err);
     } finally {
       setAutoSendWorkdayTimeSaving(false);
+    }
+  };
+
+  // ─── Site name handler ─────────────────────────────────────────────────────
+  const handleSiteNameChange = async (newValue) => {
+    setSiteName(newValue);
+    setSiteNameSaving(true);
+    setSiteNameSaved(false);
+    try {
+      await axios.put(`${API_URL}/accounts/settings/site_name`, { value: newValue });
+      window.dispatchEvent(new CustomEvent('siteName:changed', { detail: { value: newValue } }));
+      setSiteNameSaved(true);
+      setTimeout(() => setSiteNameSaved(false), 2000);
+    } catch (err) {
+      console.error('Error saving site name:', err);
+    } finally {
+      setSiteNameSaving(false);
     }
   };
 
@@ -843,6 +869,31 @@ export default function SettingsPage() {
         <p className="text-gray-600 mb-4">
           בחר את העובד שמשמש כמנהל. הפילטר "משימות מנהל" ביום שלי יציג רק משימות המיועדות אליו.
         </p>
+        {/* Site Name */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">שם המתחם</label>
+          <div className="flex items-center gap-4">
+            <input
+              type="text"
+              value={siteName}
+              onChange={(e) => handleSiteNameChange(e.target.value)}
+              placeholder="לדוגמא: NXT בע&quot;מ"
+              className="w-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            {siteNameSaving && (
+              <span className="text-blue-500 flex items-center gap-1">
+                <FaSpinner className="animate-spin" /> שומר...
+              </span>
+            )}
+            {siteNameSaved && (
+              <span className="text-green-500 flex items-center gap-1">
+                <FaCheck /> נשמר!
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">שם זה יוצג בסרגל הצד של המערכת</p>
+        </div>
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">המנהל</label>
           <div className="flex items-center gap-4">
