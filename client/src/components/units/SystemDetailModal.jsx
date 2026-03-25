@@ -7,12 +7,20 @@ import UnitForm from './UnitForm';
 import SystemForm from '../forms/SystemForm';
 import { API_URL } from '../../config';
 
-export default function SystemDetailModal({ system, isOpen, onClose }) {
+export default function SystemDetailModal({ system, isOpen, onClose, openAddUnit = false }) {
   const { deleteUnit, deleteUnitFile } = useApp();
   const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUnitForm, setShowUnitForm] = useState(false);
   const [editingUnit, setEditingUnit] = useState(null);
+
+  // פתח טופס הוספה מיד אם התבקש
+  useEffect(() => {
+    if (isOpen && openAddUnit) {
+      setShowUnitForm(true);
+      setEditingUnit(null);
+    }
+  }, [isOpen, openAddUnit]);
   const [showSystemEdit, setShowSystemEdit] = useState(false);
   const systemIdRef = useRef(system?.id);
   systemIdRef.current = system?.id;

@@ -11,6 +11,7 @@ export default function SystemsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSystem, setEditingSystem] = useState(null);
   const [selectedSystem, setSelectedSystem] = useState(null);
+  const [openAddUnitOnOpen, setOpenAddUnitOnOpen] = useState(false);
   const [unitSummary, setUnitSummary] = useState({});
 
   useEffect(() => {
@@ -60,6 +61,13 @@ export default function SystemsPage() {
 
   const handleOpenUnits = (e, system) => {
     e.stopPropagation();
+    setOpenAddUnitOnOpen(false);
+    setSelectedSystem(system);
+  };
+
+  const handleOpenUnitsAddUnit = (e, system) => {
+    e.stopPropagation();
+    setOpenAddUnitOnOpen(true);
     setSelectedSystem(system);
   };
 
@@ -119,7 +127,14 @@ export default function SystemsPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
+                    <button
+                      onClick={(e) => handleOpenUnits(e, system)}
+                      className="flex items-center gap-1 text-xs bg-primary text-white px-2 py-1 rounded-lg hover:bg-orange-600 transition-colors"
+                      title="יחידות"
+                    >
+                      יחידות
+                    </button>
                     <button
                       onClick={(e) => handleEdit(e, system)}
                       className="text-blue-500 hover:text-blue-600 p-1"
@@ -183,7 +198,8 @@ export default function SystemsPage() {
       <SystemDetailModal
         system={selectedSystem}
         isOpen={!!selectedSystem}
-        onClose={() => setSelectedSystem(null)}
+        onClose={() => { setSelectedSystem(null); setOpenAddUnitOnOpen(false); }}
+        openAddUnit={openAddUnitOnOpen}
       />
     </div>
   );
