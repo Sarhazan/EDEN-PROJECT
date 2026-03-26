@@ -7,7 +7,7 @@ const { db } = require('../database/schema');
 const router = express.Router();
 
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads', 'units');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true }); } catch(e) { console.warn('[units] Could not create uploads dir:', e.message); }
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
@@ -140,6 +140,7 @@ router.get('/needs-attention', (req, res) => {
 
 // POST /api/units — create
 router.post('/', (req, res) => {
+  console.log('[units POST] body:', JSON.stringify(req.body));
   try {
     const { name, system_id, inspection_date, alert_days, notes, supplier_id, building_id, serial_number,
             recurring_enabled, recurring_frequency, recurring_interval } = req.body;
