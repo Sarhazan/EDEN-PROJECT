@@ -919,6 +919,13 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                     </button>
                   </div>
                 </div>
+                {/* Send button */}
+                <button
+                  onClick={() => openSend({ key: `interactive_${t.id}`, label: t.name, template_text: '' })}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-semibold transition-all active:scale-95"
+                >
+                  שלח טופס
+                </button>
               </div>
             ))}
           </div>

@@ -372,6 +372,149 @@ export default function FormFillPage() {
     return <div className="min-h-screen bg-gray-50 p-6">טופס לא נמצא</div>;
   }
 
+  // ── Interactive form render ──────────────────────────────────────────────
+  if (item.isInteractive && item.interactiveTemplate) {
+    const itpl = item.interactiveTemplate;
+    const fields = itpl.fields_schema || [];
+    const isDoneInteractive = item.status === 'submitted' || item.status === 'signed';
+
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 md:p-8" dir="rtl">
+        <form
+          onSubmit={submit}
+          className="max-w-xl mx-auto bg-white rounded-2xl shadow-md overflow-hidden"
+        >
+          {/* Logo */}
+          {itpl.logo_path && (
+            <div className="bg-white border-b border-gray-100 px-6 py-4 flex justify-center">
+              <img
+                src={`${BACKEND_URL}${itpl.logo_path}`}
+                alt="לוגו חברה"
+                className="h-14 object-contain"
+              />
+            </div>
+          )}
+
+          {/* Header */}
+          <div className="px-6 py-5 border-b border-gray-100">
+            <h1 className="text-xl font-bold text-gray-900">{itpl.name}</h1>
+            {itpl.description && <p className="text-sm text-gray-500 mt-1">{itpl.description}</p>}
+            {item.payload?.personalMessage && (
+              <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-blue-800 text-sm whitespace-pre-wrap">
+                {item.payload.personalMessage}
+              </div>
+            )}
+          </div>
+
+          {/* Fields */}
+          <div className="px-6 py-5 space-y-5">
+            {isDoneInteractive ? (
+              <div className="text-center text-green-700 font-medium py-6">✅ הטופס הוגש בהצלחה. תודה!</div>
+            ) : (
+              <>
+                {fields.map((field) => (
+                  <div key={field.id}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {field.label}
+                      {field.required && <span className="text-red-500 mr-1">*</span>}
+                    </label>
+
+                    {['text', 'number', 'phone', 'id', 'email'].includes(field.type) && (
+                      <input
+                        type={field.type === 'email' ? 'email' : field.type === 'number' ? 'number' : 'text'}
+                        required={field.required}
+                        value={answers[field.id] || ''}
+                        onChange={e => setAnswer(field.id, e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder={field.placeholder || ''}
+                      />
+                    )}
+
+                    {field.type === 'date' && (
+                      <input
+                        type="date"
+                        required={field.required}
+                        value={answers[field.id] || ''}
+                        onChange={e => setAnswer(field.id, e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      />
+                    )}
+
+                    {field.type === 'select' && (
+                      <select
+                        required={field.required}
+                        value={answers[field.id] || ''}
+                        onChange={e => setAnswer(field.id, e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      >
+                        <option value="">בחר אפשרות...</option>
+                        {(field.options || []).map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                      </select>
+                    )}
+
+                    {field.type === 'checkbox' && (
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!answers[field.id]}
+                          onChange={e => setAnswer(field.id, e.target.checked)}
+                          className="w-4 h-4 rounded"
+                        />
+                        <span>{field.checkboxLabel || field.label}</span>
+                      </label>
+                    )}
+
+                    {field.type === 'photo' && (
+                      <div>
+                        <label className="cursor-pointer block border-2 border-dashed border-gray-300 rounded-lg p-4 text-center text-gray-500 text-sm hover:border-indigo-400 transition-colors">
+                          {answers[field.id] ? '✅ תמונה נבחרה' : '📷 לחץ לבחירת תמונה'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = ev => setAnswer(field.id, ev.target.result);
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        </label>
+                        {answers[field.id] && (
+                          <img src={answers[field.id]} alt="תצוגה מקדימה" className="mt-2 w-24 h-24 object-cover rounded-lg border" />
+                        )}
+                      </div>
+                    )}
+
+                    {field.type === 'signature' && (
+                      <SignaturePad
+                        onSignature={v => setAnswer(field.id, v)}
+                        disabled={isDoneInteractive}
+                      />
+                    )}
+                  </div>
+                ))}
+
+                {error && <div className="text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm">{error}</div>}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3 font-semibold text-base transition-all disabled:opacity-50"
+                >
+                  {submitting ? 'שולח...' : 'שלח טופס'}
+                </button>
+              </>
+            )}
+          </div>
+        </form>
+      </div>
+    );
+  }
+  // ── End interactive form ─────────────────────────────────────────────────
+
   const isCustomPdf = item.template?.is_custom_pdf;
   const hasSignature = item.has_signature;
   const isDone = item.status === 'submitted' || item.status === 'signed';

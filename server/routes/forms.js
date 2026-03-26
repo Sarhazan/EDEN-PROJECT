@@ -779,7 +779,14 @@ router.post('/site/send', async (req, res) => {
     // Resolve custom PDF template
     let customTemplate = null;
     const isCustomPdf = templateKey.startsWith('custom_pdf_');
-    if (isCustomPdf) {
+    const isInteractive = templateKey.startsWith('interactive_');
+    let interactiveTemplate = null;
+
+    if (isInteractive) {
+      const interactiveId = Number(templateKey.replace('interactive_', ''));
+      interactiveTemplate = db.prepare('SELECT * FROM interactive_form_templates WHERE id = ?').get(interactiveId);
+      if (!interactiveTemplate) return res.status(400).json({ error: 'תבנית אינטראקטיבית לא נמצאה' });
+    } else if (isCustomPdf) {
       const customId = Number(templateKey.replace('custom_pdf_', ''));
       customTemplate = db.prepare('SELECT * FROM custom_form_templates WHERE id = ?').get(customId);
       if (!customTemplate) return res.status(400).json({ error: 'תבנית PDF לא נמצאה' });
@@ -842,11 +849,22 @@ router.post('/site/send', async (req, res) => {
       }
     }
 
-    const templatePresentation = resolveTemplatePresentation(
-      templateKey,
-      isCustomPdf ? customTemplate.name : TEMPLATE_DEFS[templateKey].label,
-      isCustomPdf ? '' : TEMPLATE_DEFS[templateKey].defaultText || ''
-    );
+    let templateLabel = '';
+    if (isInteractive) {
+      templateLabel = interactiveTemplate.name;
+    } else if (isCustomPdf) {
+      templateLabel = customTemplate.name;
+    } else {
+      templateLabel = TEMPLATE_DEFS[templateKey]?.label || templateKey;
+    }
+
+    const templatePresentation = isInteractive
+      ? { label: templateLabel, template_text: message || '' }
+      : resolveTemplatePresentation(
+          templateKey,
+          isCustomPdf ? customTemplate.name : TEMPLATE_DEFS[templateKey].label,
+          isCustomPdf ? '' : TEMPLATE_DEFS[templateKey].defaultText || ''
+        );
 
     const payloadObj = {
       title: title || '',
@@ -855,7 +873,9 @@ router.post('/site/send', async (req, res) => {
       templateLabel: templatePresentation.label,
       templateText: (message || templatePresentation.template_text || '').trim(),
       amount: amount || null,
-      isSignedCustomPdf: Boolean(isCustomPdf && customTemplate?.has_signature)
+      isSignedCustomPdf: Boolean(isCustomPdf && customTemplate?.has_signature),
+      isInteractive: Boolean(isInteractive),
+      interactiveTemplateId: isInteractive ? interactiveTemplate.id : null
     };
     const payload = JSON.stringify(payloadObj);
 
@@ -864,11 +884,14 @@ router.post('/site/send', async (req, res) => {
     const resolvedDeliveryMode = requestedMode === 'live' ? 'live' : 'manual';
     const deliveryStatus = resolvedDeliveryMode === 'live' ? 'sending' : 'queued';
 
+    // Interactive forms can have signature field inside fields_schema
     let hasSignatureVal = 0;
-    if (customTemplate) {
+    if (isInteractive) {
+      const fields = JSON.parse(interactiveTemplate.fields_schema || '[]');
+      hasSignatureVal = fields.some(f => f.type === 'signature') ? 1 : 0;
+    } else if (customTemplate) {
       hasSignatureVal = customTemplate.has_signature ? 1 : 0;
     } else {
-      // Built-in template — check form_template_metadata
       const builtInMeta = db.prepare('SELECT has_signature FROM form_template_metadata WHERE template_key = ? AND is_deleted = 0').get(templateKey);
       hasSignatureVal = builtInMeta?.has_signature === 1 ? 1 : 0;
     }
@@ -1133,6 +1156,30 @@ router.get('/site/dispatches/:id', (req, res) => {
         dispatch.custom_signature_height = customTpl.signature_height;
         if (!dispatch.has_signature) dispatch.has_signature = customTpl.has_signature;
       }
+    }
+
+    // Handle interactive template
+    const payloadData = (() => { try { return JSON.parse(dispatch.payload_json || '{}'); } catch { return {}; } })();
+    if (payloadData.isInteractive && payloadData.interactiveTemplateId) {
+      const itpl = db.prepare('SELECT * FROM interactive_form_templates WHERE id = ?').get(payloadData.interactiveTemplateId);
+      if (!itpl) return res.status(404).json({ error: 'תבנית אינטראקטיבית לא נמצאה' });
+      const fields = JSON.parse(itpl.fields_schema || '[]');
+      const submission = dispatch.submission_id ? db.prepare('SELECT * FROM form_submissions WHERE dispatch_id = ?').get(dispatch.id) : null;
+      return res.json({
+        item: {
+          ...dispatch,
+          isInteractive: true,
+          interactiveTemplate: {
+            id: itpl.id,
+            name: itpl.name,
+            description: itpl.description,
+            fields_schema: fields,
+            logo_path: itpl.logo_path || ''
+          },
+          template: { label: itpl.name, is_interactive: true },
+          submission: submission ? { answers: JSON.parse(submission.answers_json || '{}'), submitted_at: submission.submitted_at } : null
+        }
+      });
     }
 
     let template;
