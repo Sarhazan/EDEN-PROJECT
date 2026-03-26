@@ -949,6 +949,9 @@ function initializeDatabase() {
     )
   `);
 
+  // Migration: add logo_path to interactive_form_templates if missing
+  try { db.exec(`ALTER TABLE interactive_form_templates ADD COLUMN logo_path TEXT`); } catch {}
+
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');
 
