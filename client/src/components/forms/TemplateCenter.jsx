@@ -116,6 +116,7 @@ function PdfThumbnail({ filePath, apiUrl, small = false }) {
 export default function TemplateCenter({ title = 'מרכז תבניות', subtitle = 'בחר תבנית ושלח בלחיצה' }) {
   const { buildings, whatsappConnected } = useApp();
   const [templates, setTemplates] = useState([]);
+  const [interactiveTemplates, setInteractiveTemplates] = useState([]);
   const [pendingSignature, setPendingSignature] = useState([]);
   const [sentToday, setSentToday] = useState([]);
   const [history, setHistory] = useState([]);
@@ -196,15 +197,17 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   const load = async () => {
     setError('');
     try {
-      const [tRes, pRes, sRes, hRes] = await Promise.all([
+      const [tRes, pRes, sRes, hRes, iRes] = await Promise.all([
         fetch(`${API_URL}/forms/site/templates`),
         fetch(`${API_URL}/forms/site/dispatches/pending-signature`),
         fetch(`${API_URL}/forms/site/dispatches/sent-today`),
-        fetch(`${API_URL}/forms/site/dispatches/history?limit=100&page=1`)
+        fetch(`${API_URL}/forms/site/dispatches/history?limit=100&page=1`),
+        fetch(`${API_URL}/forms/interactive`)
       ]);
-      const [tData, pData, sData, hData] = await Promise.all([tRes.json(), pRes.json(), sRes.json(), hRes.json()]);
+      const [tData, pData, sData, hData, iData] = await Promise.all([tRes.json(), pRes.json(), sRes.json(), hRes.json(), iRes.json()]);
       if (!tRes.ok || !pRes.ok || !sRes.ok || !hRes.ok) throw new Error(tData.error || pData.error || sData.error || hData.error || 'שגיאה בטעינת מרכז התבניות');
       setTemplates(tData.templates || []);
+      setInteractiveTemplates(Array.isArray(iData) ? iData : []);
       setPendingSignature((pData.items || []).map(normalizeDispatchItem));
       setSentToday((sData.items || []).map(normalizeDispatchItem));
       setHistory((hData.items || []).map(normalizeDispatchItem));
@@ -775,6 +778,52 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
               פתח קישור לטופס
             </a>
           )}
+        </div>
+      )}
+
+      {/* ── Interactive (AI) Templates ── */}
+      {interactiveTemplates.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-base font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <span>✨</span> טפסים אינטראקטיביים
+            <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{interactiveTemplates.length}</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {interactiveTemplates.map(t => (
+              <div key={t.id} className="bg-white rounded-xl border border-indigo-100 p-4 space-y-3" dir="rtl">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-base leading-tight">{t.name}</div>
+                    {t.description && <div className="text-xs text-gray-500 mt-0.5 truncate">{t.description}</div>}
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">✨ AI</span>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">{t.fields_schema?.length || 0} שדות</span>
+                      {t.logo_path && <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">🏢 לוגו</span>}
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      {(t.fields_schema || []).slice(0, 3).map((f, i) => (
+                        <div key={i} className="text-xs text-gray-500 truncate">· {f.label}</div>
+                      ))}
+                      {(t.fields_schema || []).length > 3 && (
+                        <div className="text-xs text-gray-400">ועוד {t.fields_schema.length - 3}...</div>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`למחוק את הטופס "${t.name}"?`)) return;
+                      await fetch(`${API_URL}/forms/interactive/${t.id}`, { method: 'DELETE' });
+                      setInteractiveTemplates(prev => prev.filter(x => x.id !== t.id));
+                    }}
+                    className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                    title="מחק"
+                  >
+                    <FaTrash className="text-xs" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
