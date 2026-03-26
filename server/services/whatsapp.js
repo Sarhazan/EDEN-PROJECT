@@ -40,6 +40,7 @@ class WhatsAppService {
     this.readyPollingInterval = null;
     this.knownContactChatIds = new Map(); // normalizedDigits -> chatId
     this.reinitTimer = null;
+    this.reinitCount = 0;
   }
 
   /**
@@ -338,12 +339,20 @@ class WhatsAppService {
   }
 
   scheduleReinitialize(delayMs = 4000, reason = 'unknown') {
+    const MAX_REINIT = 3;
+    this.reinitCount = (this.reinitCount || 0) + 1;
+
+    if (this.reinitCount > MAX_REINIT) {
+      console.warn(`⛔ WhatsApp reinitialize stopped after ${MAX_REINIT} attempts. Please reconnect manually via Settings.`);
+      return;
+    }
+
     if (this.reinitTimer) {
       clearTimeout(this.reinitTimer);
       this.reinitTimer = null;
     }
 
-    console.log(`🔁 Scheduling WhatsApp reinitialize in ${delayMs}ms (reason: ${reason})`);
+    console.log(`🔁 Scheduling WhatsApp reinitialize in ${delayMs}ms (reason: ${reason}, attempt ${this.reinitCount}/${MAX_REINIT})`);
     this.reinitTimer = setTimeout(async () => {
       this.reinitTimer = null;
       try {
