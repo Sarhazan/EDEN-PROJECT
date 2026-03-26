@@ -264,21 +264,23 @@ router.post('/gemini/connect', async (req, res) => {
     const { apiKey } = req.body;
     if (!apiKey?.trim()) return res.status(400).json({ error: 'API Key is required' });
 
-    // Test the key
+    // Test the key — quota errors (429) still mean the key is valid
     const { GoogleGenerativeAI } = require('@google/generative-ai');
-    let testOk = false;
     let testError = null;
     try {
       const genAI = new GoogleGenerativeAI(apiKey.trim());
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const result = await model.generateContent('say ok');
-      testOk = !!result.response.text();
+      await model.generateContent('say ok');
     } catch (e) {
-      testError = e.message;
-    }
-
-    if (!testOk) {
-      return res.status(400).json({ error: 'Gemini API Key validation failed', details: testError });
+      const isQuota = e.message?.includes('429') || e.message?.includes('quota') || e.message?.includes('RESOURCE_EXHAUSTED');
+      const isInvalidKey = e.message?.includes('API_KEY_INVALID') || e.message?.includes('400') || e.message?.includes('401') || e.message?.includes('403');
+      if (isInvalidKey) {
+        return res.status(400).json({ error: 'API Key לא תקין', details: e.message });
+      }
+      if (!isQuota) {
+        testError = e.message; // non-quota error — warn but allow
+      }
+      // quota error = key is valid, just limited
     }
 
     // Save to env + DB
