@@ -3,8 +3,90 @@ import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { API_URL, BACKEND_URL } from '../../config';
 import { useApp } from '../../context/AppContext';
-import { FaEdit, FaTrash, FaPaperclip, FaMagic } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPaperclip, FaMagic, FaEye, FaTimes } from 'react-icons/fa';
 import AIFormWizard from './AIFormWizard';
+
+const FIELD_TYPE_ICONS = {
+  text: '✏️', number: '🔢', phone: '📞', id: '🪪', email: '📧',
+  date: '📅', photo: '📷', signature: '✍️', checkbox: '☑️', select: '📋'
+};
+
+function InteractiveFormPreviewModal({ template, onClose, backendUrl }) {
+  if (!template) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" dir="rtl">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between rounded-t-2xl z-10">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <FaTimes />
+          </button>
+          <h2 className="font-bold text-gray-800 text-lg">{template.name}</h2>
+        </div>
+
+        {/* Form preview body */}
+        <div className="overflow-y-auto p-5 space-y-4">
+          {/* Logo */}
+          {template.logo_path && (
+            <div className="flex justify-center pb-2 border-b border-gray-100">
+              <img
+                src={`${backendUrl}${template.logo_path}`}
+                alt="לוגו חברה"
+                className="h-14 object-contain"
+              />
+            </div>
+          )}
+
+          {template.description && (
+            <p className="text-sm text-gray-500 text-center">{template.description}</p>
+          )}
+
+          {/* Fields */}
+          {(template.fields_schema || []).map((field, i) => (
+            <div key={i}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {FIELD_TYPE_ICONS[field.type] || '📝'} {field.label}
+                {field.required && <span className="text-red-400 mr-1">*</span>}
+              </label>
+
+              {field.type === 'text' || field.type === 'number' || field.type === 'phone' || field.type === 'id' || field.type === 'email' ? (
+                <input
+                  type={field.type === 'email' ? 'email' : field.type === 'number' ? 'number' : 'text'}
+                  disabled
+                  placeholder={`הכנס ${field.label}`}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400"
+                />
+              ) : field.type === 'date' ? (
+                <input type="date" disabled className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50" />
+              ) : field.type === 'select' ? (
+                <select disabled className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400">
+                  <option>בחר אפשרות...</option>
+                  {(field.options || []).map((opt, j) => <option key={j}>{opt}</option>)}
+                </select>
+              ) : field.type === 'checkbox' ? (
+                <label className="flex items-center gap-2 text-sm text-gray-500 cursor-not-allowed">
+                  <input type="checkbox" disabled className="w-4 h-4" />
+                  <span>{field.label}</span>
+                </label>
+              ) : field.type === 'photo' ? (
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center text-gray-400 text-sm bg-gray-50">
+                  📷 לחץ להעלאת תמונה
+                </div>
+              ) : field.type === 'signature' ? (
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center text-gray-400 text-sm bg-gray-50 h-20 flex items-center justify-center">
+                  ✍️ אזור חתימה
+                </div>
+              ) : null}
+            </div>
+          ))}
+
+          <p className="text-center text-xs text-gray-300 pt-2">תצוגה מקדימה בלבד — השדות אינם פעילים</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -151,6 +233,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
   });
 
   const [showAIWizard, setShowAIWizard] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadName, setUploadName] = useState('');
@@ -764,6 +847,12 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
         onSaved={() => { setShowAIWizard(false); load(); }}
       />
 
+      <InteractiveFormPreviewModal
+        template={previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+        backendUrl={BACKEND_URL}
+      />
+
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
       {success && (
         <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 space-y-1">
@@ -809,17 +898,26 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={async () => {
-                      if (!confirm(`למחוק את הטופס "${t.name}"?`)) return;
-                      await fetch(`${API_URL}/forms/interactive/${t.id}`, { method: 'DELETE' });
-                      setInteractiveTemplates(prev => prev.filter(x => x.id !== t.id));
-                    }}
-                    className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
-                    title="מחק"
-                  >
-                    <FaTrash className="text-xs" />
-                  </button>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button
+                      onClick={() => setPreviewTemplate(t)}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors"
+                      title="צפה בטופס"
+                    >
+                      <FaEye className="text-xs" />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`למחוק את הטופס "${t.name}"?`)) return;
+                        await fetch(`${API_URL}/forms/interactive/${t.id}`, { method: 'DELETE' });
+                        setInteractiveTemplates(prev => prev.filter(x => x.id !== t.id));
+                      }}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                      title="מחק"
+                    >
+                      <FaTrash className="text-xs" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
