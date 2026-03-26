@@ -933,6 +933,7 @@ function initializeDatabase() {
 
   // Migration: add recurring inspection fields to units
   const tryAlter = (sql) => { try { db.exec(sql); } catch(e) { if (!e.message.includes('duplicate column name')) console.error(e.message); } };
+  tryAlter(`ALTER TABLE units ADD COLUMN serial_number TEXT`);
   tryAlter(`ALTER TABLE units ADD COLUMN recurring_enabled BOOLEAN DEFAULT 0`);
   tryAlter(`ALTER TABLE units ADD COLUMN recurring_frequency TEXT DEFAULT 'monthly'`);
   tryAlter(`ALTER TABLE units ADD COLUMN recurring_interval INTEGER DEFAULT 1`);
