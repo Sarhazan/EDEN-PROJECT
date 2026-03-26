@@ -1,0 +1,11 @@
+const db = require('better-sqlite3')('maintenance.db');
+const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+console.log('Tables:', tables.map(t=>t.name).join(', '));
+const taskInfo = db.prepare('PRAGMA table_info(tasks)').all();
+console.log('tasks columns:', taskInfo.map(c=>c.name).join(', '));
+const tenantInfo = db.prepare('PRAGMA table_info(tenants)').all();
+console.log('tenants columns:', tenantInfo.map(c=>c.name).join(', '));
+const buildInfo = db.prepare('PRAGMA table_info(buildings)').all();
+console.log('buildings columns:', buildInfo.map(c=>c.name).join(', '));
+const supInfo = db.prepare('PRAGMA table_info(suppliers)').all();
+console.log('suppliers columns:', supInfo.map(c=>c.name).join(', '));
