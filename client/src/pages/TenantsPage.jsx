@@ -11,11 +11,22 @@ export default function TenantsPage() {
   const [billingByTenantId, setBillingByTenantId] = useState({});
   const [editingTenant, setEditingTenant] = useState(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const filteredTenants = useMemo(() => {
-    if (selectedBuildingId === 'all') return tenants;
-    return tenants.filter((tenant) => String(tenant.building_id) === selectedBuildingId);
-  }, [tenants, selectedBuildingId]);
+    let result = tenants;
+    if (selectedBuildingId !== 'all') {
+      result = result.filter((t) => String(t.building_id) === selectedBuildingId);
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter((t) =>
+        [t.name, t.phone, t.email, t.apartment_number, t.notes, t.building_name]
+          .some((field) => String(field || '').toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [tenants, selectedBuildingId, searchQuery]);
 
   useEffect(() => {
     const fetchBillingSummaries = async () => {
@@ -64,7 +75,24 @@ export default function TenantsPage() {
           <p className="text-gray-600 mt-1">ניהול דיירים לפי מבנים, דירות וקומות</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="חיפוש דייר..."
+              className="border border-gray-300 rounded-lg px-3 py-2 pe-9 min-h-[44px] w-52 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+            {searchQuery ? (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+              >×</button>
+            ) : (
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+            )}
+          </div>
           <select
             value={selectedBuildingId}
             onChange={(e) => setSelectedBuildingId(e.target.value)}
