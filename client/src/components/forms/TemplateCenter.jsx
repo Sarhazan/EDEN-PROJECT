@@ -3,7 +3,8 @@ import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { API_URL, BACKEND_URL } from '../../config';
 import { useApp } from '../../context/AppContext';
-import { FaEdit, FaTrash, FaPaperclip } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPaperclip, FaMagic } from 'react-icons/fa';
+import AIFormWizard from './AIFormWizard';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -148,6 +149,7 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
     deliveryMode: 'live'
   });
 
+  const [showAIWizard, setShowAIWizard] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadName, setUploadName] = useState('');
@@ -742,8 +744,22 @@ export default function TemplateCenter({ title = 'מרכז תבניות', subtit
           <h1 className="text-3xl font-bold">{title}</h1>
           <p className="text-gray-600 mt-1">{subtitle}</p>
         </div>
-        <button onClick={openCreateTemplate} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">תבנית חדשה</button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowAIWizard(true)}
+            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2.5 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-all"
+          >
+            <FaMagic size={14} /> צור עם AI
+          </button>
+          <button onClick={openCreateTemplate} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium">תבנית חדשה</button>
+        </div>
       </div>
+
+      <AIFormWizard
+        isOpen={showAIWizard}
+        onClose={() => setShowAIWizard(false)}
+        onSaved={() => { setShowAIWizard(false); load(); }}
+      />
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
       {success && (

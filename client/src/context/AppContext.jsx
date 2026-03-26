@@ -484,6 +484,16 @@ export function AppProvider({ children }) {
     }
   };
 
+  const completeUnitInspection = async (unitId) => {
+    const response = await fetch(`${API_URL}/units/${unitId}/complete-inspection`, { method: 'POST' });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.error || 'שגיאה בעדכון בדיקה');
+    }
+    await fetchUnitsNeedingAttention();
+    return await response.json();
+  };
+
   const addUnit = async (unit) => {
     const response = await fetch(`${API_URL}/units`, {
       method: 'POST',
@@ -639,6 +649,7 @@ export function AppProvider({ children }) {
     fetchUnits,
     fetchUnitsNeedingAttention,
     addUnit,
+    completeUnitInspection,
     updateUnit,
     deleteUnit,
     uploadUnitFile,

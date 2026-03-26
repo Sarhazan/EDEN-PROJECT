@@ -1590,4 +1590,138 @@ router.post('/hq/dispatches/:id/send-live', async (req, res) => {
   }
 });
 
+// ─── AI Form Builder ───────────────────────────────────────────────────────
+
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+function getGeminiModel() {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error('GEMINI_API_KEY not configured');
+  const genAI = new GoogleGenerativeAI(key);
+  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+}
+
+const FIELD_TYPES = ['text', 'number', 'phone', 'id', 'email', 'date', 'photo', 'signature', 'checkbox', 'select'];
+
+const AI_SYSTEM_PROMPT = `אתה עוזר חכם שמסייע לבנות טפסים דיגיטליים לחברות ניהול נכסים ובניינים.
+המטרה שלך: להבין מה המשתמש צריך, לשאול עד 4 שאלות מנחות בלבד אם חסר מידע, ולהפיק JSON של הטופס.
+
+כללים:
+- אל תשאל יותר מ-4 שאלות סה"כ בכל השיחה
+- אם המשתמש נתן מספיק מידע — הפק את הטופס ישירות בלי שאלות
+- כשיש לך מספיק מידע, הפק JSON בפורמט המדויק הזה (ורק JSON, בתוך \`\`\`json ... \`\`\`):
+
+{
+  "ready": true,
+  "name": "שם הטופס",
+  "description": "תיאור קצר",
+  "fields": [
+    { "id": "field_1", "label": "תווית השדה", "type": "text", "required": true },
+    ...
+  ]
+}
+
+סוגי שדות אפשריים: text, number, phone, id (ת\"ז), email, date, photo (העלאת תמונה), signature (חתימה), checkbox (תיבת סימון), select (בחירה מרשימה — הוסף "options": ["אפשרות 1", "אפשרות 2"])
+
+כשאתה שואל שאלות (לא מוכן עדיין לייצר):
+{ "ready": false, "question": "שאלה אחת ברורה וקצרה בעברית" }
+
+חשוב: תמיד תחזיר JSON תקין בתוך \`\`\`json ... \`\`\``;
+
+// POST /api/forms/ai-chat — multi-turn AI conversation
+router.post('/ai-chat', async (req, res) => {
+  try {
+    const { messages } = req.body; // [{ role: 'user'|'model', parts: [{text}] }]
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: 'messages array required' });
+    }
+
+    const model = getGeminiModel();
+    const chat = model.startChat({
+      history: [
+        { role: 'user', parts: [{ text: AI_SYSTEM_PROMPT }] },
+        { role: 'model', parts: [{ text: 'הבנתי. אני מוכן לעזור לבנות טפסים.' }] },
+        ...messages.slice(0, -1)
+      ],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+    });
+
+    const lastMsg = messages[messages.length - 1];
+    const result = await chat.sendMessage(lastMsg.parts[0].text);
+    const text = result.response.text();
+
+    // Parse JSON block from response
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[1].trim());
+      return res.json({ raw: text, parsed });
+    }
+
+    // Fallback: try to parse entire text as JSON
+    try {
+      const parsed = JSON.parse(text.trim());
+      return res.json({ raw: text, parsed });
+    } catch {
+      return res.json({ raw: text, parsed: { ready: false, question: text.trim() } });
+    }
+  } catch (err) {
+    console.error('[AI Form] chat error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/forms/interactive — save AI-generated form template
+router.post('/interactive', (req, res) => {
+  try {
+    const { name, description, fields_schema, logo_path } = req.body;
+    if (!name || !fields_schema) return res.status(400).json({ error: 'name and fields_schema required' });
+    const fieldsJson = typeof fields_schema === 'string' ? fields_schema : JSON.stringify(fields_schema);
+    // If no logo_path provided, pull from settings
+    let resolvedLogo = logo_path || '';
+    if (!resolvedLogo) {
+      const logoSetting = db.prepare(`SELECT value FROM settings WHERE key = 'company_logo_path'`).get();
+      resolvedLogo = logoSetting?.value || '';
+    }
+    const result = db.prepare(`
+      INSERT INTO interactive_form_templates (name, description, fields_schema, logo_path)
+      VALUES (?, ?, ?, ?)
+    `).run(name, description || '', fieldsJson, resolvedLogo);
+    const row = db.prepare('SELECT * FROM interactive_form_templates WHERE id = ?').get(result.lastInsertRowid);
+    res.json({ ...row, fields_schema: JSON.parse(row.fields_schema) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/forms/interactive — list all AI-generated templates
+router.get('/interactive', (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM interactive_form_templates ORDER BY created_at DESC').all();
+    res.json(rows.map(r => ({ ...r, fields_schema: JSON.parse(r.fields_schema || '[]') })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/forms/interactive/:id — get single template
+router.get('/interactive/:id', (req, res) => {
+  try {
+    const row = db.prepare('SELECT * FROM interactive_form_templates WHERE id = ?').get(req.params.id);
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    res.json({ ...row, fields_schema: JSON.parse(row.fields_schema || '[]') });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/forms/interactive/:id
+router.delete('/interactive/:id', (req, res) => {
+  try {
+    db.prepare('DELETE FROM interactive_form_templates WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

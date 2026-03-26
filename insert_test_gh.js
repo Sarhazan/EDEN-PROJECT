@@ -1,0 +1,12 @@
+const Database = require('C:/dev/projects/EDEN-PROJECT_LOCAL/node_modules/better-sqlite3');
+const db = new Database('C:/dev/projects/EDEN-PROJECT_LOCAL/maintenance.db');
+const in4days = new Date(); in4days.setDate(in4days.getDate() + 4);
+const fmt = d => d.toISOString().slice(0,10);
+const today = fmt(new Date());
+db.prepare("DELETE FROM tasks WHERE title IN ('test_due_4days', 'test_due_today_completed')").run();
+db.prepare("INSERT INTO tasks (title, start_date, start_time, due_date, frequency, is_recurring, status, priority, created_at, updated_at) VALUES ('test_due_4days', ?, '08:00', ?, 'one-time', 0, 'draft', 'normal', datetime('now'), datetime('now'))").run(today, fmt(in4days));
+db.prepare("INSERT INTO tasks (title, start_date, start_time, due_date, frequency, is_recurring, status, priority, created_at, updated_at) VALUES ('test_due_today_completed', ?, '08:00', ?, 'one-time', 0, 'completed', 'normal', datetime('now'), datetime('now'))").run(today, today);
+const rows = db.prepare("SELECT id, title, due_date, status FROM tasks WHERE title IN ('test_due_4days', 'test_due_today_completed')").all();
+console.log(JSON.stringify(rows, null, 2));
+db.close();
+console.log('done');

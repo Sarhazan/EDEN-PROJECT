@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { FaEdit, FaTrash, FaFile, FaTimes } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaFile, FaTimes, FaSync } from 'react-icons/fa';
 import { BACKEND_URL } from '../../config';
+
+const FREQ_LABEL = { daily:'יומי', weekly:'שבועי', monthly:'חודשי', annual:'שנתי' };
 
 const STATUS_CONFIG = {
   ok: { label: 'תקין', bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
@@ -71,10 +73,19 @@ export default function UnitCard({ unit, onEdit, onDelete, onDeleteFile }) {
             מ״ס: {unit.serial_number}
           </p>
         )}
+        {unit.recurring_enabled ? (
+          <div className="flex items-center gap-1.5 text-indigo-600 font-medium">
+            <FaSync size={10} />
+            <span>בדיקה כל {unit.recurring_interval > 1 ? unit.recurring_interval + ' ' : ''}{FREQ_LABEL[unit.recurring_frequency] || unit.recurring_frequency}</span>
+          </div>
+        ) : null}
         {unit.inspection_date && (
-          <p>תאריך בדיקה: {new Date(unit.inspection_date).toLocaleDateString('he-IL')}</p>
+          <p className="text-gray-500">בדיקה אחרונה: {new Date(unit.inspection_date + 'T00:00:00').toLocaleDateString('he-IL')}</p>
         )}
-        {unit.alert_days && (
+        {unit.next_inspection_date && unit.recurring_enabled && (
+          <p className="font-medium">בדיקה הבאה: {new Date(unit.next_inspection_date + 'T00:00:00').toLocaleDateString('he-IL')}</p>
+        )}
+        {unit.recurring_enabled && unit.alert_days && (
           <p>התראה: {unit.alert_days} ימים לפני</p>
         )}
         {unit.supplier_name && (

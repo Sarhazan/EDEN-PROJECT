@@ -62,6 +62,16 @@ export default function SettingsPage() {
   const [siteNameSaving, setSiteNameSaving] = useState(false);
   const [siteNameSaved, setSiteNameSaved] = useState(false);
 
+  // Company settings state
+  const [companyName, setCompanyName] = useState('');
+  const [companyEmail, setCompanyEmail] = useState('');
+  const [companyPhone, setCompanyPhone] = useState('');
+  const [companyLogoPath, setCompanyLogoPath] = useState('');
+  const [companySaving, setCompanySaving] = useState(false);
+  const [companySaved, setCompanySaved] = useState(false);
+  const [companyError, setCompanyError] = useState('');
+  const [logoUploading, setLogoUploading] = useState(false);
+
   // Manager selection state
   const [managerEmployeeId, setManagerEmployeeId] = useState('');
   const [managerSaving, setManagerSaving] = useState(false);
@@ -223,6 +233,16 @@ export default function SettingsPage() {
       }
     };
     fetchManagerData();
+  }, []);
+
+  useEffect(() => {
+    axios.get(`${API_URL}/accounts/company`).then(res => {
+      const d = res.data;
+      if (d.company_name) setCompanyName(d.company_name);
+      if (d.company_email) setCompanyEmail(d.company_email);
+      if (d.company_phone) setCompanyPhone(d.company_phone);
+      if (d.company_logo_path) setCompanyLogoPath(d.company_logo_path);
+    }).catch(() => {});
   }, []);
 
   // ─── WhatsApp handlers ─────────────────────────────────────────────────────
@@ -395,6 +415,52 @@ export default function SettingsPage() {
   };
 
   // ─── Site name handler ─────────────────────────────────────────────────────
+  // ─── Company handlers ──────────────────────────────────────────────────────
+  const handleCompanySave = async () => {
+    setCompanySaving(true);
+    setCompanySaved(false);
+    setCompanyError('');
+    try {
+      await Promise.all([
+        axios.put(`${API_URL}/accounts/settings/company_name`, { value: companyName }),
+        axios.put(`${API_URL}/accounts/settings/company_email`, { value: companyEmail }),
+        axios.put(`${API_URL}/accounts/settings/company_phone`, { value: companyPhone }),
+      ]);
+      setCompanySaved(true);
+      setTimeout(() => setCompanySaved(false), 2500);
+    } catch (err) {
+      setCompanyError('שגיאה בשמירה');
+    } finally {
+      setCompanySaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    setCompanyError('');
+    try {
+      const fd = new FormData();
+      fd.append('logo', file);
+      const res = await axios.post(`${API_URL}/accounts/company/logo`, fd);
+      setCompanyLogoPath(res.data.path);
+    } catch (err) {
+      setCompanyError('שגיאה בהעלאת הלוגו');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    try {
+      await axios.delete(`${API_URL}/accounts/company/logo`);
+      setCompanyLogoPath('');
+    } catch (err) {
+      setCompanyError('שגיאה במחיקת הלוגו');
+    }
+  };
+
   const handleSiteNameChange = async (newValue) => {
     setSiteName(newValue);
     setSiteNameSaving(true);
@@ -923,6 +989,102 @@ export default function SettingsPage() {
           <p className="text-xs text-gray-500 mt-2">
             המנהל הנבחר יהיה ברירת המחדל בעת הצגת משימה מ"היום שלי"
           </p>
+        </div>
+      </div>
+
+      {/* ── Company Settings Section ── */}
+      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-3xl">🏢</span>
+          <h2 className="text-2xl font-semibold">הגדרות חברה</h2>
+        </div>
+        <p className="text-gray-600 mb-6">
+          פרטי החברה ישמשו ליצירת טפסים עם AI — הלוגו יוטמע אוטומטית בכל טופס שנוצר.
+        </p>
+
+        <div className="space-y-5">
+          {/* Logo */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">לוגו החברה</label>
+            <div className="flex items-center gap-4 flex-wrap">
+              {companyLogoPath ? (
+                <div className="relative group">
+                  <img
+                    src={`${API_URL.replace('/api', '')}${companyLogoPath}`}
+                    alt="לוגו חברה"
+                    className="h-16 w-auto object-contain border border-gray-200 rounded-lg p-1 bg-gray-50"
+                  />
+                  <button
+                    onClick={handleLogoDelete}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="הסר לוגו"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="h-16 w-28 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs text-center p-2">
+                  אין לוגו
+                </div>
+              )}
+              <label className={`cursor-pointer bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all flex items-center gap-2 ${logoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                {logoUploading ? '⏳ מעלה...' : '📁 העלה לוגו'}
+                <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+              </label>
+              <p className="text-xs text-gray-400">PNG / JPG / SVG — עד 5MB</p>
+            </div>
+          </div>
+
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">שם החברה</label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={e => setCompanyName(e.target.value)}
+              placeholder='לדוגמא: ב.ג. אחזקות בע"מ'
+              className="w-full max-w-sm p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">אימייל החברה</label>
+            <input
+              type="email"
+              value={companyEmail}
+              onChange={e => setCompanyEmail(e.target.value)}
+              placeholder="office@company.co.il"
+              dir="ltr"
+              className="w-full max-w-sm p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">טלפון החברה</label>
+            <input
+              type="tel"
+              value={companyPhone}
+              onChange={e => setCompanyPhone(e.target.value)}
+              placeholder="1-700-70-9797"
+              dir="ltr"
+              className="w-full max-w-sm p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          {/* Save */}
+          <div className="flex items-center gap-4 pt-2">
+            <button
+              onClick={handleCompanySave}
+              disabled={companySaving}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium disabled:opacity-50 flex items-center gap-2 transition-all"
+            >
+              {companySaving ? <><FaSpinner className="animate-spin" /> שומר...</> : <><FaCheck /> שמור</>}
+            </button>
+            {companySaved && <span className="text-green-600 flex items-center gap-1"><FaCheck /> נשמר!</span>}
+            {companyError && <span className="text-red-600 text-sm">{companyError}</span>}
+          </div>
         </div>
       </div>
 

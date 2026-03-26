@@ -5,7 +5,14 @@ import '../forms/datepicker-custom.css';
 import { toast } from 'react-toastify';
 import { TOAST_DEFAULTS } from '../../utils/apiError';
 import { useApp } from '../../context/AppContext';
-import { FaUpload, FaFile, FaTimes } from 'react-icons/fa';
+import { FaUpload, FaFile, FaTimes, FaSync } from 'react-icons/fa';
+
+const FREQUENCY_OPTIONS = [
+  { value: 'daily',   label: 'יומי' },
+  { value: 'weekly',  label: 'שבועי' },
+  { value: 'monthly', label: 'חודשי' },
+  { value: 'annual',  label: 'שנתי' },
+];
 import { BACKEND_URL } from '../../config';
 
 const parseISODate = (value) => {
@@ -32,10 +39,13 @@ export default function UnitForm({ unit, systemId, onClose, onSaved }) {
     name: '',
     serial_number: '',
     inspection_date: '',
-    alert_days: 30,
+    alert_days: 3,
     supplier_id: '',
     building_id: '',
-    notes: ''
+    notes: '',
+    recurring_enabled: false,
+    recurring_frequency: 'monthly',
+    recurring_interval: 1,
   });
 
   const [files, setFiles] = useState([]);
@@ -48,18 +58,21 @@ export default function UnitForm({ unit, systemId, onClose, onSaved }) {
         name: unit.name || '',
         serial_number: unit.serial_number || '',
         inspection_date: unit.inspection_date || '',
-        alert_days: unit.alert_days || 30,
+        alert_days: unit.alert_days || 3,
         supplier_id: unit.supplier_id || '',
         building_id: unit.building_id || '',
-        notes: unit.notes || ''
+        notes: unit.notes || '',
+        recurring_enabled: !!unit.recurring_enabled,
+        recurring_frequency: unit.recurring_frequency || 'monthly',
+        recurring_interval: unit.recurring_interval || 1,
       });
       setFiles(unit.files || []);
     }
   }, [unit]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleAddFile = (e) => {
@@ -102,7 +115,10 @@ export default function UnitForm({ unit, systemId, onClose, onSaved }) {
         system_id: systemId,
         supplier_id: formData.supplier_id || null,
         building_id: formData.building_id || null,
-        inspection_date: formData.inspection_date || null
+        inspection_date: formData.inspection_date || null,
+        recurring_enabled: formData.recurring_enabled ? 1 : 0,
+        recurring_frequency: formData.recurring_enabled ? formData.recurring_frequency : null,
+        recurring_interval: formData.recurring_enabled ? Number(formData.recurring_interval) || 1 : null,
       };
 
       if (isEditing) {
@@ -154,29 +170,83 @@ export default function UnitForm({ unit, systemId, onClose, onSaved }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium mb-1">תאריך בדיקה</label>
-          <DatePicker
-            selected={parseISODate(formData.inspection_date)}
-            onChange={(date) => setFormData((prev) => ({ ...prev, inspection_date: toISODate(date) }))}
-            dateFormat="dd/MM/yyyy"
-            placeholderText="DD/MM/YYYY"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-            isClearable
-          />
+      {/* ── בדיקה תקופתית ─────────────────────────────────────────── */}
+      <div className="border border-indigo-100 bg-indigo-50/40 rounded-xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              name="recurring_enabled"
+              checked={formData.recurring_enabled}
+              onChange={handleChange}
+              className="w-4 h-4 accent-indigo-600"
+            />
+            <FaSync className={`text-sm ${formData.recurring_enabled ? 'text-indigo-600' : 'text-gray-400'}`} />
+            <span className="text-sm font-semibold text-gray-700">בדיקה תקופתית</span>
+          </label>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">התראה (ימים לפני)</label>
-          <input
-            type="number"
-            name="alert_days"
-            value={formData.alert_days}
-            onChange={handleChange}
-            min="1"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-          />
-        </div>
+
+        {formData.recurring_enabled && (
+          <div className="space-y-3">
+            {/* תאריך בדיקה אחרונה */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">תאריך בדיקה קרובה</label>
+              <DatePicker
+                selected={parseISODate(formData.inspection_date)}
+                onChange={(date) => setFormData((prev) => ({ ...prev, inspection_date: toISODate(date) }))}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="DD/MM/YYYY"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px] bg-white"
+                isClearable
+              />
+            </div>
+
+            {/* תדירות + מספר */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">תדירות</label>
+                <select
+                  name="recurring_frequency"
+                  value={formData.recurring_frequency}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px] bg-white"
+                >
+                  {FREQUENCY_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">כל כמה</label>
+                <input
+                  type="number"
+                  name="recurring_interval"
+                  value={formData.recurring_interval}
+                  onChange={handleChange}
+                  min="1"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px] bg-white"
+                />
+              </div>
+            </div>
+
+            {/* התראה */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">התראה (ימים לפני הבדיקה הבאה)</label>
+              <input
+                type="number"
+                name="alert_days"
+                value={formData.alert_days}
+                onChange={handleChange}
+                min="1"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px] bg-white"
+              />
+            </div>
+          </div>
+        )}
+
+        {!formData.recurring_enabled && (
+          <p className="text-xs text-gray-400">סמן כדי להגדיר בדיקה חוזרת עם התראה אוטומטית</p>
+        )}
       </div>
 
       <div>

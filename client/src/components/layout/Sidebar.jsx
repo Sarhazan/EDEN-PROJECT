@@ -6,7 +6,7 @@ import { useApp } from '../../context/AppContext';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
 export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEmployee, onAddLocation, onAddBuilding, onAddTenant }) {
-  const { connectionStatus, logout, tasks, employees } = useApp();
+  const { connectionStatus, logout, tasks, employees, unitsNeedingAttention } = useApp();
   const location = useLocation();
   const [starFilter, setStarFilter] = useState(false);
   const [siteName, setSiteName] = useState('');
@@ -64,6 +64,7 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
   };
 
   const incomingTasksCount = (tasks || []).filter((task) => task.status === 'sent').length;
+  const systemsAlertCount = (unitsNeedingAttention || []).length;
 
   const navItems = [
     { path: '/', icon: FaHome, label: 'היום שלי' },
@@ -127,6 +128,12 @@ export default function Sidebar({ onAddTask, onAddSystem, onAddSupplier, onAddEm
               <span className="mr-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
                 <FaEnvelope className="text-[10px]" />
                 {incomingTasksCount}
+              </span>
+            )}
+
+            {item.path === '/systems' && systemsAlertCount > 0 && (
+              <span className="mr-auto inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
+                {systemsAlertCount}
               </span>
             )}
           </NavLink>

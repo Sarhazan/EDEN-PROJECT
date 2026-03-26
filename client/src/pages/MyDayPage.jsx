@@ -2,7 +2,7 @@
 import { useApp } from '../context/AppContext';
 import { format, isBefore, startOfDay, addDays, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { FaCalendarDay, FaPaperPlane, FaDatabase, FaTrash } from 'react-icons/fa';
+import { FaCalendarDay, FaPaperPlane, FaDatabase, FaTrash, FaBell, FaTimes, FaCheckCircle, FaWrench } from 'react-icons/fa';
 import TaskCard from '../components/shared/TaskCard';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -23,7 +23,7 @@ import PendingApprovalSection from '../components/myday/PendingApprovalSection';
 import StatsBar from '../components/myday/StatsBar';
 
 export default function MyDayPage() {
-  const { tasks, systems, employees, locations, setIsTaskModalOpen, setEditingTask, updateTaskStatus, seedData, clearData } = useApp();
+  const { tasks, systems, employees, locations, buildings, setIsTaskModalOpen, setEditingTask, updateTaskStatus, seedData, clearData, unitsNeedingAttention, completeUnitInspection, fetchUnitsNeedingAttention } = useApp();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const today = startOfDay(new Date());
   const [isSendingBulk, setIsSendingBulk] = useState(false);
@@ -33,6 +33,8 @@ export default function MyDayPage() {
   const [forecastFilter, setForecastFilter] = useState('all'); // 'all' | 'manager' | 'employees'
   const [expandedPendingIds, setExpandedPendingIds] = useState(new Set());
   const [highlightTaskId, setHighlightTaskId] = useState(null);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [completingUnitId, setCompletingUnitId] = useState(null);
   const [pendingNavigateTaskId, setPendingNavigateTaskId] = useState(null);
   const navigateRetryRef = useRef(0);
 
@@ -497,13 +499,7 @@ export default function MyDayPage() {
   }, [tasks, selectedDate, starFilter]);
 
   const isSelectedDateToday = isSameDay(selectedDate, new Date());
-  const isTaskSearchActive = isSelectedDateToday && taskSearch.trim().length > 0;
-
-  useEffect(() => {
-    if (!isSelectedDateToday && taskSearch) {
-      setTaskSearch('');
-    }
-  }, [isSelectedDateToday, taskSearch]);
+  const isTaskSearchActive = taskSearch.trim().length > 0;
 
   // Dedicated open-task counters for the real current day (independent from selectedDate)
   const todayOpenStats = useMemo(() => {
@@ -531,10 +527,30 @@ export default function MyDayPage() {
     [tasks]
   );
 
+  // Tasks with due_date approaching within 3 days (not completed, not cancelled)
+  const dueSoonTasks = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return tasks.filter(t => {
+      if (!t.due_date) return false;
+      if (['completed', 'cancelled'].includes(t.status)) return false;
+      const due = new Date(t.due_date);
+      due.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 3;
+    }).map(t => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const due = new Date(t.due_date);
+      due.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
+      return { ...t, _dueDaysLeft: diffDays };
+    }).sort((a, b) => a._dueDaysLeft - b._dueDaysLeft);
+  }, [tasks]);
+
   // Filter recurring tasks (all systems including general, selected date, not completed) and sort by time
   const recurringTasks = useMemo(() => {
     const searchTerm = taskSearch.trim().toLowerCase();
-    const isTodaySearch = isSameDay(selectedDate, new Date()) && searchTerm.length > 0;
 
     let filtered = tasks.filter((t) => {
       if (!isRecurringTask(t)) return false;
@@ -546,7 +562,7 @@ export default function MyDayPage() {
         if (Number(t.employee_id) !== Number(managerEmployeeId)) return false;
       }
 
-      if (isTodaySearch) {
+      if (searchTerm.length > 0) {
         const haystack = `${t.title || ''} ${t.description || ''}`.toLowerCase();
         return haystack.includes(searchTerm);
       }
@@ -584,17 +600,17 @@ export default function MyDayPage() {
             filtered = filtered.filter((t) => t.employee_id === parseInt(filterValue));
           }
           break;
-        case 'location':
+        case 'building':
           if (filterValue === 'none') {
-            filtered = filtered.filter((t) => !t.location_id);
+            filtered = filtered.filter((t) => !t.building_id);
           } else {
-            filtered = filtered.filter((t) => t.location_id === parseInt(filterValue));
+            filtered = filtered.filter((t) => t.building_id === parseInt(filterValue));
           }
           break;
       }
     }
 
-    if (isTodaySearch) {
+    if (searchTerm.length > 0) {
       const today = startOfDay(new Date());
       const nearestBySeries = new Map();
 
@@ -649,7 +665,6 @@ export default function MyDayPage() {
   // Filter one-time tasks (selected date, not completed) and sort by time
   const oneTimeTasks = useMemo(() => {
     const searchTerm = taskSearch.trim().toLowerCase();
-    const isTodaySearch = isSameDay(selectedDate, new Date()) && searchTerm.length > 0;
 
     let filtered = tasks.filter((t) => {
       if (isRecurringTask(t)) return false;
@@ -662,11 +677,7 @@ export default function MyDayPage() {
 
       if (t.status === 'completed' && !(filterCategory === 'status' && (filterValue === 'done' || filterValue === 'all'))) return false;
 
-      if (isTodaySearch) {
-        const taskDate = startOfDay(new Date(t.start_date));
-        const today = startOfDay(new Date());
-        if (isBefore(taskDate, today)) return false;
-
+      if (searchTerm.length > 0) {
         const haystack = `${t.title || ''} ${t.description || ''}`.toLowerCase();
         return haystack.includes(searchTerm);
       }
@@ -724,9 +735,9 @@ export default function MyDayPage() {
     });
   }, [tasks, starFilter]);
 
-  // Calculate tomorrow's tasks count (for any selected date)
+  // Calculate tomorrow's tasks count — always based on real today+1, not selectedDate
   const tomorrowTasksCount = useMemo(() => {
-    const tomorrow = addDays(selectedDate, 1);
+    const tomorrow = addDays(today, 1);
     let filtered = tasks.filter(
       (t) =>
         shouldTaskAppearOnDate(t, tomorrow) &&
@@ -737,7 +748,7 @@ export default function MyDayPage() {
       filtered = filtered.filter((t) => t.is_starred === 1);
     }
     return filtered.length;
-  }, [tasks, selectedDate, starFilter]);
+  }, [tasks, starFilter]);
 
   // Count late tasks
   const lateTasksCount = useMemo(() => {
@@ -815,26 +826,236 @@ export default function MyDayPage() {
   }, [tasks, starFilter, timelineRangeDays, todayOpenStats, forecastFilter, managerEmployeeId]);
 
   return (
-    <div className="p-4 sm:p-6 overflow-x-hidden max-w-full">
+    <div className="p-4 sm:p-6 overflow-x-hidden max-w-full min-h-screen">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">היום שלי</h1>
-          {tomorrowTasksCount > 0 && (
-            <span className="text-xs sm:text-sm font-semibold text-blue-600 bg-blue-50 px-2 sm:px-3 py-1 rounded-lg">
-              משימות למחר: {tomorrowTasksCount}
-            </span>
-          )}
-          {lateTasksCount > 0 && (
-            <span className="text-xs sm:text-sm font-semibold text-red-600 bg-red-50 px-2 sm:px-3 py-1 rounded-lg">
-              משימות באיחור: {lateTasksCount}
-            </span>
-          )}
+        <div className="flex items-center gap-3">
+          {/* Notification Bell — leftmost */}
+          {(() => {
+            const totalNotifications = pendingApprovalTasks.length + (unitsNeedingAttention ? unitsNeedingAttention.length : 0);
+            if (totalNotifications === 0) return null;
+            return (
+              <button
+                onClick={() => setShowNotificationsModal(true)}
+                className="relative inline-flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 hover:bg-orange-200 transition-colors flex-shrink-0"
+                title="התראות ואישורים"
+              >
+                <FaBell className="text-orange-600 text-lg" />
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
+                  {totalNotifications}
+                </span>
+              </button>
+            );
+          })()}
+
+          {/* Title + progress bar */}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="text-2xl sm:text-3xl font-bold">היום שלי</h1>
+
+              {/* Inline progress bar — today only */}
+              {isSelectedDateToday && stats.total > 0 && (
+                <div className="flex items-center gap-2 min-w-[120px] max-w-[200px]">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-green-500 h-2.5 rounded-full transition-all duration-700 ease-out"
+                      style={{ width: `${stats.completionRate}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-green-600 whitespace-nowrap">
+                    {stats.completionRate}%
+                  </span>
+                </div>
+              )}
+
+              {/* Tomorrow badge — right next to progress bar */}
+              {tomorrowTasksCount > 0 && (
+                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg whitespace-nowrap">
+                  משימות למחר: {tomorrowTasksCount}
+                </span>
+              )}
+
+              {lateTasksCount > 0 && (
+                <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-lg whitespace-nowrap">
+                  באיחור: {lateTasksCount}
+                </span>
+              )}
+            </div>
+            <p className="text-gray-500 mt-0.5 text-sm">
+              {format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: he })}
+            </p>
+          </div>
         </div>
-        <p className="text-gray-600 mt-1 text-sm sm:text-base">
-          {format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: he })}
-        </p>
       </div>
+
+      {/* Notifications Modal */}
+      {showNotificationsModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-16" onClick={() => setShowNotificationsModal(false)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[70vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
+              <button onClick={() => setShowNotificationsModal(false)} className="text-gray-400 hover:text-gray-600">
+                <FaTimes />
+              </button>
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <FaBell className="text-orange-500" />
+                התראות ואישורים
+              </h2>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Pending Approvals */}
+              {pendingApprovalTasks.length > 0 && (
+                <div>
+                  <div className="text-sm font-bold text-orange-600 mb-2 flex items-center gap-1">
+                    <span>⏳</span> ממתינות לאישור ({pendingApprovalTasks.length})
+                  </div>
+                  <div className="space-y-2">
+                    {pendingApprovalTasks.map(task => {
+                      const isExpanded = expandedPendingIds.has(task.id);
+                      const hasDetails = task.completion_note || (task.attachments && task.attachments.filter(a => a.file_type === 'image').length > 0);
+                      return (
+                        <div key={task.id} className="bg-white border border-orange-100 rounded-lg shadow-sm overflow-hidden">
+                          <div className="flex items-center gap-3 px-3 py-2">
+                            <button
+                              onClick={() => { handleApproveTask(task.id); }}
+                              className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors font-medium flex-shrink-0"
+                            >
+                              ✓ אשר
+                            </button>
+                            <div className="flex-1 text-right min-w-0">
+                              <div className="text-sm font-semibold truncate">
+                                {task.title}
+                                {task.rollover_days > 0 && (
+                                  <span className="text-xs text-orange-500 mr-1">נגרר {task.rollover_days} {task.rollover_days === 1 ? 'יום' : 'ימים'}</span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>
+                            </div>
+                            {hasDetails && (
+                              <button
+                                onClick={() => setExpandedPendingIds(prev => {
+                                  const next = new Set(prev);
+                                  next.has(task.id) ? next.delete(task.id) : next.add(task.id);
+                                  return next;
+                                })}
+                                className="text-gray-400 hover:text-gray-600 flex-shrink-0 text-xs px-2 py-1 rounded hover:bg-gray-100"
+                              >
+                                {isExpanded ? '▲' : '▼'} פרטים
+                              </button>
+                            )}
+                          </div>
+                          {isExpanded && hasDetails && (
+                            <div className="border-t border-orange-100 bg-orange-50/50 px-4 py-3 text-right space-y-2">
+                              {task.completion_note && (
+                                <div className="text-sm text-gray-700">
+                                  <span className="font-semibold text-gray-500 text-xs">הערת עובד: </span>
+                                  {task.completion_note}
+                                </div>
+                              )}
+                              {task.attachments && task.attachments.filter(a => a.file_type === 'image').length > 0 && (
+                                <div className="flex flex-wrap gap-2 justify-end">
+                                  {task.attachments.filter(a => a.file_type === 'image').map((att, i) => (
+                                    <img
+                                      key={i}
+                                      src={`${BACKEND_URL}${att.file_path}`}
+                                      alt="תמונת השלמה"
+                                      className="w-24 h-24 object-cover rounded-lg border border-orange-200 cursor-pointer hover:opacity-90"
+                                      onClick={() => window.open(`${BACKEND_URL}${att.file_path}`, '_blank')}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Due Soon tasks */}
+              {dueSoonTasks.length > 0 && (
+                <div>
+                  <div className="text-sm font-bold text-blue-600 mb-2 flex items-center gap-1">
+                    <span>📅</span> מועד סיום מתקרב ({dueSoonTasks.length})
+                  </div>
+                  <div className="space-y-2">
+                    {dueSoonTasks.map(task => (
+                      <div key={task.id} className="bg-white border border-blue-100 rounded-lg px-3 py-2 flex items-center gap-3">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                          task._dueDaysLeft === 0
+                            ? 'bg-red-100 text-red-700'
+                            : task._dueDaysLeft === 1
+                            ? 'bg-orange-100 text-orange-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {task._dueDaysLeft === 0 ? 'היום!' : task._dueDaysLeft === 1 ? 'מחר' : `${task._dueDaysLeft} ימים`}
+                        </span>
+                        <div className="flex-1 text-right min-w-0">
+                          <div className="text-sm font-semibold truncate">{task.title}</div>
+                          <div className="text-xs text-gray-500">
+                            תאריך סיום: {new Date(task.due_date).toLocaleDateString('he-IL')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Units needing attention */}
+              {unitsNeedingAttention && unitsNeedingAttention.length > 0 && (
+                <div>
+                  <div className="text-sm font-bold text-red-600 mb-2 flex items-center gap-1">
+                    <FaWrench className="text-red-500" /> יחידות לטיפול ({unitsNeedingAttention.length})
+                  </div>
+                  <div className="space-y-2">
+                    {unitsNeedingAttention.map(unit => (
+                      <div key={unit.id} className="bg-white border border-red-100 rounded-lg px-3 py-2 flex items-center gap-3">
+                        <button
+                          onClick={async () => {
+                            setCompletingUnitId(unit.id);
+                            try {
+                              await completeUnitInspection(unit.id);
+                              await fetchUnitsNeedingAttention();
+                            } catch(e) {}
+                            setCompletingUnitId(null);
+                          }}
+                          disabled={completingUnitId === unit.id}
+                          className="flex items-center gap-1 text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
+                        >
+                          <FaCheckCircle size={11} />
+                          {completingUnitId === unit.id ? '...' : 'בוצע'}
+                        </button>
+                        <div className="flex-1 text-right min-w-0">
+                          <div className="text-sm font-semibold truncate">{unit.name}</div>
+                          {unit.system_name && <div className="text-xs text-gray-500">{unit.system_name}</div>}
+                        </div>
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                          unit.status === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${unit.status === 'overdue' ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                          {unit.status === 'overdue' ? 'באיחור' : 'צריך בדיקה'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {pendingApprovalTasks.length === 0 && (!unitsNeedingAttention || unitsNeedingAttention.length === 0) && dueSoonTasks.length === 0 && (
+                <p className="text-gray-500 text-center py-6">אין התראות כרגע</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Bar */}
       {/* Stats Bar */}
@@ -1036,18 +1257,7 @@ export default function MyDayPage() {
         )}
       </div>
 
-      {stats.total === 0 && stats.completed === 0 && (
-        <div className="bg-white rounded-lg shadow-md p-8 mb-6 text-center">
-          <h3 className="text-xl font-bold mb-2">אין משימות ליום שנבחר</h3>
-          <p className="text-gray-600 mb-4">נתחיל בקטן: צור משימה ראשונה או טען נתוני דמה לפיתוח.</p>
-          <button
-            onClick={() => setIsTaskModalOpen(true)}
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-orange-600"
-          >
-            צור משימה ראשונה
-          </button>
-        </div>
-      )}
+
 
       {/* Timeline Chart */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6 overflow-hidden">
@@ -1182,26 +1392,7 @@ export default function MyDayPage() {
         </div>
       </div>
 
-      {/* Progress Bar - show only when selectedDate is today */}
-      {isSelectedDateToday && (
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold">התקדמות משימות היום</h3>
-            <span className="text-sm text-gray-600">
-              {stats.completed} מתוך {stats.total} הושלמו
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-4">
-            <div
-              className="bg-green-500 h-4 rounded-full transition-all duration-300"
-              style={{ width: `${stats.completionRate}%` }}
-            />
-          </div>
-          <p className="text-center text-2xl font-bold text-green-600 mt-2">
-            {stats.completionRate}%
-          </p>
-        </div>
-      )}
+
 
       {/* Data management buttons (non-production only) */}
       {SHOW_DATA_CONTROLS && (
@@ -1253,17 +1444,15 @@ export default function MyDayPage() {
         </div>
       )}
 
-      {isSelectedDateToday && (
-        <div className="bg-white rounded-lg shadow-md p-4 mb-4">
-          <input
-            type="text"
-            value={taskSearch}
-            onChange={(e) => setTaskSearch(e.target.value)}
-            placeholder="חיפוש משימות..."
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
-          />
-        </div>
-      )}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+        <input
+          type="text"
+          value={taskSearch}
+          onChange={(e) => setTaskSearch(e.target.value)}
+          placeholder="חיפוש משימות..."
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+        />
+      </div>
 
       {/* Main Content - Dynamic Layout */}
       {filterCategory === 'employee' && filterValue ? (
@@ -1297,7 +1486,7 @@ export default function MyDayPage() {
               <option value="system">סנן לפי מערכת</option>
               <option value="status">סנן לפי סטטוס</option>
               <option value="employee">סנן לפי עובד</option>
-              <option value="location">סנן לפי מיקום</option>
+              <option value="building">סנן לפי מבנה</option>
             </select>
 
             {/* Secondary filter - Value selection based on category */}
@@ -1344,12 +1533,12 @@ export default function MyDayPage() {
                   </>
                 )}
 
-                {filterCategory === 'location' && (
+                {filterCategory === 'building' && (
                   <>
-                    <option value="none">ללא מיקום</option>
-                    {locations && locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.name}
+                    <option value="">הכל</option>
+                    {buildings && buildings.map((bld) => (
+                      <option key={bld.id} value={bld.id}>
+                        {bld.name}
                       </option>
                     ))}
                   </>
@@ -1441,7 +1630,7 @@ export default function MyDayPage() {
                 left: 'hover:!bg-indigo-500'
               }}
             >
-              <div className="bg-white rounded-lg shadow-md p-4 h-full">
+              <div className="bg-white rounded-lg shadow-md p-4 h-full min-h-[600px]">
                 <div className="flex items-start justify-between mb-4 gap-3">
                   <div className="flex items-center gap-3">
                     <button
@@ -1491,7 +1680,7 @@ export default function MyDayPage() {
                     <option value="system">סנן לפי מערכת</option>
                     <option value="status">סנן לפי סטטוס</option>
                     <option value="employee">סנן לפי עובד</option>
-                    <option value="location">סנן לפי מיקום</option>
+                    <option value="building">סנן לפי מבנה</option>
                   </select>
 
                   {/* Secondary filter - Value selection based on category */}
@@ -1538,14 +1727,14 @@ export default function MyDayPage() {
                         </>
                       )}
 
-                      {filterCategory === 'location' && (
+                      {filterCategory === 'building' && (
                         <>
-                          <option value="none">ללא מיקום</option>
-                          {locations && locations.map((loc) => (
-                            <option key={loc.id} value={loc.id}>
-                              {loc.name}
-                            </option>
-                          ))}
+                          <option value="">הכל</option>
+                          {buildings && buildings.map((bld) => (
+                      <option key={bld.id} value={bld.id}>
+                        {bld.name}
+                      </option>
+                    ))}
                         </>
                       )}
                     </select>
@@ -1579,7 +1768,7 @@ export default function MyDayPage() {
 
             {/* One-Time and Late Tasks - LEFT SIDE - Flex to fill remaining space */}
             <div className="relative flex-1 min-w-[250px]">
-              <div className="bg-white rounded-lg shadow-md p-4">
+              <div className="bg-white rounded-lg shadow-md p-4 min-h-[600px]">
                 <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
 
                 <div className="space-y-0">
@@ -1612,7 +1801,7 @@ export default function MyDayPage() {
           {/* Mobile: Stack vertically (< 1024px) */}
           <div className="lg:hidden grid grid-cols-1 gap-6">
             {/* Recurring Tasks */}
-            <div className="bg-white rounded-lg shadow-md p-4">
+            <div className="bg-white rounded-lg shadow-md p-4 min-h-[400px]">
               <div className="flex items-start justify-between mb-4 gap-3">
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-bold">
@@ -1662,7 +1851,7 @@ export default function MyDayPage() {
                   <option value="system">סנן לפי מערכת</option>
                   <option value="status">סנן לפי סטטוס</option>
                   <option value="employee">סנן לפי עובד</option>
-                  <option value="location">סנן לפי מיקום</option>
+                  <option value="building">סנן לפי מבנה</option>
                 </select>
 
                 {/* Secondary filter - Value selection based on category */}
@@ -1709,14 +1898,14 @@ export default function MyDayPage() {
                       </>
                     )}
 
-                    {filterCategory === 'location' && (
+                    {filterCategory === 'building' && (
                       <>
-                        <option value="none">ללא מיקום</option>
-                        {locations && locations.map((loc) => (
-                          <option key={loc.id} value={loc.id}>
-                            {loc.name}
-                          </option>
-                        ))}
+                        <option value="">הכל</option>
+                        {buildings && buildings.map((bld) => (
+                      <option key={bld.id} value={bld.id}>
+                        {bld.name}
+                      </option>
+                    ))}
                       </>
                     )}
                   </select>
@@ -1748,7 +1937,7 @@ export default function MyDayPage() {
             </div>
 
             {/* One-Time and Late Tasks */}
-            <div className="bg-white rounded-lg shadow-md p-4">
+            <div className="bg-white rounded-lg shadow-md p-4 min-h-[400px]">
               <h2 className="text-xl font-bold mb-4">משימות חד פעמיות ({oneTimeTasks.length})</h2>
 
               <div className="space-y-0">
@@ -1779,81 +1968,6 @@ export default function MyDayPage() {
         </>
       )}
 
-      {/* Pending approval — below all task lists */}
-      {pendingApprovalTasks.length > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mt-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-orange-600 font-bold text-sm">⏳ ממתינות לאישור ({pendingApprovalTasks.length})</span>
-          </div>
-          <div className="space-y-2">
-            {pendingApprovalTasks.map(task => {
-              const isExpanded = expandedPendingIds.has(task.id);
-              const hasDetails = task.completion_note || (task.attachments && task.attachments.filter(a => a.file_type === 'image').length > 0);
-              return (
-                <div key={task.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  {/* Row */}
-                  <div className="flex items-center gap-3 px-3 py-2">
-                    <button
-                      onClick={() => handleApproveTask(task.id)}
-                      className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors font-medium flex-shrink-0"
-                    >
-                      ✓ אשר
-                    </button>
-                    <div className="flex-1 text-right min-w-0">
-                      <div className="text-sm font-semibold truncate">
-                        {task.title}
-                        {task.rollover_days > 0 && (
-                          <span className="text-xs text-orange-500 mr-1">נגרר {task.rollover_days} {task.rollover_days === 1 ? 'יום' : 'ימים'}</span>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500">{task.employee_name} · {task.start_time ? task.start_time.slice(0,5) : 'ללא שעה'}</div>
-                    </div>
-                    {hasDetails && (
-                      <button
-                        onClick={() => setExpandedPendingIds(prev => {
-                          const next = new Set(prev);
-                          next.has(task.id) ? next.delete(task.id) : next.add(task.id);
-                          return next;
-                        })}
-                        className="text-gray-400 hover:text-gray-600 flex-shrink-0 text-xs px-2 py-1 rounded hover:bg-gray-100"
-                      >
-                        {isExpanded ? '▲' : '▼'} פרטים
-                      </button>
-                    )}
-                  </div>
-                  {/* Expandable details */}
-                  {isExpanded && hasDetails && (
-                    <div className="border-t border-orange-100 bg-orange-50/50 px-4 py-3 text-right space-y-2">
-                      {task.completion_note && (
-                        <div className="text-sm text-gray-700">
-                          <span className="font-semibold text-gray-500 text-xs">הערת עובד: </span>
-                          {task.completion_note}
-                        </div>
-                      )}
-                      {task.attachments && task.attachments.filter(a => a.file_type === 'image').length > 0 && (
-                        <div className="flex flex-wrap gap-2 justify-end">
-                          {task.attachments.filter(a => a.file_type === 'image').map((att, i) => (
-                            <img
-                              key={i}
-                              src={`${BACKEND_URL}${att.file_path}`}
-                              alt="תמונת השלמה"
-                              className="w-24 h-24 object-cover rounded-lg border border-orange-200 cursor-pointer hover:opacity-90"
-                              onClick={() => window.open(`${BACKEND_URL}${att.file_path}`, '_blank')}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Units needing attention */}
-      <UnitsAttentionSection />
     </div>
   );
 }

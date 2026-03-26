@@ -19,18 +19,46 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Compute status from inspection_date and alert_days
-function computeStatus(inspectionDate, alertDays) {
+// Add interval units to a date
+function addToDate(dateStr, frequency, interval) {
+  const d = new Date(dateStr);
+  const n = interval || 1;
+  switch (frequency) {
+    case 'daily':       d.setDate(d.getDate() + n); break;
+    case 'weekly':      d.setDate(d.getDate() + n * 7); break;
+    case 'monthly':     d.setMonth(d.getMonth() + n); break;
+    case 'quarterly':   d.setMonth(d.getMonth() + n * 3); break;
+    case 'semi-annual': d.setMonth(d.getMonth() + n * 6); break;
+    case 'annual':      d.setFullYear(d.getFullYear() + n); break;
+    default:            d.setMonth(d.getMonth() + n);
+  }
+  return d.toISOString().split('T')[0];
+}
+
+// Compute status: if recurring, next inspection = last inspection + interval
+// Otherwise use inspection_date directly
+function computeStatus(inspectionDate, alertDays, recurringEnabled, recurringFrequency, recurringInterval) {
   if (!inspectionDate) return 'ok';
+
+  // Next inspection date
+  const nextDate = recurringEnabled && recurringFrequency
+    ? addToDate(inspectionDate, recurringFrequency, recurringInterval)
+    : inspectionDate;
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const inspection = new Date(inspectionDate);
-  inspection.setHours(0, 0, 0, 0);
-  const diffMs = inspection - today;
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const next = new Date(nextDate);
+  next.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return 'overdue';
   if (diffDays <= (alertDays || 30)) return 'needs_inspection';
   return 'ok';
+}
+
+// Helper: get next inspection date string
+function getNextInspectionDate(inspectionDate, recurringEnabled, recurringFrequency, recurringInterval) {
+  if (!inspectionDate || !recurringEnabled || !recurringFrequency) return inspectionDate || null;
+  return addToDate(inspectionDate, recurringFrequency, recurringInterval);
 }
 
 // GET /api/units?system_id=X — return units with computed status field
@@ -69,7 +97,8 @@ router.get('/', (req, res) => {
     const fileStmt = db.prepare('SELECT * FROM unit_files WHERE unit_id = ? ORDER BY created_at DESC');
     const result = units.map(unit => ({
       ...unit,
-      status: computeStatus(unit.inspection_date, unit.alert_days),
+      status: computeStatus(unit.inspection_date, unit.alert_days, unit.recurring_enabled, unit.recurring_frequency, unit.recurring_interval),
+      next_inspection_date: getNextInspectionDate(unit.inspection_date, unit.recurring_enabled, unit.recurring_frequency, unit.recurring_interval),
       files: fileStmt.all(unit.id)
     }));
 
@@ -98,7 +127,8 @@ router.get('/needs-attention', (req, res) => {
     const result = units
       .map(unit => ({
         ...unit,
-        status: computeStatus(unit.inspection_date, unit.alert_days)
+        status: computeStatus(unit.inspection_date, unit.alert_days, unit.recurring_enabled, unit.recurring_frequency, unit.recurring_interval),
+        next_inspection_date: getNextInspectionDate(unit.inspection_date, unit.recurring_enabled, unit.recurring_frequency, unit.recurring_interval),
       }))
       .filter(unit => unit.status === 'overdue' || unit.status === 'needs_inspection');
 
@@ -111,22 +141,23 @@ router.get('/needs-attention', (req, res) => {
 // POST /api/units — create
 router.post('/', (req, res) => {
   try {
-    const { name, system_id, inspection_date, alert_days, notes, supplier_id, building_id, serial_number } = req.body;
+    const { name, system_id, inspection_date, alert_days, notes, supplier_id, building_id, serial_number,
+            recurring_enabled, recurring_frequency, recurring_interval } = req.body;
 
     if (!name || !system_id) {
       return res.status(400).json({ error: 'שם ומערכת הם שדות חובה' });
     }
 
     const result = db.prepare(`
-      INSERT INTO units (name, system_id, inspection_date, alert_days, notes, supplier_id, building_id, serial_number)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(name, system_id, inspection_date || null, alert_days || 30, notes || null, supplier_id || null, building_id || null, serial_number || null);
+      INSERT INTO units (name, system_id, inspection_date, alert_days, notes, supplier_id, building_id, serial_number,
+        recurring_enabled, recurring_frequency, recurring_interval)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(name, system_id, inspection_date || null, alert_days || 30, notes || null,
+           supplier_id || null, building_id || null, serial_number || null,
+           recurring_enabled ? 1 : 0, recurring_frequency || 'monthly', recurring_interval || 1);
 
     const newUnit = db.prepare(`
-      SELECT u.*,
-        s.name AS supplier_name,
-        b.name AS building_name,
-        sys.name AS system_name
+      SELECT u.*, s.name AS supplier_name, b.name AS building_name, sys.name AS system_name
       FROM units u
       LEFT JOIN suppliers s ON u.supplier_id = s.id
       LEFT JOIN buildings b ON u.building_id = b.id
@@ -134,7 +165,8 @@ router.post('/', (req, res) => {
       WHERE u.id = ?
     `).get(result.lastInsertRowid);
 
-    newUnit.status = computeStatus(newUnit.inspection_date, newUnit.alert_days);
+    newUnit.status = computeStatus(newUnit.inspection_date, newUnit.alert_days, newUnit.recurring_enabled, newUnit.recurring_frequency, newUnit.recurring_interval);
+    newUnit.next_inspection_date = getNextInspectionDate(newUnit.inspection_date, newUnit.recurring_enabled, newUnit.recurring_frequency, newUnit.recurring_interval);
     newUnit.files = [];
 
     res.status(201).json(newUnit);
@@ -146,23 +178,25 @@ router.post('/', (req, res) => {
 // PUT /api/units/:id — update
 router.put('/:id', (req, res) => {
   try {
-    const { name, inspection_date, alert_days, notes, supplier_id, building_id, serial_number } = req.body;
+    const { name, inspection_date, alert_days, notes, supplier_id, building_id, serial_number,
+            recurring_enabled, recurring_frequency, recurring_interval } = req.body;
 
     const result = db.prepare(`
       UPDATE units
-      SET name = ?, inspection_date = ?, alert_days = ?, notes = ?, supplier_id = ?, building_id = ?, serial_number = ?
-      WHERE id = ?
-    `).run(name, inspection_date || null, alert_days || 30, notes || null, supplier_id || null, building_id || null, serial_number || null, req.params.id);
+      SET name=?, inspection_date=?, alert_days=?, notes=?, supplier_id=?, building_id=?, serial_number=?,
+          recurring_enabled=?, recurring_frequency=?, recurring_interval=?
+      WHERE id=?
+    `).run(name, inspection_date || null, alert_days || 30, notes || null,
+           supplier_id || null, building_id || null, serial_number || null,
+           recurring_enabled ? 1 : 0, recurring_frequency || 'monthly', recurring_interval || 1,
+           req.params.id);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'יחידה לא נמצאה' });
     }
 
     const updated = db.prepare(`
-      SELECT u.*,
-        s.name AS supplier_name,
-        b.name AS building_name,
-        sys.name AS system_name
+      SELECT u.*, s.name AS supplier_name, b.name AS building_name, sys.name AS system_name
       FROM units u
       LEFT JOIN suppliers s ON u.supplier_id = s.id
       LEFT JOIN buildings b ON u.building_id = b.id
@@ -170,8 +204,42 @@ router.put('/:id', (req, res) => {
       WHERE u.id = ?
     `).get(req.params.id);
 
-    updated.status = computeStatus(updated.inspection_date, updated.alert_days);
+    updated.status = computeStatus(updated.inspection_date, updated.alert_days, updated.recurring_enabled, updated.recurring_frequency, updated.recurring_interval);
+    updated.next_inspection_date = getNextInspectionDate(updated.inspection_date, updated.recurring_enabled, updated.recurring_frequency, updated.recurring_interval);
     updated.files = db.prepare('SELECT * FROM unit_files WHERE unit_id = ? ORDER BY created_at DESC').all(req.params.id);
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/units/:id/complete-inspection — advance inspection_date to next occurrence
+router.post('/:id/complete-inspection', (req, res) => {
+  try {
+    const unit = db.prepare('SELECT * FROM units WHERE id = ?').get(req.params.id);
+    if (!unit) return res.status(404).json({ error: 'יחידה לא נמצאה' });
+
+    // Calculate next inspection date
+    const baseDate = unit.inspection_date || new Date().toISOString().split('T')[0];
+    const nextDate = unit.recurring_enabled && unit.recurring_frequency
+      ? addToDate(baseDate, unit.recurring_frequency, unit.recurring_interval || 1)
+      : baseDate;
+
+    db.prepare(`UPDATE units SET inspection_date = ? WHERE id = ?`)
+      .run(nextDate, unit.id);
+
+    const updated = db.prepare(`
+      SELECT u.*, s.name AS supplier_name, b.name AS building_name, sys.name AS system_name
+      FROM units u
+      LEFT JOIN suppliers s ON u.supplier_id = s.id
+      LEFT JOIN buildings b ON u.building_id = b.id
+      LEFT JOIN systems sys ON u.system_id = sys.id
+      WHERE u.id = ?
+    `).get(unit.id);
+
+    updated.status = computeStatus(updated.inspection_date, updated.alert_days, updated.recurring_enabled, updated.recurring_frequency, updated.recurring_interval);
+    updated.next_inspection_date = getNextInspectionDate(updated.inspection_date, updated.recurring_enabled, updated.recurring_frequency, updated.recurring_interval);
 
     res.json(updated);
   } catch (error) {

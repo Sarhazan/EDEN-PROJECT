@@ -931,6 +931,24 @@ function initializeDatabase() {
   createIndexIfNotExists('idx_units_inspection_date', 'units', 'inspection_date');
   createIndexIfNotExists('idx_unit_files_unit_id', 'unit_files', 'unit_id');
 
+  // Migration: add recurring inspection fields to units
+  const tryAlter = (sql) => { try { db.exec(sql); } catch(e) { if (!e.message.includes('duplicate column name')) console.error(e.message); } };
+  tryAlter(`ALTER TABLE units ADD COLUMN recurring_enabled BOOLEAN DEFAULT 0`);
+  tryAlter(`ALTER TABLE units ADD COLUMN recurring_frequency TEXT DEFAULT 'monthly'`);
+  tryAlter(`ALTER TABLE units ADD COLUMN recurring_interval INTEGER DEFAULT 1`);
+
+  // Interactive (AI-generated) form templates
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS interactive_form_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      fields_schema TEXT NOT NULL DEFAULT '[]',
+      logo_path TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');
 

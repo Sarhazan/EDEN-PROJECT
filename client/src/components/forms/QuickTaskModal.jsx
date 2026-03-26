@@ -208,6 +208,10 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
     setQuickDueEnabled(false);
     setQuickDueDate(null);
 
+    const isNewOneTime = !isEditMode && (forceOneTime || initialFreq === 'one-time');
+    const defaultStartTime = isNewOneTime ? '' : (initialValues?.start_time || currentTimeRounded());
+    const defaultEndTime = isNewOneTime ? '' : calculateEndTime(initialValues?.start_time || currentTimeRounded(), initialValues?.estimated_duration_minutes || 30);
+
     setFormData((prev) => ({
       ...prev,
       description: initialValues?.description || '',
@@ -216,8 +220,8 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
       interval: forceOneTime && !isEditMode ? 1 : interval,
       weekly_days: initialValues?.weekly_days || [],
       start_date: initialValues?.start_date || localDateStr(safeDate),
-      start_time: initialValues?.start_time || currentTimeRounded(),
-      end_time: calculateEndTime(initialValues?.start_time || currentTimeRounded(), initialValues?.estimated_duration_minutes || 30),
+      start_time: defaultStartTime,
+      end_time: defaultEndTime,
       system_id: initialValues?.system_id || '',
       employee_id: initialValues?.employee_id || managerEmployeeId || prev.employee_id || '',
       building_id: initialValues?.building_id || '',
@@ -801,26 +805,28 @@ export default function QuickTaskModal({ isOpen, onClose, initialValues = null, 
             />
           </div>
 
-          {/* Time Fields */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">שעת התחלה</label>
-              <TimePicker
-                value={formData.start_time}
-                onChange={(v) => handleTimeChange('start_time', v)}
-                placeholder="ללא שעה"
-              />
+          {/* Time Fields — shown only for recurring tasks or when editing a one-time task */}
+          {(taskMode === 'recurring' || isEditMode) && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">שעת התחלה</label>
+                <TimePicker
+                  value={formData.start_time}
+                  onChange={(v) => handleTimeChange('start_time', v)}
+                  placeholder="ללא שעה"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">שעת סיום</label>
+                <TimePicker
+                  value={formData.end_time}
+                  onChange={(v) => handleTimeChange('end_time', v)}
+                  disabled={!formData.start_time}
+                  placeholder="ללא שעה"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">שעת סיום</label>
-              <TimePicker
-                value={formData.end_time}
-                onChange={(v) => handleTimeChange('end_time', v)}
-                disabled={!formData.start_time}
-                placeholder="ללא שעה"
-              />
-            </div>
-          </div>
+          )}
 
           {/* Radio toggle */}
           <div className="flex gap-2 bg-gray-100 p-1 rounded-full">
