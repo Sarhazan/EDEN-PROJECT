@@ -56,6 +56,20 @@ app.use('/docs', express.static(path.join(__dirname, '..', 'docs')));
 // Initialize database
 initializeDatabase();
 
+// Load stored API keys from DB into runtime (overrides env if set in settings)
+(function loadStoredApiKeys() {
+  try {
+    const { db } = require('./database/schema');
+    const translationService = require('./services/translation');
+    const geminiKey = db.prepare(`SELECT value FROM settings WHERE key = 'gemini_api_key'`).get();
+    if (geminiKey?.value && !process.env.GEMINI_API_KEY) {
+      process.env.GEMINI_API_KEY = geminiKey.value;
+      translationService.setGeminiApiKey(geminiKey.value);
+      console.log('✓ Gemini API Key loaded from DB settings');
+    }
+  } catch(e) { console.warn('[startup] Could not load API keys from DB:', e.message); }
+})();
+
 // Auto-seed if database is empty (for Railway/cloud deployments)
 checkAndSeedDatabase();
 

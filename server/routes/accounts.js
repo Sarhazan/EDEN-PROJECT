@@ -241,4 +241,69 @@ router.get('/company', (req, res) => {
   }
 });
 
+// GET /api/accounts/gemini/status — get Gemini connection status
+router.get('/gemini/status', (req, res) => {
+  try {
+    const setting = db.prepare(`SELECT value FROM settings WHERE key = 'gemini_api_key'`).get();
+    const hasKey = !!(setting?.value);
+    const stats = translationService.getProviderStats();
+    res.json({
+      connected: hasKey && stats.geminiAvailable,
+      keyConfigured: hasKey,
+      keyMasked: hasKey ? '****' + setting.value.slice(-4) : null,
+      usage: stats.gemini
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/accounts/gemini/connect — set Gemini API key
+router.post('/gemini/connect', async (req, res) => {
+  try {
+    const { apiKey } = req.body;
+    if (!apiKey?.trim()) return res.status(400).json({ error: 'API Key is required' });
+
+    // Test the key
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    let testOk = false;
+    let testError = null;
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey.trim());
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const result = await model.generateContent('say ok');
+      testOk = !!result.response.text();
+    } catch (e) {
+      testError = e.message;
+    }
+
+    if (!testOk) {
+      return res.status(400).json({ error: 'Gemini API Key validation failed', details: testError });
+    }
+
+    // Save to env + DB
+    process.env.GEMINI_API_KEY = apiKey.trim();
+    db.prepare(`INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('gemini_api_key', ?, datetime('now'))`).run(apiKey.trim());
+
+    // Re-init translation service with new key
+    translationService.setGeminiApiKey?.(apiKey.trim());
+
+    res.json({ success: true, message: 'Gemini API connected successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/accounts/gemini/disconnect — remove Gemini API key
+router.post('/gemini/disconnect', (req, res) => {
+  try {
+    db.prepare(`DELETE FROM settings WHERE key = 'gemini_api_key'`).run();
+    process.env.GEMINI_API_KEY = '';
+    translationService.setGeminiApiKey?.(null);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

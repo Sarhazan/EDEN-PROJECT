@@ -214,6 +214,23 @@ class TranslationService {
    * @param {string} apiKey - New API key
    * @returns {boolean} - Whether initialization succeeded
    */
+  setGeminiApiKey(apiKey) {
+    if (!apiKey || !apiKey.trim()) {
+      this.gemini = null;
+      this.geminiModel = null;
+      console.log('✓ Gemini API disabled');
+      return;
+    }
+    try {
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      this.gemini = new GoogleGenerativeAI(apiKey.trim());
+      this.geminiModel = this.gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      console.log('✓ Gemini API Key updated');
+    } catch (e) {
+      console.error('✗ Failed to set Gemini API Key:', e.message);
+    }
+  }
+
   setGoogleTranslateApiKey(apiKey) {
     if (!apiKey || !apiKey.trim()) {
       this.googleTranslate = null;

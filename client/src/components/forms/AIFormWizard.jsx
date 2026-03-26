@@ -106,10 +106,14 @@ export default function AIFormWizard({ isOpen, onClose, onSaved }) {
         setMessages(prev => [...prev, { role: 'assistant', text: question }]);
       }
     } catch (err) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        text: '❌ שגיאה בתקשורת עם ה-AI. נסה שוב.'
-      }]);
+      const isQuota = err?.response?.data?.error?.includes('quota') || err?.response?.data?.error?.includes('429');
+      const isKey = err?.response?.data?.error?.includes('API key') || err?.response?.data?.error?.includes('not configured');
+      const msg = isQuota
+        ? '❌ ה-Gemini API הגיע למכסה היומית. עדכן API Key בהגדרות.'
+        : isKey
+        ? '❌ Gemini API לא מחובר. עבור להגדרות → Gemini AI והכנס API Key.'
+        : '❌ שגיאה בתקשורת עם ה-AI. נסה שוב.';
+      setMessages(prev => [...prev, { role: 'assistant', text: msg }]);
     } finally {
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 100);

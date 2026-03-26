@@ -41,6 +41,13 @@ export default function SettingsPage() {
   const [googleError, setGoogleError] = useState(null);
   const [googleSuccess, setGoogleSuccess] = useState(null);
 
+  // Gemini state
+  const [geminiStatus, setGeminiStatus] = useState(null);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [geminiLoading, setGeminiLoading] = useState(false);
+  const [geminiError, setGeminiError] = useState(null);
+  const [geminiSuccess, setGeminiSuccess] = useState(null);
+
   // Tasks per page state
   const [tasksPerPage, setTasksPerPage] = useState(3);
   const [tasksPerPageSaving, setTasksPerPageSaving] = useState(false);
@@ -233,6 +240,13 @@ export default function SettingsPage() {
       }
     };
     fetchManagerData();
+  }, []);
+
+  // Load Gemini status
+  useEffect(() => {
+    axios.get(`${API_URL}/accounts/gemini/status`).then(res => {
+      setGeminiStatus(res.data);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -461,6 +475,33 @@ export default function SettingsPage() {
     }
   };
 
+  // ─── Gemini handlers ──────────────────────────────────────────────────────
+  const handleGeminiConnect = async () => {
+    if (!geminiApiKey.trim()) return;
+    setGeminiLoading(true); setGeminiError(null); setGeminiSuccess(null);
+    try {
+      await axios.post(`${API_URL}/accounts/gemini/connect`, { apiKey: geminiApiKey });
+      setGeminiSuccess('Gemini API חובר בהצלחה ✅');
+      setGeminiApiKey('');
+      const res = await axios.get(`${API_URL}/accounts/gemini/status`);
+      setGeminiStatus(res.data);
+    } catch (err) {
+      setGeminiError(err.response?.data?.error || 'שגיאה בחיבור');
+    } finally { setGeminiLoading(false); }
+  };
+
+  const handleGeminiDisconnect = async () => {
+    setGeminiLoading(true); setGeminiError(null); setGeminiSuccess(null);
+    try {
+      await axios.post(`${API_URL}/accounts/gemini/disconnect`);
+      setGeminiSuccess('Gemini API נותק');
+      const res = await axios.get(`${API_URL}/accounts/gemini/status`);
+      setGeminiStatus(res.data);
+    } catch (err) {
+      setGeminiError('שגיאה בניתוק');
+    } finally { setGeminiLoading(false); }
+  };
+
   const handleSiteNameChange = async (newValue) => {
     setSiteName(newValue);
     setSiteNameSaving(true);
@@ -627,6 +668,67 @@ export default function SettingsPage() {
             <li>עליך לוודא שלעובדים יש מספר טלפון שמור במערכת</li>
           </ul>
         </div>
+      </div>
+
+      {/* ── Gemini API Section ── */}
+      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-3xl">✨</span>
+          <h2 className="text-2xl font-semibold">Gemini AI</h2>
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${geminiStatus?.connected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+            <span className={`w-2 h-2 rounded-full ${geminiStatus?.connected ? 'bg-green-500' : 'bg-red-500'}`} />
+            {geminiStatus?.connected ? 'מחובר' : 'לא מחובר'}
+          </span>
+        </div>
+        <p className="text-gray-600 mb-4 text-sm">
+          Gemini AI משמש ליצירת טפסים חכמים. ללא חיבור — יצירת טפסים עם AI לא תעבוד.
+        </p>
+
+        {/* Alert if not connected */}
+        {geminiStatus && !geminiStatus.connected && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 flex items-center gap-3">
+            <span className="text-red-500 text-xl">⚠️</span>
+            <div>
+              <p className="text-red-700 font-semibold text-sm">Gemini API לא מחובר</p>
+              <p className="text-red-600 text-xs mt-0.5">יצירת טפסים עם AI מושבתת. הכנס API Key תקין כדי להפעיל.</p>
+            </div>
+          </div>
+        )}
+
+        {geminiStatus?.keyConfigured && (
+          <p className="text-sm text-gray-500 mb-3">
+            Key נוכחי: <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{geminiStatus.keyMasked}</span>
+          </p>
+        )}
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <input
+            type="password"
+            value={geminiApiKey}
+            onChange={e => setGeminiApiKey(e.target.value)}
+            placeholder="הכנס Gemini API Key חדש..."
+            className="border border-gray-300 rounded-lg px-3 py-2 w-80 focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
+            dir="ltr"
+          />
+          <button
+            onClick={handleGeminiConnect}
+            disabled={geminiLoading || !geminiApiKey.trim()}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 min-h-[44px] flex items-center gap-2"
+          >
+            {geminiLoading ? <><FaSpinner className="animate-spin" /> מחבר...</> : 'חבר API Key'}
+          </button>
+          {geminiStatus?.keyConfigured && (
+            <button
+              onClick={handleGeminiDisconnect}
+              disabled={geminiLoading}
+              className="border border-red-300 text-red-600 px-4 py-2 rounded-lg font-medium hover:bg-red-50 disabled:opacity-50 min-h-[44px]"
+            >
+              נתק
+            </button>
+          )}
+        </div>
+        {geminiError && <p className="text-red-600 text-sm mt-2">{geminiError}</p>}
+        {geminiSuccess && <p className="text-green-600 text-sm mt-2 flex items-center gap-1"><FaCheck />{geminiSuccess}</p>}
       </div>
 
       {/* ── Google Translate Section ── */}
