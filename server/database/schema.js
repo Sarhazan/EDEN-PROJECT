@@ -953,6 +953,10 @@ function initializeDatabase() {
   // Migration: add logo_path to interactive_form_templates if missing
   try { db.exec(`ALTER TABLE interactive_form_templates ADD COLUMN logo_path TEXT`); } catch {}
 
+  // Migration: add billing fields to tenants
+  try { db.exec(`ALTER TABLE tenants ADD COLUMN monthly_payment REAL DEFAULT 0`); } catch {}
+  try { db.exec(`ALTER TABLE tenants ADD COLUMN payment_method TEXT DEFAULT 'cash'`); } catch {}
+
   // Enable WAL mode for better concurrency (reads during writes)
   db.pragma('journal_mode = WAL');
 

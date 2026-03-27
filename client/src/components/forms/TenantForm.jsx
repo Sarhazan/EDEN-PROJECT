@@ -14,6 +14,8 @@ export default function TenantForm({ tenant, onClose }) {
   const [floor, setFloor] = useState('');
   const [buildingId, setBuildingId] = useState('');
   const [notes, setNotes] = useState('');
+  const [monthlyPayment, setMonthlyPayment] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
 
   useEffect(() => {
     if (tenant) {
@@ -24,6 +26,8 @@ export default function TenantForm({ tenant, onClose }) {
       setFloor(tenant.floor || '');
       setBuildingId(tenant.building_id ? String(tenant.building_id) : '');
       setNotes(tenant.notes || '');
+      setMonthlyPayment(tenant.monthly_payment ? String(tenant.monthly_payment) : '');
+      setPaymentMethod(tenant.payment_method || 'cash');
     }
   }, [tenant]);
 
@@ -42,7 +46,9 @@ export default function TenantForm({ tenant, onClose }) {
       apartment_number: apartmentNumber.trim(),
       floor: floor.trim(),
       building_id: Number(buildingId),
-      notes: notes.trim() || null
+      notes: notes.trim() || null,
+      monthly_payment: monthlyPayment ? Number(monthlyPayment) : 0,
+      payment_method: paymentMethod || 'cash'
     };
 
     try {
@@ -133,6 +139,38 @@ export default function TenantForm({ tenant, onClose }) {
             className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
             placeholder="name@example.com"
           />
+        </div>
+      </div>
+
+      {/* Billing */}
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+        <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">💳 פרטי תשלום</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium mb-1">סכום חודשי (₪)</label>
+            <input
+              type="number"
+              min="0"
+              value={monthlyPayment}
+              onChange={e => setMonthlyPayment(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">אופן תשלום</label>
+            <select
+              value={paymentMethod}
+              onChange={e => setPaymentMethod(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+            >
+              <option value="cash">מזומן</option>
+              <option value="check">צ׳ק</option>
+              <option value="standing_order">הוראת קבע</option>
+              <option value="credit_card">כרטיס אשראי</option>
+              <option value="bank_transfer">העברה בנקאית</option>
+            </select>
+          </div>
         </div>
       </div>
 

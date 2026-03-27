@@ -62,9 +62,10 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'המבנה שנבחר לא קיים' });
     }
 
+    const { monthly_payment, payment_method } = req.body;
     const result = db.prepare(`
-      INSERT INTO tenants (name, phone, email, apartment_number, floor, building_id, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO tenants (name, phone, email, apartment_number, floor, building_id, notes, monthly_payment, payment_method)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       name.trim(),
       phone || null,
@@ -72,7 +73,9 @@ router.post('/', (req, res) => {
       String(apartment_number).trim(),
       String(floor).trim(),
       building_id,
-      notes || null
+      notes || null,
+      monthly_payment != null ? Number(monthly_payment) : 0,
+      payment_method || 'cash'
     );
 
     const newTenant = db.prepare(`
@@ -102,9 +105,11 @@ router.put('/:id', (req, res) => {
       return res.status(400).json({ error: 'המבנה שנבחר לא קיים' });
     }
 
+    const { monthly_payment, payment_method } = req.body;
     const result = db.prepare(`
       UPDATE tenants
-      SET name = ?, phone = ?, email = ?, apartment_number = ?, floor = ?, building_id = ?, notes = ?
+      SET name = ?, phone = ?, email = ?, apartment_number = ?, floor = ?, building_id = ?, notes = ?,
+          monthly_payment = ?, payment_method = ?
       WHERE id = ?
     `).run(
       name.trim(),
@@ -114,6 +119,8 @@ router.put('/:id', (req, res) => {
       String(floor).trim(),
       building_id,
       notes || null,
+      monthly_payment != null ? Number(monthly_payment) : 0,
+      payment_method || 'cash',
       req.params.id
     );
 
